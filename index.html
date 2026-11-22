@@ -3,264 +3,470 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Обвалка PRO v 6.9</title>
+<title>Обвалка PRO v 7.2</title>
 <style>
   :root {
     --bg: #121212;
     --card: #1e1e1e;
-    --card-inner: #262626;
-    --text: #f5f5f5;
-    --text-muted: #9e9e9e;
-    --border: #555555;
+    --card-border: #333333;
+    --text: #ffffff;
+    --text-dim: #9e9e9e;
+    --input-bg: #262626;
+    --input-border: #484848;
     --green: #00c853;
-    --green-dark: #00a844;
+    --green-hover: #00e676;
     --yellow: #ffab00;
     --yellow-soft: rgba(255, 171, 0, 0.22);
     --red: #ff5252;
-    --input-bg: #2a2a2a;
+    --red-bg: rgba(255, 82, 82, 0.14);
+    --btn-bg: #2c2c2c;
+    --btn-border: #444444;
+    --modal-bg: #242424;
   }
   body.light {
-    --bg: #f0f2f5;
+    --bg: #f2f4f7;
     --card: #ffffff;
-    --card-inner: #f7f8fa;
-    --text: #111111;
-    --text-muted: #555555;
-    --border: #888888;
-    --green: #00c853;
-    --green-dark: #009e40;
-    --yellow: #ffab00;
-    --yellow-soft: rgba(255, 171, 0, 0.28);
-    --red: #e53935;
-    --input-bg: #ffffff;
+    --card-border: #d0d5dd;
+    --text: #101828;
+    --text-dim: #667085;
+    --input-bg: #f9fafb;
+    --input-border: #98a2b3;
+    --green: #00a844;
+    --green-hover: #00c853;
+    --yellow: #d98200;
+    --yellow-soft: rgba(255, 171, 0, 0.25);
+    --red: #d92d20;
+    --red-bg: rgba(217, 45, 32, 0.1);
+    --btn-bg: #eaecf0;
+    --btn-border: #98a2b3;
+    --modal-bg: #ffffff;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-  html, body {
-    margin: 0; padding: 0;
-    background: var(--bg); color: var(--text);
+  input, textarea { user-select: text; }
+  body {
+    margin: 0;
+    padding: 8px;
+    background: var(--bg);
+    color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 14px;
+    display: flex;
+    justify-content: center;
   }
   .app-wrap {
     width: 100%;
     max-width: 440px;
-    margin: 0 auto;
-    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
   .card {
     background: var(--card);
-    border-radius: 14px;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
     padding: 10px;
-    margin-bottom: 8px;
-    border: 1px solid rgba(255,255,255,0.06);
   }
-  body.light .card { border: 1px solid #dcdcdc; }
   .cal-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 8px; gap: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
   }
   .nav-btn {
-    background: var(--card-inner); color: var(--text);
-    border: 1px solid var(--border); border-radius: 8px;
-    width: 34px; height: 30px; font-size: 14px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    background: var(--btn-bg);
+    border: 1px solid var(--btn-border);
+    color: var(--text);
+    width: 32px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .month-title-wrap {
-    flex: 1; text-align: center; font-size: 17px; font-weight: 700;
-    display: flex; align-items: baseline; justify-content: center; gap: 6px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .month-title {
+    font-size: 16px;
+    font-weight: 700;
   }
   .ver-tag {
-    font-size: 10px; font-weight: 500;
-    color: rgba(255,255,255,0.72);
-    letter-spacing: 0.2px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #e0e0e0;
+    opacity: 0.85;
   }
-  body.light .ver-tag { color: #333333; }
+  body.light .ver-tag { color: #475467; }
+  .top-actions {
+    display: flex;
+    gap: 6px;
+  }
   .icon-btn {
-    background: var(--card-inner); color: var(--text);
-    border: 1px solid var(--border); border-radius: 8px;
-    width: 30px; height: 30px; font-size: 14px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
+    background: var(--btn-bg);
+    border: 1px solid var(--btn-border);
+    color: var(--text);
+    width: 30px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .tabs {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
     margin-bottom: 8px;
   }
   .tab-btn {
-    background: var(--card-inner); color: var(--text-muted);
-    border: 1px solid var(--border); border-radius: 8px;
-    padding: 6px 2px; font-size: 12px; font-weight: 600; cursor: pointer;
-    text-align: center;
+    background: var(--btn-bg);
+    border: 1px solid var(--btn-border);
+    color: var(--text);
+    padding: 6px 2px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
   }
   .tab-btn.active {
-    background: var(--green); color: #000000; border-color: var(--green); font-weight: 700;
+    background: var(--green);
+    border-color: var(--green);
+    color: #000;
+    font-weight: 700;
   }
   .weekdays {
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    text-align: center; font-size: 11px; color: var(--text-muted);
-    margin-bottom: 4px; font-weight: 600;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    font-weight: 600;
   }
   .days-grid {
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    gap: 3px; touch-action: pan-y;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    touch-action: none;
   }
   .day-cell {
-    height: 33px; border-radius: 7px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 600; position: relative;
-    background: var(--card-inner); cursor: pointer;
+    height: 31px;
+    border-radius: 7px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    position: relative;
+    cursor: pointer;
+    border: 1px solid transparent;
   }
   .day-cell.other-month { opacity: 0.35; }
-  body.light .day-cell { color: #000000; }
-  body.light .day-cell.other-month { color: #000000; opacity: 0.45; }
   .day-cell.in-range { background: var(--yellow-soft); }
   .day-cell.selected {
-    background: var(--yellow) !important; color: #000000 !important;
-    font-weight: 800; opacity: 1 !important;
+    background: var(--yellow) !important;
+    color: #000 !important;
+    font-weight: 800;
+  }
+  .day-cell.day-off {
+    color: var(--red);
+  }
+  .day-cell.day-off::after {
+    content: "✕";
+    position: absolute;
+    font-size: 18px;
+    color: rgba(255, 82, 82, 0.55);
+    pointer-events: none;
   }
   .day-dot {
-    width: 14px; height: 2px; border-radius: 2px;
-    background: var(--green); position: absolute; bottom: 3px;
+    width: 14px;
+    height: 2.5px;
+    background: var(--green);
+    border-radius: 2px;
+    margin-top: 1px;
   }
-  .day-cell.selected .day-dot { background: #000000; }
-  .day-off-mark {
-    position: absolute; font-size: 18px; color: var(--red);
-    font-weight: 800; line-height: 1; pointer-events: none;
-  }
+  .day-cell.selected .day-dot { background: #000; }
   .cal-hint {
-    text-align: center; font-size: 11px; color: var(--text-muted);
-    margin: 6px 0 6px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin: 5px 0 6px;
   }
-  .btn-dayoff-wide {
-    width: 100%; height: 25px;
-    background: rgba(255, 82, 82, 0.12); color: var(--red);
-    border: 1px solid var(--red); border-radius: 8px;
-    font-size: 12px; font-weight: 700; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 5px;
+  .dayoff-btn {
+    width: 100%;
+    height: 25px;
+    background: var(--red-bg);
+    border: 1px solid var(--red);
+    color: var(--red);
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
   }
   .sec-header {
-    display: flex; align-items: center; justify-content: space-between;
-    font-size: 11px; font-weight: 700; color: var(--text-muted);
-    text-transform: uppercase; margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    text-transform: uppercase;
   }
   .summary-box {
-    background: var(--card-inner); border-radius: 10px;
-    padding: 8px 10px; display: flex; align-items: center; justify-content: space-between;
-    gap: 8px; margin-bottom: 6px;
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
   }
-  .sum-title { font-size: 10px; font-weight: 700; color: var(--green); text-transform: uppercase; }
-  .sum-stats { font-size: 13px; font-weight: 700; margin: 2px 0; }
-  .sum-money { font-size: 19px; font-weight: 800; color: var(--yellow); }
-  body.light .sum-money { color: #d98200; }
-  .rep-btns { display: flex; flex-direction: column; gap: 5px; }
-  .btn-rep {
-    border: none; border-radius: 7px; padding: 6px 10px;
-    font-size: 12px; font-weight: 700; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 4px;
+  .sum-left { display: flex; flex-direction: column; gap: 2px; }
+  .sum-label { font-size: 10px; font-weight: 700; color: var(--green); text-transform: uppercase; }
+  .sum-stats { font-size: 13px; font-weight: 700; }
+  .sum-money { font-size: 20px; font-weight: 800; color: var(--yellow); }
+  .report-btns { display: flex; flex-direction: column; gap: 5px; }
+  .rep-btn {
+    border: 1px solid var(--btn-border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
     white-space: nowrap;
   }
-  .btn-rep-full { background: var(--green); color: #000000; }
-  .btn-rep-short { background: var(--card); color: var(--text); border: 1px solid var(--border); }
-  .records-list { display: flex; flex-direction: column; gap: 2px; }
-  .rec-row {
-    display: flex; align-items: center; justify-content: space-between;
-    background: var(--card-inner); border-radius: 7px;
-    padding: 4px 8px; font-size: 12px; line-height: 1.15;
+  .rep-btn.full { background: var(--green); border-color: var(--green); color: #000; }
+  .rep-btn.short { background: var(--btn-bg); color: var(--text); }
+  .records-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+    max-height: 150px;
+    overflow-y: auto;
+  }
+  .rec-item {
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
   }
   .rec-del {
-    background: transparent; border: none; color: var(--red);
-    font-size: 14px; font-weight: 700; cursor: pointer; padding: 0 4px;
+    background: transparent;
+    border: none;
+    color: var(--red);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0 4px;
   }
   .undo-bar {
-    display: none; align-items: center; justify-content: space-between;
-    background: rgba(255, 171, 0, 0.16); border: 1px solid var(--yellow);
-    border-radius: 8px; padding: 5px 8px; margin-top: 6px; gap: 6px;
+    display: none;
+    gap: 6px;
+    margin-top: 6px;
   }
-  .btn-undo {
-    background: var(--yellow); color: #000000; border: none;
-    border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 800; cursor: pointer;
+  .undo-btn {
+    flex: 1;
+    background: var(--yellow);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
   }
-  .btn-clear-all {
-    background: transparent; color: var(--red); border: 1px solid var(--red);
-    border-radius: 6px; padding: 4px 8px; font-size: 11px; font-weight: 700; cursor: pointer;
+  .clear-undo-btn {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
   }
-  .sel-date-row {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 6px; font-size: 13px;
+  .form-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 8px;
   }
+  .form-top span:first-child { color: var(--text-dim); }
+  .form-top span:last-child { font-weight: 700; }
   .form-row {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 5px; gap: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 13px;
   }
-  .form-label { font-size: 14px; font-weight: 600; }
+  .form-row label { font-weight: 600; }
   .form-input {
-    width: 135px; height: 32px;
-    background: var(--input-bg); color: var(--text);
-    border: 1px solid var(--border); border-radius: 8px;
-    padding: 0 10px; font-size: 15px; font-weight: 700;
-    text-align: right; outline: none;
-    -webkit-appearance: none; appearance: none;
+    width: 135px;
+    height: 32px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    color: var(--text);
+    text-align: right;
+    padding: 0 10px;
+    font-size: 14px;
+    font-weight: 700;
+    outline: none;
   }
   .form-input:focus { border-color: var(--green); }
-  .shift-total-bar {
-    display: flex; justify-content: space-between; align-items: center;
-    background: var(--card-inner); border: 1px solid var(--border);
-    border-radius: 8px; padding: 6px 10px; margin: 6px 0;
-    font-size: 13px; font-weight: 700;
+  .shift-preview {
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin: 6px 0 8px;
   }
-  .btn-add {
-    width: 100%; height: 38px;
-    background: var(--green); color: #000000;
-    border: none; border-radius: 10px;
-    font-size: 14px; font-weight: 800; cursor: pointer;
+  .shift-preview-vals { display: flex; gap: 10px; }
+  .shift-kg { color: var(--green); }
+  .shift-rub { color: var(--yellow); }
+  .add-btn {
+    width: 100%;
+    height: 38px;
+    background: var(--green);
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
   }
-  .btn-add:active { background: var(--green-dark); }
-  .bottom-actions {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+  .bottom-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
-  .btn-bottom {
-    background: var(--card); color: var(--text);
-    border: 1px solid var(--border); border-radius: 10px;
-    height: 36px; font-size: 12px; font-weight: 700; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 5px;
+  .sec-btn {
+    background: var(--card);
+    border: 1px solid var(--input-border);
+    color: var(--text);
+    height: 36px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
   }
   .modal-backdrop {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.75); z-index: 1000;
-    align-items: center; justify-content: center; padding: 14px;
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.72);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
   }
-  .modal-backdrop.top-modal { z-index: 2000; }
+  .modal-backdrop.top-modal { z-index: 2500; }
   .modal-box {
-    background: var(--card); color: var(--text);
-    border: 1px solid var(--border); border-radius: 14px;
-    width: 100%; max-width: 400px; padding: 14px;
-    max-height: 85vh; overflow-y: auto;
+    background: var(--modal-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 14px;
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
   }
-  .modal-title { font-size: 15px; font-weight: 800; margin-bottom: 10px; }
-  .preview-area {
-    width: 100%; min-height: 150px; background: var(--input-bg); color: var(--text);
-    border: 1px solid var(--border); border-radius: 8px; padding: 8px;
-    font-family: monospace; font-size: 12px; resize: none; user-select: text;
+  .modal-title { font-size: 14px; font-weight: 700; }
+  .modal-textarea {
+    width: 100%;
+    height: 160px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px;
+    font-family: monospace;
+    font-size: 12px;
+    resize: none;
   }
-  .modal-btns {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px;
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
   }
   .m-btn {
-    border: none; border-radius: 8px; padding: 8px;
-    font-size: 13px; font-weight: 700; cursor: pointer;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--btn-border);
+    background: var(--btn-bg);
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
   }
-  .m-btn-cancel { background: var(--card-inner); color: var(--text); border: 1px solid var(--border); }
-  .m-btn-ok { background: var(--green); color: #000000; }
-  .m-btn-wa { background: #25D366; color: #000000; }
-  .m-btn-tg { background: #2AABEE; color: #ffffff; }
+  .m-btn.green { background: var(--green); border-color: var(--green); color: #000; }
+  .m-btn.red { background: var(--red); border-color: var(--red); color: #fff; }
+  .m-btn.tg { background: #24A1DE; border-color: #24A1DE; color: #fff; }
+  .m-btn.wa { background: #25D366; border-color: #25D366; color: #000; }
+  .backup-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
   .backup-item {
-    display: flex; align-items: center; justify-content: space-between;
-    background: var(--card-inner); border: 1px solid var(--border);
-    border-radius: 8px; padding: 7px 8px; margin-bottom: 6px; gap: 6px;
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
   }
   .toast {
-    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
-    background: #222222; color: #ffffff; border: 1px solid var(--green);
-    padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
-    z-index: 3000; display: none; white-space: nowrap;
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #323232;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 3000;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
   }
 </style>
 </head>
@@ -268,31 +474,32 @@
 <div class="app-wrap">
   <div class="card">
     <div class="cal-header">
-      <button class="nav-btn" id="prevMonthBtn">◀</button>
+      <button type="button" class="nav-btn" id="prevMonthBtn">◀</button>
       <div class="month-title-wrap">
-        <span id="monthLabel">Ноябрь 2026</span>
-        <span class="ver-tag">v 6.9</span>
+        <span class="month-title" id="monthTitle">Ноябрь 2026</span>
+        <span class="ver-tag" id="verTag">v 7.2</span>
       </div>
-      <button class="icon-btn" id="updateBtn" title="Проверить обновление">🔄</button>
-      <button class="icon-btn" id="themeBtn" title="Сменить тему">☀️</button>
-      <button class="nav-btn" id="nextMonthBtn">▶</button>
+      <div class="top-actions">
+        <button type="button" class="icon-btn" id="updateBtn" title="Проверить обновление">🔄</button>
+        <button type="button" class="icon-btn" id="themeBtn" title="Сменить тему">☀️</button>
+        <button type="button" class="nav-btn" id="nextMonthBtn">▶</button>
+      </div>
     </div>
 
-    <div class="tabs">
-      <button class="tab-btn active" data-mode="day">День</button>
-      <button class="tab-btn" data-mode="week">Неделя</button>
-      <button class="tab-btn" data-mode="two_weeks">2х недели</button>
-      <button class="tab-btn" data-mode="month">Месяц</button>
-      <button class="tab-btn" data-mode="year">Год</button>
+    <div class="tabs" id="periodTabs">
+      <button type="button" class="tab-btn active" data-mode="day">День</button>
+      <button type="button" class="tab-btn" data-mode="week">Неделя</button>
+      <button type="button" class="tab-btn" data-mode="biweek">2х недели</button>
+      <button type="button" class="tab-btn" data-mode="month">Месяц</button>
+      <button type="button" class="tab-btn" data-mode="year">Год</button>
     </div>
 
     <div class="weekdays">
-      <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+      <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Bc</div>
     </div>
     <div class="days-grid" id="daysGrid"></div>
-
     <div class="cal-hint">Нажмите на день или протяните пальцем для выбора периода</div>
-    <button class="btn-dayoff-wide" id="dayOffBtn">✕ ВЫХОДНОЙ</button>
+    <button type="button" class="dayoff-btn" id="dayOffBtn">✕ ВЫХОДНОЙ</button>
   </div>
 
   <div class="card">
@@ -300,67 +507,70 @@
       <span id="recordsHeader">ЗАПИСИ (ДЕНЬ)</span>
     </div>
     <div class="summary-box">
-      <div>
-        <div class="sum-title" id="sumTitle">ИТОГ ЗА ДЕНЬ</div>
+      <div class="sum-left">
+        <div class="sum-label" id="sumLabel">ИТОГ ЗА ДЕНЬ</div>
         <div class="sum-stats" id="sumStats">0 кор. | 0 кг</div>
         <div class="sum-money" id="sumMoney">0 ₽</div>
       </div>
-      <div class="rep-btns">
-        <button class="btn-rep btn-rep-full" id="fullReportBtn">📤 Полный отчёт</button>
-        <button class="btn-rep btn-rep-short" id="shortReportBtn">📋 Краткий отчёт</button>
+      <div class="report-btns">
+        <button type="button" class="rep-btn full" id="fullReportBtn">📤 Полный отчёт</button>
+        <button type="button" class="rep-btn short" id="shortReportBtn">📋 Краткий отчёт</button>
       </div>
     </div>
     <div class="records-list" id="recordsList"></div>
     <div class="undo-bar" id="undoBar">
-      <button class="btn-undo" id="undoBtn">↩ Вернуть (0)</button>
-      <button class="btn-clear-all" id="clearDayBtn">Очистить день</button>
+      <button type="button" class="undo-btn" id="undoBtn">↩ ОТМЕНИТЬ УДАЛЕНИЕ (0)</button>
+      <button type="button" class="clear-undo-btn" id="clearUndoBtn">✕</button>
     </div>
   </div>
 
   <div class="card">
-    <div class="sel-date-row">
-      <span style="color:var(--text-muted)">Выбрано:</span>
-      <strong id="selectedDateLabel">22 ноября</strong>
+    <div class="form-top">
+      <span>Выбрано:</span>
+      <span id="selectedDateLabel">22 ноября</span>
     </div>
     <div class="form-row">
-      <label class="form-label" for="workerNameInput">Обвальщик:</label>
-      <input class="form-input" id="workerNameInput" type="text" placeholder="Имя" autocomplete="off">
+      <label for="workerName">Обвальщик:</label>
+      <input type="text" id="workerName" class="form-input" placeholder="Имя">
     </div>
     <div class="form-row">
-      <label class="form-label" for="boxesInput">Коробки (шт):</label>
-      <input class="form-input" id="boxesInput" type="text" inputmode="numeric" placeholder="0" autocomplete="off">
+      <label for="boxCount">Коробки (шт):</label>
+      <input type="text" inputmode="numeric" id="boxCount" class="form-input" placeholder="0">
     </div>
     <div class="form-row">
-      <label class="form-label" for="weightInput">Вес коробки (кг):</label>
-      <input class="form-input" id="weightInput" type="text" inputmode="decimal" placeholder="00.0" autocomplete="off">
+      <label for="boxWeight">Вес коробки (кг):</label>
+      <input type="text" inputmode="decimal" id="boxWeight" class="form-input" placeholder="00.0">
     </div>
     <div class="form-row">
-      <label class="form-label" for="rateInput">Ставка за 1 кг (₽):</label>
-      <input class="form-input" id="rateInput" type="text" inputmode="decimal" placeholder="0.0" autocomplete="off">
+      <label for="ratePerKg">Ставка за 1 кг (₽):</label>
+      <input type="text" inputmode="decimal" id="ratePerKg" class="form-input" placeholder="0.0">
     </div>
-    <div class="shift-total-bar">
+    <div class="shift-preview">
       <span>ИТОГО ЗА СМЕНУ:</span>
-      <span><span id="shiftKg" style="color:var(--green)">0 кг</span> &nbsp; <span id="shiftRub" style="color:var(--yellow)">0 ₽</span></span>
+      <div class="shift-preview-vals">
+        <span class="shift-kg" id="previewKg">0 кг</span>
+        <span class="shift-rub" id="previewRub">0 ₽</span>
+      </div>
     </div>
-    <button class="btn-add" id="addRecordBtn">+ ДОБАВИТЬ ЗАПИСЬ</button>
+    <button type="button" class="add-btn" id="addRecordBtn">+ ДОБАВИТЬ ЗАПИСЬ</button>
   </div>
 
-  <div class="bottom-actions">
-    <button class="btn-bottom" id="saveBackupBtn">💾 СОХРАНИТЬ БАЗУ</button>
-    <button class="btn-bottom" id="openRestoreBtn">📂 ВОССТАНОВИТЬ</button>
+  <div class="bottom-btns">
+    <button type="button" class="sec-btn" id="saveBackupBtn">💾 СОХРАНИТЬ БАЗУ</button>
+    <button type="button" class="sec-btn" id="restoreModalBtn">📂 ВОССТАНОВИТЬ</button>
   </div>
 </div>
 
-<!-- Предпросмотр отчёта -->
+<!-- Окно предпросмотра отчёта -->
 <div class="modal-backdrop" id="reportModal">
   <div class="modal-box">
-    <div class="modal-title" id="reportModalTitle">Предпросмотр отчёта</div>
-    <textarea class="preview-area" id="reportPreviewText" readonly></textarea>
-    <div class="modal-btns">
-      <button class="m-btn m-btn-wa" id="sendWaBtn">WhatsApp</button>
-      <button class="m-btn m-btn-tg" id="sendTgBtn">Telegram</button>
-      <button class="m-btn m-btn-ok" id="sendShareBtn">Отправить / MAX</button>
-      <button class="m-btn m-btn-cancel" id="closeReportBtn">Отмена</button>
+    <div class="modal-title">Предпросмотр отчёта</div>
+    <textarea class="modal-textarea" id="reportPreviewText" readonly></textarea>
+    <div class="modal-actions">
+      <button type="button" class="m-btn wa" id="sendWaBtn">WhatsApp</button>
+      <button type="button" class="m-btn tg" id="sendTgBtn">Telegram</button>
+      <button type="button" class="m-btn green" id="sendNativeBtn">Отправить / MAX</button>
+      <button type="button" class="m-btn" id="cancelReportBtn">Отмена</button>
     </div>
   </div>
 </div>
@@ -368,859 +578,40 @@
 <!-- Окно восстановления баз -->
 <div class="modal-backdrop" id="restoreModal">
   <div class="modal-box">
-    <div class="modal-title" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>Сохранённые копии</span>
-      <button class="m-btn m-btn-cancel" id="toggleTransferBtn" style="padding:4px 8px;font-size:11px;">🔑 Перенос / Код</button>
+    <div class="modal-title">Сохранённые копии в телефоне</div>
+    <div class="backup-list" id="backupList"></div>
+    <div class="modal-actions">
+      <button type="button" class="m-btn" id="transferCodeBtn">🔑 Перенос / Код</button>
+      <button type="button" class="m-btn" id="closeRestoreBtn">Закрыть</button>
     </div>
-    <div id="transferBox" style="display:none;margin-bottom:10px;">
-      <textarea class="preview-area" id="transferCodeArea" style="min-height:80px;" placeholder="Нажмите «Скопировать код» или вставьте сюда код базы с другого телефона"></textarea>
-      <div class="modal-btns" style="margin-top:6px;">
-        <button class="m-btn m-btn-ok" id="copyCodeBtn">Скопировать код</button>
-        <button class="m-btn m-btn-tg" id="importCodeBtn">Загрузить из кода</button>
-      </div>
-    </div>
-    <div id="backupsContainer"></div>
-    <button class="m-btn m-btn-cancel" id="closeRestoreBtn" style="width:100%;margin-top:6px;">Закрыть</button>
   </div>
 </div>
 
-<!-- Верхнее окно подтверждения -->
+<!-- Окно переноса по коду -->
+<div class="modal-backdrop top-modal" id="codeModal">
+  <div class="modal-box">
+    <div class="modal-title">Перенос базы (текстовый код)</div>
+    <textarea class="modal-textarea" id="transferCodeArea" placeholder="Вставьте код базы для восстановления или скопируйте текущий..."></textarea>
+    <div class="modal-actions">
+      <button type="button" class="m-btn green" id="applyCodeBtn">Загрузить код</button>
+      <button type="button" class="m-btn" id="copyCodeBtn">Скопировать код</button>
+      <button type="button" class="m-btn" id="closeCodeBtn" style="grid-column: span 2;">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- Окно подтверждения -->
 <div class="modal-backdrop top-modal" id="confirmModal">
   <div class="modal-box">
-    <div class="modal-title" id="confirmTitle">Подтверждение</div>
-    <div id="confirmText" style="font-size:13px;margin-bottom:12px;">Вы уверены?</div>
-    <div class="modal-btns">
-      <button class="m-btn m-btn-cancel" id="confirmNoBtn">Нет</button>
-      <button class="m-btn" id="confirmYesBtn" style="background:var(--red);color:#fff;">Да</button>
+    <div class="modal-title" id="confirmText">Вы уверены?</div>
+    <div class="modal-actions">
+      <button type="button" class="m-btn red" id="confirmYesBtn">Да</button>
+      <button type="button" class="m-btn" id="confirmNoBtn">Нет</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
-
-<script>
-(function() {
-  var APP_VERSION = "6.9";
-  var STORAGE_KEY = "obvalka_pro_data_v1";
-  var BACKUPS_KEY = "obvalka_pro_backups_v1";
-  var DB_NAME = "ObvalkaProDB";
-  var DB_STORE = "kv";
-
-  var MONTHS_NOM = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
-  var MONTHS_GEN = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
-  var MONTHS_SHORT = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
-
-  var state = {
-    records: {},
-    dayOffs: {},
-    rate: "",
-    workerName: "",
-    theme: "dark",
-    lastAutoBackupDate: ""
-  };
-
-  var now = new Date();
-  var viewYear = now.getFullYear();
-  var viewMonth = now.getMonth();
-  var selectedDate = formatDateKey(now);
-  var filterMode = "day";
-  var customRangeStart = null;
-  var customRangeEnd = null;
-  var isDragging = false;
-  var dragStartKey = null;
-  var deletedStack = [];
-  var confirmCallback = null;
-
-  function formatDateKey(d) {
-    var y = d.getFullYear();
-    var m = String(d.getMonth() + 1).padStart(2, "0");
-    var day = String(d.getDate()).padStart(2, "0");
-    return y + "-" + m + "-" + day;
-  }
-
-  function parseDateKey(key) {
-    var parts = key.split("-");
-    return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-  }
-
-  function formatHumanDate(key) {
-    var d = parseDateKey(key);
-    return d.getDate() + " " + MONTHS_GEN[d.getMonth()];
-  }
-
-  function formatShortDate(key) {
-    var d = parseDateKey(key);
-    return d.getDate() + " " + MONTHS_SHORT[d.getMonth()];
-  }
-
-  function showToast(msg) {
-    var t = document.getElementById("toast");
-    t.textContent = msg;
-    t.style.display = "block";
-    clearTimeout(t._timer);
-    t._timer = setTimeout(function() { t.style.display = "none"; }, 2400);
-  }
-
-  function openIDB(cb) {
-    if (!window.indexedDB) { cb(null); return; }
-    var req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = function(e) {
-      var db = e.target.result;
-      if (!db.objectStoreNames.contains(DB_STORE)) {
-        db.createObjectStore(DB_STORE);
-      }
-    };
-    req.onsuccess = function(e) { cb(e.target.result); };
-    req.onerror = function() { cb(null); };
-  }
-
-  function idbGet(key, cb) {
-    openIDB(function(db) {
-      if (!db) { cb(null); return; }
-      try {
-        var tx = db.transaction(DB_STORE, "readonly");
-        var req = tx.objectStore(DB_STORE).get(key);
-        req.onsuccess = function() { cb(req.result || null); };
-        req.onerror = function() { cb(null); };
-      } catch (err) { cb(null); }
-    });
-  }
-
-  function idbSet(key, val, cb) {
-    openIDB(function(db) {
-      if (!db) { if (cb) cb(); return; }
-      try {
-        var tx = db.transaction(DB_STORE, "readwrite");
-        tx.objectStore(DB_STORE).put(val, key);
-        tx.oncomplete = function() { if (cb) cb(); };
-        tx.onerror = function() { if (cb) cb(); };
-      } catch (err) { if (cb) cb(); }
-    });
-  }
-
-  function countRecords(obj) {
-    if (!obj || !obj.records) return 0;
-    var c = 0;
-    for (var k in obj.records) {
-      if (Array.isArray(obj.records[k])) c += obj.records[k].length;
-    }
-    if (obj.dayOffs) c += Object.keys(obj.dayOffs).length;
-    return c;
-  }
-
-  function saveState(cb) {
-    var raw = JSON.stringify(state);
-    try { localStorage.setItem(STORAGE_KEY, raw); } catch (e) {}
-    idbSet(STORAGE_KEY, raw, cb);
-  }
-
-  function loadState(cb) {
-    var lsObj = null;
-    try {
-      var lsRaw = localStorage.getItem(STORAGE_KEY);
-      if (lsRaw) lsObj = JSON.parse(lsRaw);
-    } catch (e) {}
-
-    idbGet(STORAGE_KEY, function(idbRaw) {
-      var idbObj = null;
-      try {
-        if (idbRaw) idbObj = (typeof idbRaw === "string") ? JSON.parse(idbRaw) : idbRaw;
-      } catch (e) {}
-
-      var chosen = lsObj;
-      if (countRecords(idbObj) > countRecords(lsObj)) {
-        chosen = idbObj;
-      }
-      if (chosen) {
-        state.records = chosen.records || {};
-        state.dayOffs = chosen.dayOffs || {};
-        state.rate = chosen.rate || "";
-        state.workerName = chosen.workerName || "";
-        state.theme = chosen.theme || "dark";
-        state.lastAutoBackupDate = chosen.lastAutoBackupDate || "";
-        saveState();
-      }
-      if (cb) cb();
-    });
-  }
-
-  function getBackups(cb) {
-    var lsList = [];
-    try {
-      var r = localStorage.getItem(BACKUPS_KEY);
-      if (r) lsList = JSON.parse(r);
-    } catch (e) {}
-    idbGet(BACKUPS_KEY, function(idbRaw) {
-      var idbList = [];
-      try {
-        if (idbRaw) idbList = (typeof idbRaw === "string") ? JSON.parse(idbRaw) : idbRaw;
-      } catch (e) {}
-      var res = (idbList.length >= lsList.length) ? idbList : lsList;
-      cb(Array.isArray(res) ? res : []);
-    });
-  }
-
-  function saveBackups(list, cb) {
-    var trimmed = list.slice(0, 8);
-    var raw = JSON.stringify(trimmed);
-    try { localStorage.setItem(BACKUPS_KEY, raw); } catch (e) {}
-    idbSet(BACKUPS_KEY, raw, cb);
-  }
-
-  function createBackup(isAuto, cb) {
-    getBackups(function(list) {
-      var d = new Date();
-      var stamp = String(d.getDate()).padStart(2, "0") + "." +
-                  String(d.getMonth() + 1).padStart(2, "0") + "." +
-                  d.getFullYear() + " " +
-                  String(d.getHours()).padStart(2, "0") + ":" +
-                  String(d.getMinutes()).padStart(2, "0");
-      var total = countRecords(state);
-      list.unshift({
-        id: Date.now(),
-        date: stamp,
-        count: total,
-        auto: !!isAuto,
-        data: JSON.parse(JSON.stringify(state))
-      });
-      saveBackups(list, function() {
-        if (cb) cb(total);
-      });
-    });
-  }
-
-  function checkDailyAutoBackup() {
-    var todayKey = formatDateKey(new Date());
-    if (state.lastAutoBackupDate !== todayKey && countRecords(state) > 0) {
-      state.lastAutoBackupDate = todayKey;
-      saveState();
-      createBackup(true);
-    }
-  }
-
-  function applyTheme() {
-    if (state.theme === "light") {
-      document.body.classList.add("light");
-      document.getElementById("themeBtn").textContent = "🌙";
-    } else {
-      document.body.classList.remove("light");
-      document.getElementById("themeBtn").textContent = "☀️";
-    }
-  }
-
-  function getActiveRange() {
-    if (customRangeStart && customRangeEnd) {
-      return customRangeStart <= customRangeEnd
-        ? { start: customRangeStart, end: customRangeEnd, isCustom: true }
-        : { start: customRangeEnd, end: customRangeStart, isCustom: true };
-    }
-    var sel = parseDateKey(selectedDate);
-    if (filterMode === "day") {
-      return { start: selectedDate, end: selectedDate, isCustom: false };
-    }
-    if (filterMode === "week") {
-      var dow = sel.getDay();
-      var diffToMon = (dow === 0) ? -6 : (1 - dow);
-      var mon = new Date(sel.getFullYear(), sel.getMonth(), sel.getDate() + diffToMon);
-      var sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
-      return { start: formatDateKey(mon), end: formatDateKey(sun), isCustom: false };
-    }
-    if (filterMode === "two_weeks") {
-      var y = sel.getFullYear(), m = sel.getMonth(), day = sel.getDate();
-      var lastDay = new Date(y, m + 1, 0).getDate();
-      if (day <= 15) {
-        return {
-          start: formatDateKey(new Date(y, m, 1)),
-          end: formatDateKey(new Date(y, m, 15)),
-          isCustom: false
-        };
-      } else {
-        return {
-          start: formatDateKey(new Date(y, m, 16)),
-          end: formatDateKey(new Date(y, m, lastDay)),
-          isCustom: false
-        };
-      }
-    }
-    if (filterMode === "month") {
-      var ym = viewYear, mm = viewMonth;
-      var lastM = new Date(ym, mm + 1, 0).getDate();
-      return {
-        start: formatDateKey(new Date(ym, mm, 1)),
-        end: formatDateKey(new Date(ym, mm, lastM)),
-        isCustom: false
-      };
-    }
-    if (filterMode === "year") {
-      return {
-        start: viewYear + "-01-01",
-        end: viewYear + "-12-31",
-        isCustom: false
-      };
-    }
-    return { start: selectedDate, end: selectedDate, isCustom: false };
-  }
-
-  function renderCalendar() {
-    document.getElementById("monthLabel").textContent = MONTHS_NOM[viewMonth] + " " + viewYear;
-    var grid = document.getElementById("daysGrid");
-    grid.innerHTML = "";
-
-    var firstDay = new Date(viewYear, viewMonth, 1);
-    var startOffset = (firstDay.getDay() + 6) % 7;
-    var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    var prevMonthDays = new Date(viewYear, viewMonth, 0).getDate();
-
-    var range = getActiveRange();
-    var totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
-
-    for (var i = 0; i < totalCells; i++) {
-      var cellDate;
-      var isOther = false;
-      if (i < startOffset) {
-        var dPrev = prevMonthDays - startOffset + 1 + i;
-        cellDate = new Date(viewYear, viewMonth - 1, dPrev);
-        isOther = true;
-      } else if (i >= startOffset + daysInMonth) {
-        var dNext = i - (startOffset + daysInMonth) + 1;
-        cellDate = new Date(viewYear, viewMonth + 1, dNext);
-        isOther = true;
-      } else {
-        cellDate = new Date(viewYear, viewMonth, i - startOffset + 1);
-      }
-
-      var key = formatDateKey(cellDate);
-      var cell = document.createElement("div");
-      cell.className = "day-cell";
-      if (isOther) cell.classList.add("other-month");
-      if (key >= range.start && key <= range.end && range.start !== range.end) {
-        cell.classList.add("in-range");
-      }
-      if (key === selectedDate && !customRangeStart) {
-        cell.classList.add("selected");
-      } else if (customRangeStart && key >= range.start && key <= range.end) {
-        if (key === range.start || key === range.end) cell.classList.add("selected");
-      }
-
-      cell.textContent = cellDate.getDate();
-      cell.dataset.key = key;
-
-      if (state.records[key] && state.records[key].length > 0) {
-        var dot = document.createElement("div");
-        dot.className = "day-dot";
-        cell.appendChild(dot);
-      }
-      if (state.dayOffs[key]) {
-        var mark = document.createElement("div");
-        mark.className = "day-off-mark";
-        mark.textContent = "✕";
-        cell.appendChild(mark);
-      }
-
-      (function(k) {
-        cell.addEventListener("pointerdown", function(e) {
-          isDragging = true;
-          dragStartKey = k;
-          customRangeStart = null;
-          customRangeEnd = null;
-          selectedDate = k;
-          var parsed = parseDateKey(k);
-          viewYear = parsed.getFullYear();
-          viewMonth = parsed.getMonth();
-          renderAll();
-        });
-        cell.addEventListener("pointerenter", function() {
-          if (isDragging && dragStartKey && dragStartKey !== k) {
-            customRangeStart = dragStartKey;
-            customRangeEnd = k;
-            renderAll();
-          }
-        });
-      })(key);
-
-      grid.appendChild(cell);
-    }
-  }
-
-  window.addEventListener("pointerup", function() {
-    isDragging = false;
-  });
-
-  function renderRecordsAndSummary() {
-    var range = getActiveRange();
-    var headerText = "ЗАПИСИ";
-    var sumTitleText = "ИТОГ";
-
-    if (range.isCustom && range.start !== range.end) {
-      var pText = formatHumanDate(range.start) + " – " + formatHumanDate(range.end);
-      headerText = "ЗАПИСИ (" + pText + ")";
-      sumTitleText = "ИТОГ (" + pText + ")";
-    } else if (filterMode === "day") {
-      headerText = "ЗАПИСИ (ДЕНЬ)";
-      sumTitleText = "ИТОГ ЗА ДЕНЬ";
-    } else if (filterMode === "week") {
-      var wText = formatHumanDate(range.start) + " – " + formatHumanDate(range.end);
-      headerText = "ЗАПИСИ (НЕДЕЛЯ: " + wText + ")";
-      sumTitleText = "ИТОГ ЗА НЕДЕЛЮ (" + wText + ")";
-    } else if (filterMode === "two_weeks") {
-      var twText = formatHumanDate(range.start) + " – " + formatHumanDate(range.end);
-      headerText = "ЗАПИСИ (2Х НЕДЕЛИ: " + twText + ")";
-      sumTitleText = "ИТОГ ЗА 2Х НЕДЕЛИ (" + twText + ")";
-    } else if (filterMode === "month") {
-      var mName = MONTHS_NOM[viewMonth].toUpperCase() + " " + viewYear;
-      headerText = "ЗАПИСИ (" + mName + ")";
-      sumTitleText = "ИТОГ ЗА МЕСЯЦ (" + mName + ")";
-    } else if (filterMode === "year") {
-      headerText = "ЗАПИСИ (" + viewYear + " ГОД)";
-      sumTitleText = "ИТОГ ЗА " + viewYear + " ГОД";
-    }
-
-    document.getElementById("recordsHeader").textContent = headerText;
-    document.getElementById("sumTitle").textContent = sumTitleText;
-    document.getElementById("selectedDateLabel").textContent = formatHumanDate(selectedDate);
-
-    var allKeys = Object.keys(state.records).sort();
-    var totalBoxes = 0;
-    var totalKg = 0;
-    var totalRub = 0;
-    var listEl = document.getElementById("recordsList");
-    listEl.innerHTML = "";
-
-    allKeys.forEach(function(k) {
-      if (k >= range.start && k <= range.end) {
-        var arr = state.records[k] || [];
-        arr.forEach(function(item, idx) {
-          var boxes = Number(item.boxes) || 0;
-          var weight = Number(item.weight) || 0;
-          var rate = Number(item.rate) || 0;
-          var kg = +(boxes * weight).toFixed(2);
-          var rub = +(kg * rate).toFixed(2);
-
-          totalBoxes += boxes;
-          totalKg = +(totalKg + kg).toFixed(2);
-          totalRub = +(totalRub + rub).toFixed(2);
-
-          var row = document.createElement("div");
-          row.className = "rec-row";
-          row.innerHTML =
-            "<span><b>" + formatShortDate(k) + "</b> · " + boxes + " кор × " + weight + " кг (" + rate + "₽)</span>" +
-            "<span style='display:flex;align-items:center;gap:6px;'>" +
-              "<b style='color:var(--green)'>" + kg + " кг</b> " +
-              "<b style='color:var(--yellow)'>" + rub + "₽</b>" +
-              "<button class='rec-del' title='Удалить'>✕</button>" +
-            "</span>";
-          row.querySelector(".rec-del").addEventListener("click", function() {
-            deletedStack.push({ date: k, item: item });
-            state.records[k].splice(idx, 1);
-            if (state.records[k].length === 0) delete state.records[k];
-            saveState();
-            renderAll();
-          });
-          listEl.appendChild(row);
-        });
-      }
-    });
-
-    document.getElementById("sumStats").textContent = totalBoxes + " кор. | " + totalKg + " кг";
-    document.getElementById("sumMoney").textContent = totalRub + " ₽";
-
-    var undoBar = document.getElementById("undoBar");
-    var hasDayRecords = (state.records[selectedDate] && state.records[selectedDate].length > 0) || state.dayOffs[selectedDate];
-    if (deletedStack.length > 0 || hasDayRecords) {
-      undoBar.style.display = "flex";
-      document.getElementById("undoBtn").style.display = deletedStack.length > 0 ? "inline-block" : "none";
-      document.getElementById("undoBtn").textContent = "↩ Вернуть (" + deletedStack.length + ")";
-      document.getElementById("clearDayBtn").style.display = hasDayRecords ? "inline-block" : "none";
-    } else {
-      undoBar.style.display = "none";
-    }
-  }
-
-  function updateShiftPreview() {
-    var boxes = parseFloat(document.getElementById("boxesInput").value.replace(",", ".")) || 0;
-    var weight = parseFloat(document.getElementById("weightInput").value.replace(",", ".")) || 0;
-    var rate = parseFloat(document.getElementById("rateInput").value.replace(",", ".")) || 0;
-    var kg = +(boxes * weight).toFixed(2);
-    var rub = +(kg * rate).toFixed(2);
-    document.getElementById("shiftKg").textContent = kg + " кг";
-    document.getElementById("shiftRub").textContent = rub + " ₽";
-  }
-
-  function buildReport(isFull) {
-    var range = getActiveRange();
-    var worker = (state.workerName || "").trim();
-    var allKeys = Object.keys(state.records).sort();
-    var totalBoxes = 0;
-    var totalKg = 0;
-    var totalRub = 0;
-    var dayMap = {};
-
-    allKeys.forEach(function(k) {
-      if (k >= range.start && k <= range.end) {
-        var arr = state.records[k] || [];
-        arr.forEach(function(item) {
-          var b = Number(item.boxes) || 0;
-          var w = Number(item.weight) || 0;
-          var r = Number(item.rate) || 0;
-          var kg = +(b * w).toFixed(2);
-          var rub = +(kg * r).toFixed(2);
-          totalBoxes += b;
-          totalKg = +(totalKg + kg).toFixed(2);
-          totalRub = +(totalRub + rub).toFixed(2);
-          if (!dayMap[k]) dayMap[k] = { boxes: 0, kg: 0, rub: 0 };
-          dayMap[k].boxes += b;
-          dayMap[k].kg = +(dayMap[k].kg + kg).toFixed(2);
-          dayMap[k].rub = +(dayMap[k].rub + rub).toFixed(2);
-        });
-      }
-    });
-
-    var lines = [];
-    if (worker) lines.push(worker);
-
-    if (!isFull) {
-      if (range.isCustom && range.start !== range.end) {
-        lines.push(formatShortDate(range.start) + " – " + formatShortDate(range.end));
-      }
-      lines.push("Вес: " + totalKg + " кг " + totalBoxes + " кор.");
-      return lines.join("\\n").replace(/\\\\n/g, "\n");
-    }
-
-    if (range.start === range.end) {
-      lines.push(formatHumanDate(range.start));
-    } else {
-      lines.push(formatShortDate(range.start) + " – " + formatShortDate(range.end));
-    }
-
-    Object.keys(dayMap).sort().forEach(function(k) {
-      var d = dayMap[k];
-      lines.push(formatShortDate(k) + " | " + d.boxes + "кор | " + d.kg + "кг | " + d.rub + "₽");
-    });
-    lines.push("ИТОГ: " + totalBoxes + "кор | " + totalKg + "кг | " + totalRub + "₽");
-    return lines.join("\n");
-  }
-
-  function openReportPreview(isFull) {
-    var text = buildReport(isFull);
-    document.getElementById("reportModalTitle").textContent = isFull ? "Полный отчёт" : "Краткий отчёт";
-    document.getElementById("reportPreviewText").value = text;
-    document.getElementById("reportModal").style.display = "flex";
-  }
-
-  function silentCopy(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(function() {});
-    } else {
-      var ta = document.getElementById("reportPreviewText");
-      ta.select();
-      try { document.execCommand("copy"); } catch (e) {}
-    }
-  }
-
-  function renderAll() {
-    applyTheme();
-    renderCalendar();
-    renderRecordsAndSummary();
-    updateShiftPreview();
-  }
-
-  function openConfirm(title, text, onYes) {
-    document.getElementById("confirmTitle").textContent = title;
-    document.getElementById("confirmText").textContent = text;
-    confirmCallback = onYes;
-    document.getElementById("confirmModal").style.display = "flex";
-  }
-
-  document.getElementById("confirmNoBtn").addEventListener("click", function() {
-    document.getElementById("confirmModal").style.display = "none";
-    confirmCallback = null;
-  });
-
-  document.getElementById("confirmYesBtn").addEventListener("click", function() {
-    document.getElementById("confirmModal").style.display = "none";
-    if (confirmCallback) confirmCallback();
-    confirmCallback = null;
-  });
-
-  document.getElementById("prevMonthBtn").addEventListener("click", function() {
-    viewMonth--;
-    if (viewMonth < 0) { viewMonth = 11; viewYear--; }
-    customRangeStart = null; customRangeEnd = null;
-    if (filterMode === "month" || filterMode === "year") {
-      selectedDate = formatDateKey(new Date(viewYear, viewMonth, 1));
-    }
-    renderAll();
-  });
-
-  document.getElementById("nextMonthBtn").addEventListener("click", function() {
-    viewMonth++;
-    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
-    customRangeStart = null; customRangeEnd = null;
-    if (filterMode === "month" || filterMode === "year") {
-      selectedDate = formatDateKey(new Date(viewYear, viewMonth, 1));
-    }
-    renderAll();
-  });
-
-  document.querySelectorAll(".tab-btn").forEach(function(btn) {
-    btn.addEventListener("click", function() {
-      document.querySelectorAll(".tab-btn").forEach(function(b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      filterMode = btn.dataset.mode;
-      customRangeStart = null;
-      customRangeEnd = null;
-      renderAll();
-    });
-  });
-
-  document.getElementById("themeBtn").addEventListener("click", function() {
-    state.theme = (state.theme === "dark") ? "light" : "dark";
-    saveState();
-    applyTheme();
-  });
-
-  document.getElementById("dayOffBtn").addEventListener("click", function() {
-    if (state.dayOffs[selectedDate]) {
-      delete state.dayOffs[selectedDate];
-    } else {
-      state.dayOffs[selectedDate] = true;
-    }
-    saveState();
-    checkDailyAutoBackup();
-    renderAll();
-  });
-
-  function sanitizeNumericInput(el, allowDecimal) {
-    el.addEventListener("input", function() {
-      var v = el.value.replace(",", ".");
-      if (allowDecimal) {
-        v = v.replace(/[^0-9.]/g, "");
-        var parts = v.split(".");
-        if (parts.length > 2) v = parts[0] + "." + parts.slice(1).join("");
-      } else {
-        v = v.replace(/[^0-9]/g, "");
-      }
-      el.value = v;
-      updateShiftPreview();
-    });
-  }
-
-  sanitizeNumericInput(document.getElementById("boxesInput"), false);
-  sanitizeNumericInput(document.getElementById("weightInput"), true);
-  sanitizeNumericInput(document.getElementById("rateInput"), true);
-
-  document.getElementById("rateInput").addEventListener("change", function() {
-    state.rate = document.getElementById("rateInput").value;
-    saveState();
-  });
-
-  document.getElementById("workerNameInput").addEventListener("input", function() {
-    state.workerName = document.getElementById("workerNameInput").value;
-    saveState();
-  });
-
-  document.getElementById("addRecordBtn").addEventListener("click", function() {
-    var boxes = parseInt(document.getElementById("boxesInput").value, 10) || 0;
-    var weight = parseFloat(document.getElementById("weightInput").value.replace(",", ".")) || 0;
-    var rate = parseFloat(document.getElementById("rateInput").value.replace(",", ".")) || 0;
-    if (boxes <= 0 || weight <= 0) {
-      showToast("Введите коробки и вес");
-      return;
-    }
-    state.rate = document.getElementById("rateInput").value;
-    if (!state.records[selectedDate]) state.records[selectedDate] = [];
-    state.records[selectedDate].push({ boxes: boxes, weight: weight, rate: rate });
-    delete state.dayOffs[selectedDate];
-    document.getElementById("boxesInput").value = "";
-    document.getElementById("weightInput").value = "";
-    saveState();
-    checkDailyAutoBackup();
-    renderAll();
-  });
-
-  document.getElementById("undoBtn").addEventListener("click", function() {
-    if (deletedStack.length === 0) return;
-    var last = deletedStack.pop();
-    if (!state.records[last.date]) state.records[last.date] = [];
-    state.records[last.date].push(last.item);
-    saveState();
-    renderAll();
-  });
-
-  document.getElementById("clearDayBtn").addEventListener("click", function() {
-    openConfirm("Очистка дня", "Удалить все записи и отметку выходного за " + formatHumanDate(selectedDate) + "?", function() {
-      if (state.records[selectedDate]) {
-        state.records[selectedDate].forEach(function(it) {
-          deletedStack.push({ date: selectedDate, item: it });
-        });
-        delete state.records[selectedDate];
-      }
-      delete state.dayOffs[selectedDate];
-      saveState();
-      renderAll();
-    });
-  });
-
-  document.getElementById("fullReportBtn").addEventListener("click", function() { openReportPreview(true); });
-  document.getElementById("shortReportBtn").addEventListener("click", function() { openReportPreview(false); });
-  document.getElementById("closeReportBtn").addEventListener("click", function() {
-    document.getElementById("reportModal").style.display = "none";
-  });
-
-  document.getElementById("sendWaBtn").addEventListener("click", function() {
-    var txt = document.getElementById("reportPreviewText").value;
-    silentCopy(txt);
-    document.getElementById("reportModal").style.display = "none";
-    window.location.href = "https://api.whatsapp.com/send?text=" + encodeURIComponent(txt);
-  });
-
-  document.getElementById("sendTgBtn").addEventListener("click", function() {
-    var txt = document.getElementById("reportPreviewText").value;
-    silentCopy(txt);
-    document.getElementById("reportModal").style.display = "none";
-    window.location.href = "https://t.me/share/url?url=&text=" + encodeURIComponent(txt);
-  });
-
-  document.getElementById("sendShareBtn").addEventListener("click", function() {
-    var txt = document.getElementById("reportPreviewText").value;
-    silentCopy(txt);
-    document.getElementById("reportModal").style.display = "none";
-    if (navigator.share) {
-      navigator.share({ text: txt }).catch(function() {});
-    } else {
-      showToast("Текст скопирован для вставки в MAX");
-    }
-  });
-
-  document.getElementById("saveBackupBtn").addEventListener("click", function() {
-    createBackup(false, function(total) {
-      showToast("База сохранена (" + total + " зап.)");
-    });
-  });
-
-  function renderBackupsList() {
-    getBackups(function(list) {
-      var box = document.getElementById("backupsContainer");
-      box.innerHTML = "";
-      if (list.length === 0) {
-        box.innerHTML = "<div style='color:var(--text-muted);font-size:12px;margin-bottom:8px;'>Сохранённых копий пока нет</div>";
-        return;
-      }
-      list.forEach(function(b, idx) {
-        var row = document.createElement("div");
-        row.className = "backup-item";
-        var label = (b.date || "Копия") + (b.auto ? " (авто)" : "") + " · " + (b.count || 0) + " зап.";
-        row.innerHTML =
-          "<span style='font-size:12px;'>" + label + "</span>" +
-          "<div style='display:flex;gap:5px;'>" +
-            "<button class='m-btn m-btn-ok' style='padding:4px 8px;font-size:11px;'>Восстановить</button>" +
-            "<button class='m-btn' style='background:var(--red);color:#fff;padding:4px 8px;font-size:11px;'>✕</button>" +
-          "</div>";
-        var btns = row.querySelectorAll("button");
-        btns[0].addEventListener("click", function() {
-          if (b.data) {
-            state.records = b.data.records || {};
-            state.dayOffs = b.data.dayOffs || {};
-            state.rate = b.data.rate || state.rate;
-            state.workerName = b.data.workerName || state.workerName;
-            document.getElementById("rateInput").value = state.rate;
-            document.getElementById("workerNameInput").value = state.workerName;
-            saveState();
-            renderAll();
-            document.getElementById("restoreModal").style.display = "none";
-            showToast("База восстановлена");
-          }
-        });
-        btns[1].addEventListener("click", function() {
-          openConfirm("Удаление копии", "Удалить эту сохранённую базу? Вы уверены?", function() {
-            list.splice(idx, 1);
-            saveBackups(list, renderBackupsList);
-          });
-        });
-        box.appendChild(row);
-      });
-    });
-  }
-
-  document.getElementById("openRestoreBtn").addEventListener("click", function() {
-    document.getElementById("transferBox").style.display = "none";
-    renderBackupsList();
-    document.getElementById("restoreModal").style.display = "flex";
-  });
-
-  document.getElementById("closeRestoreBtn").addEventListener("click", function() {
-    document.getElementById("restoreModal").style.display = "none";
-  });
-
-  document.getElementById("toggleTransferBtn").addEventListener("click", function() {
-    var tb = document.getElementById("transferBox");
-    tb.style.display = (tb.style.display === "none") ? "block" : "none";
-    document.getElementById("transferCodeArea").value = JSON.stringify(state);
-  });
-
-  document.getElementById("copyCodeBtn").addEventListener("click", function() {
-    var code = JSON.stringify(state);
-    document.getElementById("transferCodeArea").value = code;
-    silentCopy(code);
-    showToast("Код базы скопирован");
-  });
-
-  document.getElementById("importCodeBtn").addEventListener("click", function() {
-    try {
-      var parsed = JSON.parse(document.getElementById("transferCodeArea").value.trim());
-      if (!parsed || typeof parsed !== "object" || !parsed.records) throw new Error();
-      state.records = parsed.records || {};
-      state.dayOffs = parsed.dayOffs || {};
-      state.rate = parsed.rate || "";
-      state.workerName = parsed.workerName || "";
-      document.getElementById("rateInput").value = state.rate;
-      document.getElementById("workerNameInput").value = state.workerName;
-      saveState();
-      renderAll();
-      document.getElementById("restoreModal").style.display = "none";
-      showToast("Данные загружены из кода");
-    } catch (e) {
-      showToast("Неверный формат кода базы");
-    }
-  });
-
-  document.getElementById("updateBtn").addEventListener("click", function() {
-    showToast("Проверка обновления...");
-    saveState(function() {
-      var baseUrl = window.location.href.split("?")[0].split("#")[0];
-      fetch(baseUrl + "?nocache=" + Date.now(), { cache: "no-store" })
-        .then(function(r) { return r.text(); })
-        .then(function(txt) {
-          var m = txt.match(/var\s+APP_VERSION\s*=\s*"([^"]+)"/);
-          var remoteVer = m ? m[1] : APP_VERSION;
-          if (remoteVer !== APP_VERSION && txt.indexOf("daysGrid") !== -1) {
-            idbSet("obvalka_cached_html", txt, function() {
-              if ("caches" in window) {
-                caches.keys().then(function(names) {
-                  Promise.all(names.map(function(n) { return caches.delete(n); })).then(function() {
-                    window.location.reload();
-                  });
-                });
-              } else {
-                window.location.reload();
-              }
-            });
-          } else {
-            showToast("У вас актуальная версия v " + APP_VERSION);
-          }
-        })
-        .catch(function() {
-          showToast("Нет соединения с сервером");
-        });
-    });
-  });
-
-  loadState(function() {
-    document.getElementById("rateInput").value = state.rate || "";
-    document.getElementById("workerNameInput").value = state.workerName || "";
-    renderAll();
-  });
-})();
-</script>
+<script src="app.js?v=7.2"></script>
 </body>
 </html>
