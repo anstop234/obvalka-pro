@@ -1,222 +1,220 @@
-(function () {
-  var gridEl = null;
-  var isDragging = false;
-  var dragStart = null;
-  var touchStartX = 0;
-  var touchStartY = 0;
+(function(){
+  const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const state = {
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+    period: 'day',
+    startDate: null,
+    endDate: null,
+    isDragging: false,
+    dragStart: null,
+    records: {}
+  };
 
-  function pad2(n) {
-    return n < 10 ? "0" + n : "" + n;
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+  function toKey(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function fromKey(k){ const p = k.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+
+  if (!state.startDate) {
+    const today = toKey(new Date());
+    state.startDate = today;
+    state.endDate = today;
   }
 
-  function toKey(y, m, d) {
-    return y + "-" + pad2(m + 1) + "-" + pad2(d);
-  }
+  function renderCalendar() {
+    const grid = document.getElementById('calGrid') || document.querySelector('.cal-grid');
+    if (!grid) return;
 
-  function getState() {
-    if (window.ObvalkaState) return window.ObvalkaState;
-    var now = new Date();
-    window.ObvalkaState = {
-      viewYear: now.getFullYear(),
-      viewMonth: now.getMonth(),
-      selectedStart: toKey(now.getFullYear(), now.getMonth(), now.getDate()),
-      selectedEnd: toKey(now.getFullYear(), now.getMonth(), now.getDate()),
-      periodMode: "day",
-      records: {}
-    };
-    return window.ObvalkaState;
-  }
-
-  function isBetween(k, a, b) {
-    var minK = a <= b ? a : b;
-    var maxK = a <= b ? b : a;
-    return k >= minK && k <= maxK;
-  }
-
-  function notifyChange(isManualRange) {
-    if (typeof window.onObvalkaRangeChange === "function") {
-      window.onObvalkaRangeChange(isManualRange);
+    const titleEl = document.getElementById('calTitle') || document.querySelector('.cal-title');
+    if (titleEl) {
+      const verSpan = titleEl.querySelector('.ver-tag, span');
+      const verHTML = verSpan ? ' ' + verSpan.outerHTML : '';
+      titleEl.innerHTML = MONTHS[state.month] + ' ' + state.year + verHTML;
     }
-  }
 
-  function renderCalendarGrid() {
-    gridEl = document.getElementById("calendarGrid");
-    if (!gridEl) return;
+    const firstDay = new Date(state.year, state.month, 1);
+    let startOffset = firstDay.getDay() - 1;
+    if (startOffset < 0) startOffset = 6;
 
-    var st = getState();
-    var y = st.viewYear;
-    var m = st.viewMonth;
+    const daysInMonth = new Date(state.year, state.month + 1, 0).getDate();
+    const prevMonthDays = new Date(state.year, state.month, 0).getDate();
 
-    var firstDay = new Date(y, m, 1).getDay();
-    var offset = (firstDay + 6) % 7;
-    var daysInMonth = new Date(y, m + 1, 0).getDate();
-    var prevDays = new Date(y, m, 0).getDate();
+    const s1 = state.startDate || '';
+    const s2 = state.endDate || s1;
+    const minK = s1 <= s2 ? s1 : s2;
+    const maxK = s1 <= s2 ? s2 : s1;
 
-    var now = new Date();
-    var todayKey = toKey(now.getFullYear(), now.getMonth(), now.getDate());
+    let html = '';
+    const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
 
-    var html = [];
-    var totalCells = Math.ceil((offset + daysInMonth) / 7) * 7;
-
-    for (var i = 0; i < totalCells; i++) {
-      var cellY = y;
-      var cellM = m;
-      var cellD = 1;
-      var otherMonth = false;
-
-      if (i < offset) {
-        otherMonth = true;
-        cellD = prevDays - offset + 1 + i;
-        cellM = m - 1;
-        if (cellM < 0) {
-          cellM = 11;
-          cellY = y - 1;
-        }
-      } else if (i >= offset + daysInMonth) {
-        otherMonth = true;
-        cellD = i - offset - daysInMonth + 1;
-        cellM = m + 1;
-        if (cellM > 11) {
-          cellM = 0;
-          cellY = y + 1;
-        }
+    for (let i = 0; i < totalCells; i++) {
+      let dayNum, m = state.month, y = state.year, isOther = false;
+      if (i < startOffset) {
+        dayNum = prevMonthDays - startOffset + i + 1;
+        m = state.month - 1;
+        if (m < 0) { m = 11; y--; }
+        isOther = true;
+      } else if (i >= startOffset + daysInMonth) {
+        dayNum = i - (startOffset + daysInMonth) + 1;
+        m = state.month + 1;
+        if (m > 11) { m = 0; y++; }
+        isOther = true;
       } else {
-        cellD = i - offset + 1;
+        dayNum = i - startOffset + 1;
       }
 
-      var k = toKey(cellY, cellM, cellD);
-      var classes = ["day-cell"];
-      if (otherMonth) classes.push("other-month");
-      if (k === todayKey) classes.push("today");
-      if (isBetween(k, st.selectedStart, st.selectedEnd)) {
-        classes.push("selected");
-        if (k === st.selectedStart || k === st.selectedEnd) {
-          classes.push("selected-edge");
-        }
+      const key = y + '-' + pad(m + 1) + '-' + pad(dayNum);
+      let cls = 'day-cell';
+      if (isOther) cls += ' other-month';
+      if (minK && maxK && key >= minK && key <= maxK) {
+        cls += (key === minK || key === maxK) ? ' selected active' : ' in-range selected';
       }
 
-      var recs = st.records && st.records[k] ? st.records[k] : [];
-      var dotHtml = "";
+      const recs = state.records[key] || [];
+      let dotHTML = '';
       if (recs.length > 0) {
-        var hasOff = false;
-        var hasWork = false;
-        for (var r = 0; r < recs.length; r++) {
-          if (recs[r] && recs[r].isOff) hasOff = true;
-          else hasWork = true;
-        }
-        if (hasWork) {
-          dotHtml = '<span class="day-dot work"></span>';
-        } else if (hasOff) {
-          dotHtml = '<span class="day-dot off"></span>';
-        }
+        const isOff = recs.some(r => r.isOff || r.off || (Number(r.boxes || r.b || 0) === 0 && Number(r.weight || r.totalWeight || r.w || 0) === 0));
+        dotHTML = '<span class="day-dot ' + (isOff ? 'off' : 'work') + '"></span>';
       }
 
-      html.push(
-        '<div class="' + classes.join(" ") + '" data-date="' + k + '">' +
-        '<span>' + cellD + '</span>' +
-        dotHtml +
-        '</div>'
-      );
+      html += '<div class="' + cls + '" data-date="' + key + '">' + dayNum + dotHTML + '</div>';
     }
 
-    gridEl.innerHTML = html.join("");
+    grid.innerHTML = html;
   }
 
-  function handleSelectStart(dateKey) {
-    if (!dateKey) return;
-    var st = getState();
-    isDragging = true;
-    dragStart = dateKey;
-    st.selectedStart = dateKey;
-    st.selectedEnd = dateKey;
-    st.periodMode = "day";
-    renderCalendarGrid();
-    notifyChange(false);
-  }
-
-  function handleSelectMove(dateKey) {
-    if (!isDragging || !dateKey || !dragStart) return;
-    var st = getState();
-    if (dateKey <= dragStart) {
-      st.selectedStart = dateKey;
-      st.selectedEnd = dragStart;
-    } else {
-      st.selectedStart = dragStart;
-      st.selectedEnd = dateKey;
+  function notifyApp() {
+    if (typeof window.onCalendarChange === 'function') {
+      window.onCalendarChange({
+        year: state.year,
+        month: state.month,
+        period: state.period,
+        startDate: state.startDate,
+        endDate: state.endDate
+      });
     }
-    st.periodMode = st.selectedStart === st.selectedEnd ? "day" : "custom";
-    renderCalendarGrid();
-    notifyChange(st.selectedStart !== st.selectedEnd);
+    document.dispatchEvent(new CustomEvent('calendar:change', { detail: Object.assign({}, state) }));
   }
 
-  function handleSelectEnd() {
-    if (!isDragging) return;
-    isDragging = false;
-    var st = getState();
-    notifyChange(st.selectedStart !== st.selectedEnd);
-  }
-
-  function bindGridEvents() {
-    var el = document.getElementById("calendarGrid");
-    if (!el || el.dataset.bound === "1") return;
-    el.dataset.bound = "1";
-
-    el.addEventListener("mousedown", function (e) {
-      var cell = e.target.closest(".day-cell");
-      if (!cell) return;
-      handleSelectStart(cell.getAttribute("data-date"));
-    });
-
-    el.addEventListener("mouseover", function (e) {
-      if (!isDragging) return;
-      var cell = e.target.closest(".day-cell");
-      if (!cell) return;
-      handleSelectMove(cell.getAttribute("data-date"));
-    });
-
-    window.addEventListener("mouseup", function () {
-      handleSelectEnd();
-    });
-
-    el.addEventListener("touchstart", function (e) {
-      if (!e.touches || e.touches.length === 0) return;
-      var t = e.touches[0];
-      touchStartX = t.clientX;
-      touchStartY = t.clientY;
-      var cell = e.target.closest(".day-cell");
-      if (!cell) return;
-      handleSelectStart(cell.getAttribute("data-date"));
-    }, { passive: true });
-
-    el.addEventListener("touchmove", function (e) {
-      if (!isDragging || !e.touches || e.touches.length === 0) return;
-      var t = e.touches[0];
-      if (Math.abs(t.clientX - touchStartX) > 6 || Math.abs(t.clientY - touchStartY) > 6) {
-        if (e.cancelable) e.preventDefault();
+  function setPeriodRange(period) {
+    state.period = period;
+    const base = state.startDate ? fromKey(state.startDate) : new Date(state.year, state.month, 1);
+    if (period === 'day') {
+      const k = toKey(base);
+      state.startDate = k; state.endDate = k;
+    } else if (period === 'week') {
+      const dow = (base.getDay() + 6) % 7;
+      const mon = new Date(base); mon.setDate(base.getDate() - dow);
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+      state.startDate = toKey(mon); state.endDate = toKey(sun);
+    } else if (period === '2weeks') {
+      const d = base.getDate();
+      const y = base.getFullYear(), m = base.getMonth();
+      if (d <= 15) {
+        state.startDate = toKey(new Date(y, m, 1));
+        state.endDate = toKey(new Date(y, m, 15));
+      } else {
+        state.startDate = toKey(new Date(y, m, 16));
+        state.endDate = toKey(new Date(y, m + 1, 0));
       }
-      var target = document.elementFromPoint(t.clientX, t.clientY);
-      if (!target) return;
-      var cell = target.closest(".day-cell");
-      if (!cell) return;
-      handleSelectMove(cell.getAttribute("data-date"));
-    }, { passive: false });
+    } else if (period === 'month') {
+      state.startDate = toKey(new Date(state.year, state.month, 1));
+      state.endDate = toKey(new Date(state.year, state.month + 1, 0));
+    } else if (period === 'year') {
+      state.startDate = toKey(new Date(state.year, 0, 1));
+      state.endDate = toKey(new Date(state.year, 11, 31));
+    }
+    renderCalendar();
+    notifyApp();
+  }
 
-    el.addEventListener("touchend", function () {
-      handleSelectEnd();
+  function bindEvents() {
+    const grid = document.getElementById('calGrid') || document.querySelector('.cal-grid');
+    if (grid) {
+      grid.addEventListener('pointerdown', function(e) {
+        const cell = e.target.closest('.day-cell');
+        if (!cell) return;
+        const d = cell.getAttribute('data-date');
+        state.isDragging = true;
+        state.dragStart = d;
+        state.startDate = d;
+        state.endDate = d;
+        state.period = 'day';
+        renderCalendar();
+        notifyApp();
+      });
+
+      grid.addEventListener('pointermove', function(e) {
+        if (!state.isDragging) return;
+        const el = document.elementFromPoint(e.clientX, e.clientY);
+        const cell = el && el.closest('.day-cell');
+        if (!cell) return;
+        const d = cell.getAttribute('data-date');
+        if (d && d !== state.endDate) {
+          state.endDate = d;
+          renderCalendar();
+          notifyApp();
+        }
+      });
+
+      window.addEventListener('pointerup', function() {
+        if (state.isDragging) {
+          state.isDragging = false;
+          if (state.startDate > state.endDate) {
+            const tmp = state.startDate;
+            state.startDate = state.endDate;
+            state.endDate = tmp;
+          }
+          renderCalendar();
+          notifyApp();
+        }
+      });
+    }
+
+    const prevBtn = document.getElementById('prevMonth') || document.querySelector('[data-dir="-1"]');
+    const nextBtn = document.getElementById('nextMonth') || document.querySelector('[data-dir="1"]');
+    if (prevBtn) prevBtn.addEventListener('click', function() {
+      state.month--;
+      if (state.month < 0) { state.month = 11; state.year--; }
+      if (state.period === 'month' || state.period === 'year') setPeriodRange(state.period);
+      else { renderCalendar(); notifyApp(); }
+    });
+    if (nextBtn) nextBtn.addEventListener('click', function() {
+      state.month++;
+      if (state.month > 11) { state.month = 0; state.year++; }
+      if (state.period === 'month' || state.period === 'year') setPeriodRange(state.period);
+      else { renderCalendar(); notifyApp(); }
+    });
+
+    document.querySelectorAll('[data-period]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('[data-period]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        setPeriodRange(btn.getAttribute('data-period'));
+      });
     });
   }
 
-  function bootCalendar() {
-    renderCalendarGrid();
-    bindGridEvents();
+  window.ObvalkaCalendar = {
+    render: renderCalendar,
+    setRecords: function(recs) { state.records = recs || {}; renderCalendar(); },
+    setRange: function(s, e, p) {
+      if (s) { state.startDate = s; const d = fromKey(s); state.year = d.getFullYear(); state.month = d.getMonth(); }
+      if (e) state.endDate = e;
+      if (p) state.period = p;
+      renderCalendar();
+    },
+    getState: function() { return Object.assign({}, state); }
+  };
+
+  function init() {
+    renderCalendar();
+    bindEvents();
   }
 
-  window.renderCalendarGrid = renderCalendarGrid;
-  window.bootCalendar = bootCalendar;
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootCalendar);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
   } else {
-    bootCalendar();
+    init();
   }
 })();
