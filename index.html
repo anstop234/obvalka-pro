@@ -3,79 +3,72 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Обвалка PRO</title>
+<title>Обвалка PRO v 8.4</title>
 <style>
   :root {
     --bg: #121212;
-    --card: #1e1e1e;
-    --card-border: #2c2c2c;
-    --text: #f3f4f6;
-    --text-muted: #9ca3af;
+    --card: #1b1b1b;
+    --card-border: #2a2a2a;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --accent: #22c55e;
+    --accent-dark: #16a34a;
+    --yellow: #facc15;
+    --danger: #ef4444;
     --input-bg: #262626;
-    --input-border: #3a3a3a;
-    --cell-bg: #242424;
+    --cell-bg: #232323;
     --cell-border: #383838;
-    --green: #16a34a;
-    --green-dark: #15803d;
-    --green-soft: rgba(22, 163, 74, 0.16);
-    --yellow: #eab308;
-    --yellow-text: #111827;
-    --red: #dc2626;
-    --red-soft: rgba(220, 38, 38, 0.16);
   }
   body.light {
-    --bg: #f3f4f6;
+    --bg: #f1f5f9;
     --card: #ffffff;
-    --card-border: #d1d5db;
-    --text: #111827;
-    --text-muted: #6b7280;
-    --input-bg: #f9fafb;
-    --input-border: #cbd5e1;
+    --card-border: #cbd5e1;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #16a34a;
+    --accent-dark: #15803d;
+    --yellow: #eab308;
+    --danger: #dc2626;
+    --input-bg: #f8fafc;
     --cell-bg: #f8fafc;
     --cell-border: #cbd5e1;
-    --green-soft: rgba(22, 163, 74, 0.12);
-    --red-soft: rgba(220, 38, 38, 0.1);
   }
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 8px;
     background: var(--bg);
     color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     display: flex;
     justify-content: center;
-    padding: 6px;
-    font-size: 14px;
     user-select: none;
   }
-  .app {
-    width: 100%;
-    max-width: 440px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
+  .wrap { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 8px; }
   .card {
     background: var(--card);
     border: 1px solid var(--card-border);
-    border-radius: 12px;
-    padding: 8px;
+    border-radius: 14px;
+    padding: 10px;
   }
-  .header {
+  .header-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 6px;
+    gap: 6px;
+    margin-bottom: 8px;
   }
-  .nav-btn {
+  .nav-btn, .icon-btn {
     background: var(--input-bg);
-    border: 1px solid var(--input-border);
+    border: 1px solid var(--card-border);
     color: var(--text);
-    width: 30px;
-    height: 28px;
     border-radius: 8px;
+    height: 30px;
+    min-width: 30px;
+    padding: 0 8px;
     font-size: 13px;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
   }
@@ -86,28 +79,7 @@
     align-items: baseline;
     gap: 6px;
   }
-  .ver-badge {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-muted);
-  }
-  .header-actions {
-    display: flex;
-    gap: 5px;
-  }
-  .icon-btn {
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    color: var(--text);
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  .ver-badge { font-size: 11px; color: var(--muted); font-weight: 500; }
   .tabs {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -116,28 +88,28 @@
   }
   .tab-btn {
     background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    color: var(--text);
+    border: 1px solid var(--card-border);
+    color: var(--muted);
+    border-radius: 14px;
     padding: 5px 2px;
-    border-radius: 8px;
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     text-align: center;
   }
   .tab-btn.active {
-    background: var(--green);
-    border-color: var(--green);
-    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #052e16;
+    font-weight: 700;
   }
   .weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     text-align: center;
     font-size: 11px;
-    color: var(--text-muted);
-    margin-bottom: 3px;
-    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 4px;
   }
   .cal-grid {
     display: grid;
@@ -146,7 +118,7 @@
     touch-action: none;
   }
   .day-cell {
-    height: 26px;
+    height: 27px;
     background: var(--cell-bg);
     border: 1px solid var(--cell-border);
     border-radius: 6px;
@@ -159,432 +131,309 @@
     cursor: pointer;
     position: relative;
   }
-  .day-cell.other-month {
-    opacity: 0.35;
+  .day-cell.other-month { opacity: 0.35; }
+  .day-cell.in-range {
+    background: rgba(34, 197, 94, 0.22);
+    border-color: var(--accent);
   }
   .day-cell.selected {
     background: var(--yellow);
     border-color: var(--yellow);
-    color: var(--yellow-text);
-  }
-  .day-cell.in-range {
-    background: var(--green-soft);
-    border-color: var(--green);
+    color: #111827;
+    font-weight: 800;
   }
   .day-dot {
     width: 12px;
     height: 2px;
     border-radius: 2px;
-    background: var(--green);
     position: absolute;
     bottom: 2px;
   }
-  .day-dot.off {
-    background: var(--red);
-  }
+  .day-dot.work { background: var(--accent); }
+  .day-dot.off { background: var(--danger); }
   .cal-hint {
     text-align: center;
     font-size: 10px;
-    color: var(--text-muted);
-    margin: 4px 0;
+    color: var(--muted);
+    margin: 5px 0 6px;
   }
-  .btn-off-full {
+  .off-btn {
     width: 100%;
     height: 24px;
-    background: var(--red-soft);
-    border: 1px solid var(--red);
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.55);
     color: #f87171;
-    border-radius: 7px;
+    border-radius: 8px;
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
   }
   .sec-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 11px;
-    font-weight: 700;
-    color: var(--text-muted);
-    margin-bottom: 4px;
+    color: var(--muted);
+    margin-bottom: 6px;
     text-transform: uppercase;
+    letter-spacing: 0.4px;
   }
+  .summary-box {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .sum-label { font-size: 10px; color: var(--accent); font-weight: 700; }
+  .sum-sub { font-size: 12px; font-weight: 700; margin-top: 2px; }
+  .sum-money { font-size: 17px; font-weight: 800; color: var(--yellow); margin-top: 2px; }
+  .rep-btns { display: flex; flex-direction: column; gap: 5px; }
+  .rep-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .rep-btn.full { background: var(--accent); color: #052e16; }
+  .rep-btn.short { background: var(--input-bg); color: var(--text); border: 1px solid var(--card-border); }
   .records-list {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    max-height: 150px;
+    margin-top: 6px;
+    max-height: 170px;
     overflow-y: auto;
-    margin-bottom: 5px;
-  }
-  .records-list:empty {
-    display: none;
   }
   .rec-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: var(--input-bg);
-    border: 1px solid var(--input-border);
+    border: 1px solid var(--card-border);
     border-radius: 6px;
     padding: 2px 6px;
     min-height: 22px;
-    font-size: 12px;
-    line-height: 1.15;
+    font-size: 11px;
   }
-  .rec-item.is-off {
-    border-color: rgba(220, 38, 38, 0.45);
-    color: #f87171;
-  }
-  .rec-text {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding-right: 6px;
-  }
+  .rec-item.off-item { border-color: rgba(239, 68, 68, 0.45); color: #f87171; }
   .rec-del {
-    background: rgba(220, 38, 38, 0.18);
-    border: 1px solid rgba(220, 38, 38, 0.5);
-    color: #f87171;
     width: 18px;
     height: 18px;
     border-radius: 4px;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
     font-size: 10px;
-    line-height: 1;
     cursor: pointer;
-    flex-shrink: 0;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
   }
-  .undo-bar {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 5px;
-  }
-  .undo-bar.hidden {
-    display: none;
-  }
-  .btn-undo {
-    flex: 1;
-    background: var(--yellow);
-    color: var(--yellow-text);
-    border: none;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .btn-clear-undo {
-    background: var(--red);
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .summary-box {
-    background: var(--green-soft);
-    border: 1px solid rgba(22, 163, 74, 0.4);
-    border-radius: 9px;
-    padding: 6px 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 6px;
-  }
-  .sum-info {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  .sum-label {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--green);
-    text-transform: uppercase;
-  }
-  .sum-stats {
-    font-size: 12px;
-    font-weight: 700;
-  }
-  .sum-money {
-    font-size: 17px;
-    font-weight: 800;
-    color: var(--yellow);
-  }
-  .report-btns {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 118px;
-  }
-  .btn-rep-full {
-    background: var(--green);
-    color: #fff;
-    border: none;
-    border-radius: 7px;
-    padding: 5px 8px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .btn-rep-short {
-    background: var(--input-bg);
-    color: var(--text);
-    border: 1px solid var(--input-border);
-    border-radius: 7px;
-    padding: 5px 8px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .form-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-    font-size: 12px;
-  }
-  .form-head span:first-child { color: var(--text-muted); }
-  .form-head span:last-child { font-weight: 700; }
   .form-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
+    justify-content: space-between;
     gap: 8px;
+    margin-bottom: 6px;
   }
-  .form-row label {
-    font-size: 13px;
-    font-weight: 600;
-  }
-  .form-row input {
-    width: 140px;
+  .form-row label { font-size: 12px; color: var(--muted); }
+  .form-input {
+    width: 145px;
     height: 30px;
     background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 7px;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
     color: var(--text);
-    text-align: right;
-    padding: 0 8px;
-    font-size: 14px;
+    padding: 0 10px;
+    font-size: 13px;
     font-weight: 700;
-    outline: none;
-  }
-  .form-row input:focus {
-    border-color: var(--green);
+    text-align: right;
   }
   .shift-preview {
     background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 7px;
-    padding: 5px 8px;
+    border-radius: 8px;
+    padding: 6px 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 5px 0;
     font-size: 12px;
     font-weight: 700;
+    margin: 6px 0 8px;
   }
-  .shift-vals {
-    display: flex;
-    gap: 8px;
-    font-size: 13px;
-  }
-  .shift-w { color: var(--green); }
-  .shift-m { color: var(--yellow); }
-  .btn-add {
+  .add-btn {
     width: 100%;
-    height: 34px;
-    background: var(--green);
-    color: #fff;
+    height: 36px;
+    background: var(--accent);
     border: none;
-    border-radius: 8px;
+    border-radius: 10px;
+    color: #052e16;
     font-size: 13px;
     font-weight: 800;
     cursor: pointer;
   }
-  .bottom-bar {
+  .bottom-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 8px;
   }
-  .btn-db {
+  .util-btn {
+    height: 34px;
     background: var(--card);
     border: 1px solid var(--card-border);
+    border-radius: 10px;
     color: var(--text);
-    height: 32px;
-    border-radius: 9px;
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
   }
-  .modal-backdrop {
+  .undo-btn {
+    width: 100%;
+    height: 32px;
+    background: var(--yellow);
+    border: none;
+    border-radius: 8px;
+    color: #111827;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    display: none;
+  }
+  .modal-bg {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.72);
     display: none;
     align-items: center;
     justify-content: center;
-    padding: 12px;
+    padding: 14px;
     z-index: 100;
   }
-  .modal-backdrop.open {
-    display: flex;
-  }
+  .modal-bg.open { display: flex; }
   .modal-box {
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
     width: 100%;
     max-width: 400px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 14px;
     position: relative;
   }
-  .modal-title {
-    font-size: 15px;
-    font-weight: 700;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .modal-body {
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 8px;
-    padding: 8px;
-    font-family: monospace;
-    font-size: 12px;
-    white-space: pre-wrap;
-    word-break: break-word;
+  .modal-title { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+  .report-pre {
+    width: 100%;
+    min-height: 120px;
     max-height: 240px;
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px;
+    font-family: inherit;
+    font-size: 13px;
+    white-space: pre-wrap;
     overflow-y: auto;
+    margin-bottom: 10px;
     user-select: text;
   }
-  .modal-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-  .btn-m-cancel {
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    color: var(--text);
-    height: 34px;
+  .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .m-btn {
+    height: 36px;
     border-radius: 8px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .btn-m-ok {
-    background: var(--green);
     border: none;
-    color: #fff;
-    height: 34px;
-    border-radius: 8px;
+    font-size: 13px;
     font-weight: 700;
     cursor: pointer;
   }
+  .m-btn.cancel { background: var(--input-bg); color: var(--text); border: 1px solid var(--card-border); }
+  .m-btn.ok { background: var(--accent); color: #052e16; }
   .backup-list {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
     max-height: 220px;
     overflow-y: auto;
+    margin-bottom: 10px;
   }
-  .backup-row {
+  .bk-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 7px;
-    padding: 6px 8px;
-    font-size: 12px;
+    justify-content: space-between;
     gap: 6px;
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 11px;
   }
-  .backup-btns {
-    display: flex;
-    gap: 4px;
-  }
-  .btn-sm-restore {
-    background: var(--green);
-    color: #fff;
+  .bk-acts { display: flex; gap: 4px; }
+  .bk-use {
+    background: var(--accent);
+    color: #052e16;
     border: none;
-    border-radius: 5px;
-    padding: 4px 7px;
+    border-radius: 6px;
+    padding: 4px 8px;
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
   }
-  .btn-sm-del {
-    background: var(--red);
-    color: #fff;
-    border: none;
-    border-radius: 5px;
+  .bk-del {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    border-radius: 6px;
     padding: 4px 7px;
     font-size: 11px;
-    font-weight: 700;
     cursor: pointer;
   }
   .confirm-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(18, 18, 18, 0.94);
-    border-radius: 12px;
+    background: rgba(18, 18, 18, 0.96);
+    border-radius: 14px;
+    padding: 16px;
     display: none;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
-    padding: 14px;
-    text-align: center;
-    gap: 10px;
+    gap: 12px;
     z-index: 10;
   }
-  .confirm-overlay.open {
-    display: flex;
-  }
+  .confirm-overlay.open { display: flex; }
   .toast {
     position: fixed;
-    bottom: 14px;
+    bottom: 16px;
     left: 50%;
     transform: translateX(-50%);
-    background: #111827;
-    color: #fff;
-    border: 1px solid #374151;
-    padding: 6px 12px;
-    border-radius: 8px;
+    background: #1e293b;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    padding: 8px 14px;
+    border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
     z-index: 200;
     display: none;
-    white-space: nowrap;
-  }
-  .toast.show {
-    display: block;
+    text-align: center;
+    max-width: 90%;
   }
 </style>
 </head>
 <body>
-<div class="app">
+<div class="wrap">
   <div class="card">
-    <div class="header">
+    <div class="header-row">
       <button class="nav-btn" id="prevMonthBtn">◀</button>
       <div class="month-title">
-        <span id="monthTitleText">Ноябрь 2026</span>
-        <span class="ver-badge" id="verBadge">v 8.1</span>
+        <span id="monthLabel">Ноябрь 2026</span>
+        <span class="ver-badge" id="verLabel">v 8.4</span>
       </div>
-      <div class="header-actions">
+      <div style="display:flex;gap:5px;">
         <button class="icon-btn" id="updateBtn" title="Обновить">🔄</button>
         <button class="icon-btn" id="themeBtn" title="Тема">☀️</button>
         <button class="nav-btn" id="nextMonthBtn">▶</button>
@@ -594,7 +443,7 @@
     <div class="tabs" id="periodTabs">
       <button class="tab-btn active" data-mode="day">День</button>
       <button class="tab-btn" data-mode="week">Неделя</button>
-      <button class="tab-btn" data-mode="2weeks">2х недели</button>
+      <button class="tab-btn" data-mode="twoWeeks">2х недели</button>
       <button class="tab-btn" data-mode="month">Месяц</button>
       <button class="tab-btn" data-mode="year">Год</button>
     </div>
@@ -604,114 +453,101 @@
     </div>
     <div class="cal-grid" id="calGrid"></div>
     <div class="cal-hint">Нажмите на день или протяните пальцем для выбора периода</div>
-    <button class="btn-off-full" id="dayOffBtn">✕ ВЫХОДНОЙ</button>
+    <button class="off-btn" id="offDayBtn">✕ ВЫХОДНОЙ</button>
   </div>
 
   <div class="card">
     <div class="sec-head">
-      <span id="recordsTitle">ЗАПИСИ (ДЕНЬ)</span>
+      <span id="recordsHeader">ЗАПИСИ (ДЕНЬ)</span>
       <span id="recordsCount">0 ШТ.</span>
     </div>
-
-    <div class="undo-bar hidden" id="undoBar">
-      <button class="btn-undo" id="undoBtn">↩ Отменить удаление (0)</button>
-      <button class="btn-clear-undo" id="clearUndoBtn">Очистить</button>
-    </div>
-
-    <div class="records-list" id="recordsList"></div>
-
     <div class="summary-box">
-      <div class="sum-info">
-        <div class="sum-label" id="sumLabel">ИТОГ ЗА ДЕНЬ</div>
-        <div class="sum-stats" id="sumStats">0 кор. • 0 кг</div>
+      <div>
+        <div class="sum-label" id="sumPeriodTitle">ИТОГ ЗА ДЕНЬ</div>
+        <div class="sum-sub" id="sumBoxesWeight">0 кор. • 0 кг</div>
         <div class="sum-money" id="sumMoney">0 ₽</div>
       </div>
-      <div class="report-btns">
-        <button class="btn-rep-full" id="fullReportBtn">📤 Полный отчёт</button>
-        <button class="btn-rep-short" id="shortReportBtn">📋 Краткий отчёт</button>
+      <div class="rep-btns">
+        <button class="rep-btn full" id="fullReportBtn">📤 Полный отчёт</button>
+        <button class="rep-btn short" id="shortReportBtn">📋 Краткий отчёт</button>
       </div>
     </div>
+    <div class="records-list" id="recordsList"></div>
   </div>
 
   <div class="card">
-    <div class="form-head">
-      <span>Выбрана дата:</span>
-      <span id="selectedDateLabel">22 ноября</span>
+    <div class="form-row">
+      <span style="font-size:12px;color:var(--muted);">Выбрано:</span>
+      <span style="font-size:13px;font-weight:700;" id="selectedDateLabel">22 ноября</span>
     </div>
     <div class="form-row">
       <label for="workerInput">Обвальщик:</label>
-      <input type="text" id="workerInput" placeholder="Имя">
+      <input class="form-input" id="workerInput" type="text" placeholder="Имя">
     </div>
     <div class="form-row">
       <label for="boxesInput">Коробки (шт):</label>
-      <input type="text" inputmode="numeric" id="boxesInput" placeholder="0">
+      <input class="form-input" id="boxesInput" type="number" inputmode="numeric" placeholder="0">
     </div>
     <div class="form-row">
       <label for="weightInput">Вес коробки (кг):</label>
-      <input type="text" inputmode="decimal" id="weightInput" placeholder="00.0">
+      <input class="form-input" id="weightInput" type="text" inputmode="decimal" placeholder="00.0">
     </div>
     <div class="form-row">
       <label for="rateInput">Ставка за 1 кг (₽):</label>
-      <input type="text" inputmode="decimal" id="rateInput" placeholder="0.0">
+      <input class="form-input" id="rateInput" type="text" inputmode="decimal" placeholder="0.0">
     </div>
     <div class="shift-preview">
       <span>ИТОГО ЗА СМЕНУ:</span>
-      <div class="shift-vals">
-        <span class="shift-w" id="previewWeight">0 кг</span>
-        <span class="shift-m" id="previewMoney">0 ₽</span>
-      </div>
+      <span><span style="color:var(--accent);" id="prevWeight">0 кг</span> &nbsp;<span style="color:var(--yellow);" id="prevMoney">0 ₽</span></span>
     </div>
-    <button class="btn-add" id="addRecordBtn">+ ДОБАВИТЬ ЗАПИСЬ</button>
+    <button class="add-btn" id="addRecordBtn">+ ДОБАВИТЬ ЗАПИСЬ</button>
   </div>
 
-  <div class="bottom-bar">
-    <button class="btn-db" id="saveBackupBtn">💾 СОХРАНИТЬ БАЗУ</button>
-    <button class="btn-db" id="openBackupBtn">📂 ВОССТАНОВИТЬ</button>
+  <button class="undo-btn" id="undoBtn">↩ ОТМЕНИТЬ УДАЛЕНИЕ</button>
+
+  <div class="bottom-grid">
+    <button class="util-btn" id="saveBackupBtn">💾 СОХРАНИТЬ БАЗУ</button>
+    <button class="util-btn" id="openRestoreBtn">📂 ВОССТАНОВИТЬ</button>
   </div>
 </div>
 
-<div class="modal-backdrop" id="reportModal">
+<div class="modal-bg" id="reportModal">
   <div class="modal-box">
-    <div class="modal-title">
-      <span>Предпросмотр отчёта</span>
-    </div>
-    <div class="modal-body" id="reportPreviewText"></div>
+    <div class="modal-title">Предпросмотр отчёта</div>
+    <div class="report-pre" id="reportText"></div>
     <div class="modal-actions">
-      <button class="btn-m-cancel" id="closeReportModalBtn">Отмена</button>
-      <button class="btn-m-ok" id="sendReportConfirmBtn">📤 Отправить</button>
+      <button class="m-btn cancel" id="closeReportBtn">Отмена</button>
+      <button class="m-btn ok" id="sendReportBtn">📤 Отправить</button>
     </div>
   </div>
 </div>
 
-<div class="modal-backdrop" id="backupModal">
+<div class="modal-bg" id="restoreModal">
   <div class="modal-box">
-    <div class="modal-title">
-      <span>Резервные копии</span>
-      <button class="btn-sm-restore" id="transferCodeBtn">🔑 Код переноса</button>
-    </div>
+    <div class="modal-title">Резервные копии и перенос</div>
     <div class="backup-list" id="backupList"></div>
-    <div id="transferArea" style="display:none; flex-direction:column; gap:6px;">
-      <textarea id="transferTextarea" rows="3" style="width:100%; background:var(--input-bg); color:var(--text); border:1px solid var(--input-border); border-radius:6px; padding:6px; font-size:11px;" placeholder="Вставьте код базы сюда..."></textarea>
-      <div style="display:flex; gap:6px;">
-        <button class="btn-sm-restore" style="flex:1;" id="copyCodeBtn">Скопировать мой код</button>
-        <button class="btn-sm-restore" style="flex:1; background:var(--yellow); color:#111;" id="importCodeBtn">Загрузить из кода</button>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Код переноса базы (для нового телефона):</div>
+      <div style="display:flex;gap:6px;">
+        <input class="form-input" id="transferCodeInput" style="width:100%;text-align:left;font-size:11px;" placeholder="Вставьте код или нажмите Копировать">
+        <button class="bk-use" id="copyCodeBtn">Копия</button>
+        <button class="bk-use" id="importCodeBtn" style="background:var(--yellow);">Загрузить</button>
       </div>
     </div>
-    <button class="btn-m-cancel" id="closeBackupModalBtn">Закрыть</button>
+    <button class="m-btn cancel" style="width:100%;" id="closeRestoreBtn">Закрыть</button>
 
-    <div class="confirm-overlay" id="confirmOverlay">
-      <div id="confirmText" style="font-size:13px; font-weight:700;">Подтвердите действие</div>
-      <div style="display:flex; gap:8px; width:100%;">
-        <button class="btn-m-cancel" style="flex:1;" id="confirmNoBtn">Нет</button>
-        <button class="btn-m-ok" style="flex:1; background:var(--red);" id="confirmYesBtn">Да</button>
+    <div class="confirm-overlay" id="confirmDeleteBox">
+      <div style="font-size:14px;font-weight:700;text-align:center;" id="confirmDeleteText">Удалить эту резервную копию?</div>
+      <div class="modal-actions">
+        <button class="m-btn cancel" id="cancelDelBkBtn">Отмена</button>
+        <button class="m-btn ok" style="background:var(--danger);color:#fff;" id="confirmDelBkBtn">Удалить</button>
       </div>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toastBox"></div>
 
-<script src="calendar.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=8.4"></script>
 </body>
 </html>

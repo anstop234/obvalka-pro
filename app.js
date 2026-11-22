@@ -1,77 +1,89 @@
-(function() {
+(function () {
   "use strict";
 
-  var APP_VERSION = "8.2";
-  var STORAGE_KEY = "obvalka_pro_state_v1";
-  var IDB_NAME = "ObvalkaProDB";
-  var IDB_STORE = "kv";
-  var IDB_KEY = "main_state";
-  var MONTHS_GEN = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
-  var MONTHS_SHORT = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+  var APP_VERSION = "8.4";
+  var STORAGE_KEY = "obvalka_pro_state_v8";
+  var DB_NAME = "ObvalkaProDB";
+  var DB_STORE = "kv";
+  var NL = String.fromCharCode(10);
 
-  function pad2(n) {
-    return n < 10 ? "0" + n : String(n);
+  var MONTHS_NOM = [
+    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+  ];
+  var MONTHS_GEN = [
+    "января", "февраля", "марта", "апреля", "мая", "июня",
+    "июля", "августа", "сентября", "октября", "ноября", "декабря"
+  ];
+  var MONTHS_SHORT = [
+    "янв", "фев", "мар", "апр", "май", "июн",
+    "июл", "авг", "сен", "окт", "ноя", "дек"
+  ];
+
+  var now = new Date();
+  var state = {
+    viewYear: now.getFullYear(),
+    viewMonth: now.getMonth(),
+    selectedStart: toKey(now),
+    selectedEnd: toKey(now),
+    periodMode: "day",
+    isCustomRange: false,
+    workerName: "",
+    defaultRate: "",
+    theme: "dark",
+    records: [],
+    backups: [],
+    lastAutoBackupDate: "",
+    updatedAt: 0
+  };
+
+  var deletedHistory = [];
+  var pendingDeleteBackupIdx = -1;
+  var dragActive = false;
+  var dragAnchorKey = null;
+
+  function toKey(d) {
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
   }
 
-  function toIso(d) {
-    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
-  }
-
-  function parseIso(iso) {
-    var p = String(iso || "").split("-");
+  function parseKey(key) {
+    var p = String(key || "").split("-");
     if (p.length !== 3) return new Date();
     return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
   }
 
-  function formatDayMonth(iso) {
-    var d = parseIso(iso);
-    return d.getDate() + " " + MONTHS_GEN[d.getMonth()];
-  }
-
-  function formatShortDate(iso) {
-    var d = parseIso(iso);
-    return d.getDate() + " " + MONTHS_SHORT[d.getMonth()];
-  }
-
   function cleanNum(val) {
     if (typeof val === "number") return isFinite(val) ? val : 0;
-    if (!val) return 0;
-    var s = String(val).replace(",", ".").trim();
+    var s = String(val || "").replace(",", ".").trim();
     var out = "";
-    var hasDot = false;
+    var dot = false;
     for (var i = 0; i < s.length; i++) {
-      var ch = s.charAt(i);
-      if (ch >= "0" && ch <= "9") {
-        out += ch;
-      } else if (ch === "." && !hasDot) {
-        out += ch;
-        hasDot = true;
-      } else if (ch === "-" && out.length === 0) {
-        out += ch;
-      }
+      var ch = s[i];
+      if (ch >= "0" && ch <= "9") out += ch;
+      else if (ch === "." && !dot) { out += "."; dot = true; }
     }
-    var num = parseFloat(out);
-    return isFinite(num) ? num : 0;
+    var n = parseFloat(out);
+    return isFinite(n) ? n : 0;
   }
 
   function round2(n) {
     return Math.round((Number(n) || 0) * 100) / 100;
   }
 
-  function round1(n) {
-    return Math.round((Number(n) || 0) * 10) / 10;
-  }
-
   function normalizeRecord(raw, fallbackRate) {
     if (!raw || typeof raw !== "object") return null;
-    var date = raw.date || raw.d || toIso(new Date());
-    var isOff = Boolean(raw.isOff || raw.off || raw.dayOff);
+    var date = raw.date || raw.d || toKey(new Date());
+    var isOff = Boolean(raw.isOff || raw.off || raw.type === "off");
     var boxes = Math.round(cleanNum(raw.boxes !== undefined ? raw.boxes : raw.b));
-    var boxWeight = round1(cleanNum(raw.boxWeight !== undefined ? raw.boxWeight : raw.bw));
-    var totalWeight = round1(cleanNum(raw.totalWeight !== undefined ? raw.totalWeight : (raw.weight !== undefined ? raw.weight : raw.w)));
-    var rate = round2(cleanNum(raw.rate !== undefined ? raw.rate : raw.r));
+    var boxWeight = cleanNum(raw.boxWeight !== undefined ? raw.boxWeight : raw.bw);
+    var weight = cleanNum(raw.weight !== undefined ? raw.weight : (raw.totalWeight !== undefined ? raw.totalWeight : raw.w));
+    var rate = cleanNum(raw.rate !== undefined ? raw.rate : raw.r);
+    if (rate <= 0 && fallbackRate > 0) rate = fallbackRate;
 
-    if (!isOff && boxes === 0 && totalWeight === 0 && boxWeight === 0) {
+    if (!isOff && boxes === 0 && weight === 0 && cleanNum(raw.pay || raw.totalPay || raw.sum) === 0) {
       isOff = true;
     }
 
@@ -82,1084 +94,819 @@
         isOff: true,
         boxes: 0,
         boxWeight: 0,
-        totalWeight: 0,
+        weight: 0,
         rate: 0,
-        totalPay: 0
+        pay: 0
       };
     }
 
-    if (totalWeight <= 0 && boxes > 0 && boxWeight > 0) {
-      totalWeight = round1(boxes * boxWeight);
-    } else if (boxes > 0 && boxWeight > 0 && Math.abs(totalWeight - boxWeight) < 0.01 && boxes > 1) {
-      totalWeight = round1(boxes * boxWeight);
+    if (weight <= 0 && boxes > 0 && boxWeight > 0) {
+      weight = round2(boxes * boxWeight);
+    } else if (boxes > 0 && boxWeight > 0 && Math.abs(weight - boxWeight) < 0.001 && boxes > 1) {
+      weight = round2(boxes * boxWeight);
+    } else {
+      weight = round2(weight);
     }
 
-    if (rate <= 0) {
-      rate = round2(cleanNum(fallbackRate));
-    }
-
-    var totalPay = round2(totalWeight * rate);
+    var pay = round2(weight * rate);
     return {
       id: raw.id || (Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
       date: date,
       isOff: false,
       boxes: boxes,
-      boxWeight: boxWeight,
-      totalWeight: totalWeight,
-      rate: rate,
-      totalPay: totalPay
+      boxWeight: round2(boxWeight),
+      weight: weight,
+      rate: round2(rate),
+      pay: pay
     };
   }
 
-  function createDefaultState() {
-    var today = new Date();
-    var iso = toIso(today);
+  function normalizePayload(data) {
+    if (!data || typeof data !== "object") return null;
+    var rate = cleanNum(data.defaultRate || data.rate || "");
+    var recs = Array.isArray(data.records) ? data.records : [];
+    var cleanRecs = [];
+    for (var i = 0; i < recs.length; i++) {
+      var nr = normalizeRecord(recs[i], rate);
+      if (nr) cleanRecs.push(nr);
+    }
+    var bks = Array.isArray(data.backups) ? data.backups : [];
     return {
-      records: [],
-      backups: [],
-      workerName: "",
-      lastRate: 9.5,
-      theme: "dark",
-      viewYear: today.getFullYear(),
-      viewMonth: today.getMonth(),
-      mode: "day",
-      rangeStart: iso,
-      rangeEnd: iso,
-      manualRange: false,
-      autoBackupDate: "",
-      updatedAt: 0
+      workerName: String(data.workerName || ""),
+      defaultRate: rate > 0 ? String(rate) : "",
+      theme: data.theme === "light" ? "light" : "dark",
+      records: cleanRecs,
+      backups: bks,
+      lastAutoBackupDate: String(data.lastAutoBackupDate || ""),
+      updatedAt: Number(data.updatedAt) || 0
     };
   }
 
-  function normalizeState(raw) {
-    var base = createDefaultState();
-    if (!raw || typeof raw !== "object") return base;
-
-    base.workerName = typeof raw.workerName === "string" ? raw.workerName : "";
-    var r = cleanNum(raw.lastRate);
-    base.lastRate = r > 0 ? round2(r) : 9.5;
-    base.theme = raw.theme === "light" ? "light" : "dark";
-    base.autoBackupDate = typeof raw.autoBackupDate === "string" ? raw.autoBackupDate : "";
-    base.updatedAt = Number(raw.updatedAt) || 0;
-
-    if (Array.isArray(raw.records)) {
-      var list = [];
-      for (var i = 0; i < raw.records.length; i++) {
-        var nr = normalizeRecord(raw.records[i], base.lastRate);
-        if (nr) list.push(nr);
-      }
-      base.records = list;
-    }
-
-    if (Array.isArray(raw.backups)) {
-      var bList = [];
-      for (var j = 0; j < raw.backups.length; j++) {
-        var b = raw.backups[j];
-        if (!b || !Array.isArray(b.records)) continue;
-        var normRecs = [];
-        for (var k = 0; k < b.records.length; k++) {
-          var br = normalizeRecord(b.records[k], b.lastRate || base.lastRate);
-          if (br) normRecs.push(br);
-        }
-        bList.push({
-          id: b.id || ("bk_" + j + "_" + Date.now()),
-          label: String(b.label || "Копия базы"),
-          createdAt: Number(b.createdAt) || Date.now(),
-          workerName: typeof b.workerName === "string" ? b.workerName : base.workerName,
-          lastRate: cleanNum(b.lastRate) || base.lastRate,
-          records: normRecs
-        });
-      }
-      base.backups = bList;
-    }
-
-    return base;
-  }
-
-  function openDb(cb) {
-    if (!window.indexedDB) {
-      cb(null);
-      return;
-    }
-    try {
-      var req = window.indexedDB.open(IDB_NAME, 1);
-      req.onupgradeneeded = function(e) {
-        var db = e.target.result;
-        if (!db.objectStoreNames.contains(IDB_STORE)) {
-          db.createObjectStore(IDB_STORE);
-        }
-      };
-      req.onsuccess = function(e) {
-        cb(e.target.result);
-      };
-      req.onerror = function() {
-        cb(null);
-      };
-    } catch (err) {
-      cb(null);
-    }
-  }
-
-  function readFromIdb(cb) {
-    openDb(function(db) {
-      if (!db) {
-        cb(null);
-        return;
-      }
-      try {
-        var tx = db.transaction(IDB_STORE, "readonly");
-        var store = tx.objectStore(IDB_STORE);
-        var getReq = store.get(IDB_KEY);
-        getReq.onsuccess = function() {
-          cb(getReq.result || null);
-        };
-        getReq.onerror = function() {
-          cb(null);
-        };
-      } catch (e) {
-        cb(null);
-      }
-    });
-  }
-
-  function writeToIdb(payload, cb) {
-    openDb(function(db) {
-      if (!db) {
-        if (cb) cb(false);
-        return;
-      }
-      try {
-        var tx = db.transaction(IDB_STORE, "readwrite");
-        var store = tx.objectStore(IDB_STORE);
-        store.put(payload, IDB_KEY);
-        tx.oncomplete = function() {
-          if (cb) cb(true);
-        };
-        tx.onerror = function() {
-          if (cb) cb(false);
-        };
-      } catch (e) {
-        if (cb) cb(false);
-      }
-    });
-  }
-
-  function readFromLocalStorage() {
-    try {
-      var raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function readFromWindowName() {
-    try {
-      if (!window.name || window.name.indexOf("OBVALKA_BAK:") !== 0) return null;
-      var json = window.name.slice("OBVALKA_BAK:".length);
-      return JSON.parse(json);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function pickBestState(candidates) {
-    var best = null;
-    var bestScore = -1;
-    for (var i = 0; i < candidates.length; i++) {
-      var c = candidates[i];
-      if (!c || typeof c !== "object") continue;
-      var norm = normalizeState(c);
-      var recCount = norm.records.length;
-      var bkCount = norm.backups.length;
-      var ts = Number(norm.updatedAt) || 0;
-      var score = recCount * 1000000000000 + bkCount * 10000000000 + Math.floor(ts / 1000);
-      if (score > bestScore) {
-        bestScore = score;
-        best = norm;
-      }
-    }
-    return best || createDefaultState();
-  }
-
-  var state = createDefaultState();
-  var lastDeletedRecord = null;
-  var undoTimer = null;
-  var undoSeconds = 0;
-  var pendingReportText = "";
-
-  window.ObvalkaApp = {
-    getState: function() {
-      return state;
-    },
-    onCalendarSelect: function(startIso, endIso, isManual) {
-      state.rangeStart = startIso;
-      state.rangeEnd = endIso;
-      state.manualRange = Boolean(isManual);
-      if (isManual) {
-        state.mode = startIso === endIso ? "day" : "custom";
-      }
-      renderAll();
-    },
-    onMonthChange: function(year, month) {
-      state.viewYear = year;
-      state.viewMonth = month;
-      if (state.mode === "month") {
-        applyPeriodMode("month");
-      } else if (state.mode === "year") {
-        applyPeriodMode("year");
-      } else {
-        renderAll();
-      }
-    }
-  };
-
-  function persistState(cb) {
-    state.updatedAt = Date.now();
-    var snapshot = {
+  function getSerializableState() {
+    return {
+      workerName: state.workerName,
+      defaultRate: state.defaultRate,
+      theme: state.theme,
       records: state.records,
       backups: state.backups,
-      workerName: state.workerName,
-      lastRate: state.lastRate,
-      theme: state.theme,
-      autoBackupDate: state.autoBackupDate,
-      updatedAt: state.updatedAt
+      lastAutoBackupDate: state.lastAutoBackupDate,
+      updatedAt: state.updatedAt || Date.now()
     };
-    var json = JSON.stringify(snapshot);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, json);
-    } catch (e) {}
-    try {
-      window.name = "OBVALKA_BAK:" + json;
-    } catch (e) {}
-    writeToIdb(snapshot, function(ok) {
-      if (cb) cb(ok);
+  }
+
+  function idbOpen() {
+    return new Promise(function (resolve) {
+      if (!window.indexedDB) { resolve(null); return; }
+      try {
+        var req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = function (e) {
+          var db = e.target.result;
+          if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
+        };
+        req.onsuccess = function (e) { resolve(e.target.result); };
+        req.onerror = function () { resolve(null); };
+      } catch (e) { resolve(null); }
     });
   }
 
-  function showToast(msg, duration) {
-    var el = document.getElementById("toast");
+  function idbGet(key) {
+    return idbOpen().then(function (db) {
+      if (!db) return null;
+      return new Promise(function (resolve) {
+        try {
+          var tx = db.transaction(DB_STORE, "readonly");
+          var req = tx.objectStore(DB_STORE).get(key);
+          req.onsuccess = function () { resolve(req.result || null); };
+          req.onerror = function () { resolve(null); };
+        } catch (e) { resolve(null); }
+      });
+    });
+  }
+
+  function idbSet(key, val) {
+    return idbOpen().then(function (db) {
+      if (!db) return false;
+      return new Promise(function (resolve) {
+        try {
+          var tx = db.transaction(DB_STORE, "readwrite");
+          tx.objectStore(DB_STORE).put(val, key);
+          tx.oncomplete = function () { resolve(true); };
+          tx.onerror = function () { resolve(false); };
+        } catch (e) { resolve(false); }
+      });
+    });
+  }
+
+  function saveAllStorages(touchTimestamp) {
+    if (touchTimestamp !== false) state.updatedAt = Date.now();
+    var payload = getSerializableState();
+    var json = JSON.stringify(payload);
+    try { localStorage.setItem(STORAGE_KEY, json); } catch (e) {}
+    try { window.name = "OBV_BAK:" + json; } catch (e) {}
+    return idbSet(STORAGE_KEY, payload);
+  }
+
+  function pickBestCandidate(list) {
+    var best = null;
+    for (var i = 0; i < list.length; i++) {
+      var cand = normalizePayload(list[i]);
+      if (!cand) continue;
+      if (!best) { best = cand; continue; }
+      var candScore = cand.records.length * 10 + cand.backups.length;
+      var bestScore = best.records.length * 10 + best.backups.length;
+      if (cand.updatedAt > best.updatedAt && candScore >= bestScore) {
+        best = cand;
+      } else if (candScore > bestScore) {
+        best = cand;
+      }
+    }
+    return best;
+  }
+
+  function loadInitialState() {
+    var candidates = [];
+    try {
+      var lsRaw = localStorage.getItem(STORAGE_KEY);
+      if (lsRaw) candidates.push(JSON.parse(lsRaw));
+    } catch (e) {}
+    try {
+      if (window.name && window.name.indexOf("OBV_BAK:") === 0) {
+        candidates.push(JSON.parse(window.name.slice(8)));
+      }
+    } catch (e) {}
+
+    return idbGet(STORAGE_KEY).then(function (idbData) {
+      if (idbData) candidates.push(idbData);
+      var best = pickBestCandidate(candidates);
+      if (best) {
+        state.workerName = best.workerName;
+        state.defaultRate = best.defaultRate;
+        state.theme = best.theme;
+        state.records = best.records;
+        state.backups = best.backups;
+        state.lastAutoBackupDate = best.lastAutoBackupDate;
+        state.updatedAt = best.updatedAt || Date.now();
+        saveAllStorages(false);
+      }
+    });
+  }
+
+  function showToast(msg, ms) {
+    var el = document.getElementById("toastBox");
     if (!el) return;
     el.textContent = msg;
-    el.classList.add("show");
-    clearTimeout(el._tid);
-    el._tid = setTimeout(function() {
-      el.classList.remove("show");
-    }, duration || 2200);
+    el.style.display = "block";
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function () { el.style.display = "none"; }, ms || 2400);
   }
 
   function applyTheme() {
     if (state.theme === "light") {
-      document.body.classList.add("light-theme");
+      document.body.classList.add("light");
+      document.getElementById("themeBtn").textContent = "🌙";
     } else {
-      document.body.classList.remove("light-theme");
-    }
-    var btn = document.getElementById("btnTheme");
-    if (btn) {
-      btn.textContent = state.theme === "light" ? "🌙" : "☀️";
+      document.body.classList.remove("light");
+      document.getElementById("themeBtn").textContent = "☀️";
     }
   }
 
-  function applyPeriodMode(mode) {
-    state.mode = mode;
-    state.manualRange = false;
-    var anchor = parseIso(state.rangeStart || toIso(new Date()));
-    var y = anchor.getFullYear();
-    var m = anchor.getMonth();
-    var day = anchor.getDate();
+  function getOrderedRange() {
+    if (state.selectedStart <= state.selectedEnd) {
+      return { start: state.selectedStart, end: state.selectedEnd };
+    }
+    return { start: state.selectedEnd, end: state.selectedStart };
+  }
+
+  function applyPeriodPreset(mode) {
+    state.periodMode = mode;
+    state.isCustomRange = false;
+    var base = parseKey(state.selectedStart);
+    var y = base.getFullYear();
+    var m = base.getMonth();
+    var d = base.getDate();
 
     if (mode === "day") {
-      var iso = toIso(anchor);
-      state.rangeStart = iso;
-      state.rangeEnd = iso;
+      state.selectedEnd = state.selectedStart;
     } else if (mode === "week") {
-      var dow = anchor.getDay();
-      var diffToMon = dow === 0 ? -6 : 1 - dow;
-      var mon = new Date(y, m, day + diffToMon);
-      var sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
-      state.rangeStart = toIso(mon);
-      state.rangeEnd = toIso(sun);
-    } else if (mode === "two_weeks") {
-      if (day <= 15) {
-        state.rangeStart = toIso(new Date(y, m, 1));
-        state.rangeEnd = toIso(new Date(y, m, 15));
+      var dow = (base.getDay() + 6) % 7;
+      var mon = new Date(y, m, d - dow);
+      var sun = new Date(y, m, d - dow + 6);
+      state.selectedStart = toKey(mon);
+      state.selectedEnd = toKey(sun);
+    } else if (mode === "twoWeeks") {
+      if (d <= 15) {
+        state.selectedStart = toKey(new Date(y, m, 1));
+        state.selectedEnd = toKey(new Date(y, m, 15));
       } else {
-        var lastDay = new Date(y, m + 1, 0).getDate();
-        state.rangeStart = toIso(new Date(y, m, 16));
-        state.rangeEnd = toIso(new Date(y, m, lastDay));
+        var lastD = new Date(y, m + 1, 0).getDate();
+        state.selectedStart = toKey(new Date(y, m, 16));
+        state.selectedEnd = toKey(new Date(y, m, lastD));
       }
     } else if (mode === "month") {
-      var vy = state.viewYear;
-      var vm = state.viewMonth;
-      var endM = new Date(vy, vm + 1, 0).getDate();
-      state.rangeStart = toIso(new Date(vy, vm, 1));
-      state.rangeEnd = toIso(new Date(vy, vm, endM));
+      var endM = new Date(y, m + 1, 0);
+      state.selectedStart = toKey(new Date(y, m, 1));
+      state.selectedEnd = toKey(endM);
     } else if (mode === "year") {
-      var yy = state.viewYear;
-      state.rangeStart = yy + "-01-01";
-      state.rangeEnd = yy + "-12-31";
+      state.selectedStart = y + "-01-01";
+      state.selectedEnd = y + "-12-31";
+    }
+  }
+
+  function renderCalendar() {
+    var grid = document.getElementById("calGrid");
+    var monthLbl = document.getElementById("monthLabel");
+    if (!grid || !monthLbl) return;
+
+    monthLbl.textContent = MONTHS_NOM[state.viewMonth] + " " + state.viewYear;
+    var range = getOrderedRange();
+
+    var dayFlags = {};
+    for (var i = 0; i < state.records.length; i++) {
+      var r = state.records[i];
+      if (r.isOff) {
+        if (!dayFlags[r.date]) dayFlags[r.date] = "off";
+      } else {
+        dayFlags[r.date] = "work";
+      }
     }
 
-    var sDate = parseIso(state.rangeStart);
-    state.viewYear = sDate.getFullYear();
-    state.viewMonth = sDate.getMonth();
-    renderAll();
+    var firstDay = new Date(state.viewYear, state.viewMonth, 1);
+    var startOffset = (firstDay.getDay() + 6) % 7;
+    var daysInMonth = new Date(state.viewYear, state.viewMonth + 1, 0).getDate();
+    var totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+
+    grid.innerHTML = "";
+    for (var c = 0; c < totalCells; c++) {
+      var cellDate = new Date(state.viewYear, state.viewMonth, 1 - startOffset + c);
+      var key = toKey(cellDate);
+      var cell = document.createElement("div");
+      cell.className = "day-cell";
+      cell.dataset.key = key;
+      cell.textContent = String(cellDate.getDate());
+
+      if (cellDate.getMonth() !== state.viewMonth) cell.classList.add("other-month");
+      if (key >= range.start && key <= range.end) {
+        cell.classList.add("in-range");
+        if (key === range.start || key === range.end) cell.classList.add("selected");
+      }
+
+      if (dayFlags[key]) {
+        var dot = document.createElement("span");
+        dot.className = "day-dot " + dayFlags[key];
+        cell.appendChild(dot);
+      }
+      grid.appendChild(cell);
+    }
+
+    var tabs = document.querySelectorAll("#periodTabs .tab-btn");
+    for (var t = 0; t < tabs.length; t++) {
+      var btn = tabs[t];
+      btn.classList.toggle("active", !state.isCustomRange && btn.dataset.mode === state.periodMode);
+    }
+  }
+
+  function formatHumanDate(key) {
+    var d = parseKey(key);
+    return d.getDate() + " " + MONTHS_GEN[d.getMonth()];
+  }
+
+  function formatShortDate(key) {
+    var d = parseKey(key);
+    return d.getDate() + " " + MONTHS_SHORT[d.getMonth()];
   }
 
   function getFilteredRecords() {
-    var s = state.rangeStart;
-    var e = state.rangeEnd;
-    if (s > e) {
-      var tmp = s;
-      s = e;
-      e = tmp;
-    }
-    var res = [];
+    var range = getOrderedRange();
+    var list = [];
     for (var i = 0; i < state.records.length; i++) {
       var r = state.records[i];
-      if (r.date >= s && r.date <= e) {
-        res.push(r);
-      }
+      if (r.date >= range.start && r.date <= range.end) list.push(r);
     }
-    res.sort(function(a, b) {
-      if (a.date < b.date) return -1;
-      if (a.date > b.date) return 1;
-      return 0;
-    });
-    return res;
+    list.sort(function (a, b) { return a.date.localeCompare(b.date); });
+    return list;
+  }
+
+  function renderRecordsAndSummary() {
+    var range = getOrderedRange();
+    var list = getFilteredRecords();
+
+    var modeNames = {
+      day: "ДЕНЬ",
+      week: "НЕДЕЛЯ",
+      twoWeeks: "2Х НЕДЕЛИ",
+      month: "МЕСЯЦ",
+      year: "ГОД"
+    };
+    var tag = state.isCustomRange ? "ПЕРИОД" : (modeNames[state.periodMode] || "ДЕНЬ");
+    document.getElementById("recordsHeader").textContent = "ЗАПИСИ (" + tag + ")";
+    document.getElementById("recordsCount").textContent = list.length + " ШТ.";
+    document.getElementById("sumPeriodTitle").textContent = "ИТОГ ЗА " + tag;
+
+    if (range.start === range.end) {
+      document.getElementById("selectedDateLabel").textContent = formatHumanDate(range.start);
+    } else {
+      document.getElementById("selectedDateLabel").textContent = formatShortDate(range.start) + " – " + formatShortDate(range.end);
+    }
+
+    var totBoxes = 0;
+    var totWeight = 0;
+    var totPay = 0;
+    var container = document.getElementById("recordsList");
+    container.innerHTML = "";
+
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      var row = document.createElement("div");
+      row.className = "rec-item" + (r.isOff ? " off-item" : "");
+
+      var info = document.createElement("span");
+      if (r.isOff) {
+        info.textContent = formatShortDate(r.date) + ": Выходной";
+      } else {
+        totBoxes += r.boxes;
+        totWeight = round2(totWeight + r.weight);
+        totPay = round2(totPay + r.pay);
+        var bPart = r.boxes > 0 ? (r.boxes + " кор. • ") : "";
+        info.textContent = formatShortDate(r.date) + ": " + bPart + r.weight + " кг × " + r.rate + " ₽ = " + r.pay + " ₽";
+      }
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "rec-del";
+      delBtn.textContent = "✕";
+      delBtn.dataset.id = r.id;
+
+      row.appendChild(info);
+      row.appendChild(delBtn);
+      container.appendChild(row);
+    }
+
+    document.getElementById("sumBoxesWeight").textContent = totBoxes + " кор. • " + totWeight + " кг";
+    document.getElementById("sumMoney").textContent = totPay + " ₽";
   }
 
   function updateShiftPreview() {
-    var boxesEl = document.getElementById("inpBoxes");
-    var weightEl = document.getElementById("inpBoxWeight");
-    var rateEl = document.getElementById("inpRate");
-    var prevEl = document.getElementById("shiftPreview");
-    if (!boxesEl || !weightEl || !rateEl || !prevEl) return;
+    var boxes = Math.round(cleanNum(document.getElementById("boxesInput").value));
+    var boxW = cleanNum(document.getElementById("weightInput").value);
+    var rate = cleanNum(document.getElementById("rateInput").value);
 
-    var boxes = Math.round(cleanNum(boxesEl.value));
-    var bw = round1(cleanNum(weightEl.value));
-    var rate = round2(cleanNum(rateEl.value));
-    var totalW = boxes > 0 ? round1(boxes * bw) : bw;
-    var totalP = round2(totalW * rate);
+    var totalW = (boxes > 0 && boxW > 0) ? round2(boxes * boxW) : round2(boxW);
+    var totalM = round2(totalW * rate);
 
-    prevEl.innerHTML = '<span style="color:#10b981;font-weight:700;">' + totalW + ' кг</span> &nbsp;<span style="color:#f59e0b;font-weight:700;">' + totalP + ' ₽</span>';
+    document.getElementById("prevWeight").textContent = totalW + " кг";
+    document.getElementById("prevMoney").textContent = totalM + " ₽";
   }
 
-  function renderRecordsAndTotals() {
-    var listEl = document.getElementById("recordsList");
-    var titleEl = document.getElementById("recordsTitle");
-    var countEl = document.getElementById("recordsCount");
-    var summaryTitleEl = document.getElementById("summaryTitle");
-    var summarySubEl = document.getElementById("summarySub");
-    var summaryPayEl = document.getElementById("summaryPay");
-    var selectedDateLabelEl = document.getElementById("selectedDateLabel");
-
-    var filtered = getFilteredRecords();
-    var totalBoxes = 0;
-    var totalWeight = 0;
-    var totalPay = 0;
-
-    for (var i = 0; i < filtered.length; i++) {
-      var r = filtered[i];
-      if (!r.isOff) {
-        totalBoxes += r.boxes;
-        totalWeight = round1(totalWeight + r.totalWeight);
-        totalPay = round2(totalPay + r.totalPay);
-      }
-    }
-
-    var isSingle = state.rangeStart === state.rangeEnd;
-    var periodSuffix = isSingle
-      ? ("ДЕНЬ (" + formatShortDate(state.rangeStart).toUpperCase() + ")")
-      : (formatShortDate(state.rangeStart).toUpperCase() + " – " + formatShortDate(state.rangeEnd).toUpperCase());
-
-    if (titleEl) titleEl.textContent = "ЗАПИСИ (" + periodSuffix + ")";
-    if (countEl) countEl.textContent = filtered.length + " ШТ.";
-    if (summaryTitleEl) summaryTitleEl.textContent = "ИТОГ ЗА " + periodSuffix;
-    if (summarySubEl) summarySubEl.textContent = totalBoxes + " кор. • " + totalWeight + " кг";
-    if (summaryPayEl) summaryPayEl.textContent = totalPay + " ₽";
-    if (selectedDateLabelEl) selectedDateLabelEl.textContent = formatDayMonth(state.rangeStart);
-
-    if (!listEl) return;
-    listEl.innerHTML = "";
-
-    for (var j = 0; j < filtered.length; j++) {
-      (function(rec) {
-        var row = document.createElement("div");
-        row.className = "rec-item" + (rec.isOff ? " rec-off" : "");
-
-        var textSpan = document.createElement("span");
-        textSpan.className = "rec-text";
-        if (rec.isOff) {
-          textSpan.textContent = formatShortDate(rec.date) + ": Выходной";
-        } else {
-          var parts = [formatShortDate(rec.date) + ":"];
-          if (rec.boxes > 0) parts.push(rec.boxes + " кор. •");
-          parts.push(rec.totalWeight + " кг × " + rec.rate + " ₽ =");
-          textSpan.innerHTML = parts.join(" ") + ' <strong style="color:#f59e0b;">' + rec.totalPay + ' ₽</strong>';
-        }
-
-        var delBtn = document.createElement("button");
-        delBtn.type = "button";
-        delBtn.className = "rec-del";
-        delBtn.textContent = "✕";
-        delBtn.onclick = function() {
-          deleteRecord(rec.id);
-        };
-
-        row.appendChild(textSpan);
-        row.appendChild(delBtn);
-        listEl.appendChild(row);
-      })(filtered[j]);
+  function updateUndoButton() {
+    var btn = document.getElementById("undoBtn");
+    if (!btn) return;
+    if (deletedHistory.length > 0) {
+      btn.style.display = "block";
+      btn.textContent = "↩ ОТМЕНИТЬ УДАЛЕНИЕ (" + deletedHistory.length + ")";
+    } else {
+      btn.style.display = "none";
     }
   }
 
-  function renderTabsAndHeader() {
-    var verEl = document.getElementById("appVersion");
-    if (verEl) verEl.textContent = "v " + APP_VERSION;
-
-    var tabs = document.querySelectorAll(".mode-tab");
-    for (var i = 0; i < tabs.length; i++) {
-      var t = tabs[i];
-      if (t.getAttribute("data-mode") === state.mode) {
-        t.classList.add("active");
-      } else {
-        t.classList.remove("active");
+  function createBackupSnapshot(tag) {
+    var snap = {
+      ts: Date.now(),
+      label: new Date().toLocaleString("ru-RU", {
+        day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"
+      }) + (tag ? " " + tag : ""),
+      data: {
+        workerName: state.workerName,
+        defaultRate: state.defaultRate,
+        records: JSON.parse(JSON.stringify(state.records))
       }
-    }
-
-    var undoBtn = document.getElementById("btnUndo");
-    if (undoBtn) {
-      if (lastDeletedRecord && undoSeconds > 0) {
-        undoBtn.style.display = "inline-flex";
-        undoBtn.textContent = "↩ Вернуть (" + undoSeconds + "с)";
-      } else {
-        undoBtn.style.display = "none";
-      }
-    }
-  }
-
-  function renderAll() {
-    applyTheme();
-    renderTabsAndHeader();
-    renderRecordsAndTotals();
-    updateShiftPreview();
-    if (window.ObvalkaCalendar && typeof window.ObvalkaCalendar.render === "function") {
-      window.ObvalkaCalendar.render(state);
-    }
+    };
+    state.backups.unshift(snap);
+    if (state.backups.length > 20) state.backups.length = 20;
   }
 
   function ensureDailyAutoBackup() {
-    var todayIso = toIso(new Date());
-    if (state.autoBackupDate === todayIso) return;
-    if (state.records.length === 0) return;
-
-    var now = new Date();
-    var label = pad2(now.getDate()) + "." + pad2(now.getMonth() + 1) + " " + pad2(now.getHours()) + ":" + pad2(now.getMinutes()) + " (авто)";
-    state.backups.unshift({
-      id: "auto_" + Date.now(),
-      label: label,
-      createdAt: Date.now(),
-      workerName: state.workerName,
-      lastRate: state.lastRate,
-      records: JSON.parse(JSON.stringify(state.records))
-    });
-    if (state.backups.length > 25) {
-      state.backups = state.backups.slice(0, 25);
+    var todayKey = toKey(new Date());
+    if (state.lastAutoBackupDate !== todayKey) {
+      state.lastAutoBackupDate = todayKey;
+      createBackupSnapshot("(авто)");
     }
-    state.autoBackupDate = todayIso;
   }
 
-  function addRecord(isOff) {
-    var targetDate = state.rangeStart || toIso(new Date());
-    var nameEl = document.getElementById("inpWorker");
-    if (nameEl) {
-      state.workerName = nameEl.value.trim();
-    }
-
-    if (isOff) {
-      state.records.push({
-        id: "rec_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-        date: targetDate,
-        isOff: true,
-        boxes: 0,
-        boxWeight: 0,
-        totalWeight: 0,
-        rate: 0,
-        totalPay: 0
-      });
-      ensureDailyAutoBackup();
-      persistState();
-      renderAll();
-      return;
-    }
-
-    var boxesEl = document.getElementById("inpBoxes");
-    var weightEl = document.getElementById("inpBoxWeight");
-    var rateEl = document.getElementById("inpRate");
-
-    var boxes = Math.round(cleanNum(boxesEl ? boxesEl.value : 0));
-    var bw = round1(cleanNum(weightEl ? weightEl.value : 0));
-    var rate = round2(cleanNum(rateEl ? rateEl.value : state.lastRate));
-
-    if (rate > 0) {
-      state.lastRate = rate;
-    } else {
-      rate = state.lastRate;
-    }
-
-    var totalW = boxes > 0 ? round1(boxes * bw) : bw;
-    if (totalW <= 0) {
-      showToast("Введите вес или количество коробок");
-      return;
-    }
-
-    var totalP = round2(totalW * rate);
-    state.records.push({
-      id: "rec_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-      date: targetDate,
-      isOff: false,
-      boxes: boxes,
-      boxWeight: bw,
-      totalWeight: totalW,
-      rate: rate,
-      totalPay: totalP
-    });
-
-    if (boxesEl) boxesEl.value = "";
-    if (weightEl) weightEl.value = "";
-
-    ensureDailyAutoBackup();
-    persistState();
-    renderAll();
-  }
-
-  function deleteRecord(id) {
-    var idx = -1;
-    for (var i = 0; i < state.records.length; i++) {
-      if (state.records[i].id === id) {
-        idx = i;
-        break;
-      }
-    }
-    if (idx === -1) return;
-    lastDeletedRecord = state.records[idx];
-    state.records.splice(idx, 1);
-
-    clearInterval(undoTimer);
-    undoSeconds = 7;
-    undoTimer = setInterval(function() {
-      undoSeconds--;
-      if (undoSeconds <= 0) {
-        clearInterval(undoTimer);
-        lastDeletedRecord = null;
-      }
-      renderTabsAndHeader();
-    }, 1000);
-
-    persistState();
-    renderAll();
-  }
-
-  function undoDelete() {
-    if (!lastDeletedRecord) return;
-    state.records.push(lastDeletedRecord);
-    lastDeletedRecord = null;
-    clearInterval(undoTimer);
-    undoSeconds = 0;
-    persistState();
-    renderAll();
-  }
-
-  function buildReportText(isFull) {
-    var NL = String.fromCharCode(10);
-    var filtered = getFilteredRecords();
-    var nameEl = document.getElementById("inpWorker");
-    var worker = (nameEl && nameEl.value.trim()) ? nameEl.value.trim() : (state.workerName || "Обвальщик");
-    var isSingle = state.rangeStart === state.rangeEnd;
-
-    var totalBoxes = 0;
-    var totalWeight = 0;
-    var totalPay = 0;
-    for (var i = 0; i < filtered.length; i++) {
-      if (!filtered[i].isOff) {
-        totalBoxes += filtered[i].boxes;
-        totalWeight = round1(totalWeight + filtered[i].totalWeight);
-        totalPay = round2(totalPay + filtered[i].totalPay);
-      }
-    }
-
+  function buildReport(isFull) {
+    var range = getOrderedRange();
+    var list = getFilteredRecords();
+    var worker = (state.workerName || "").trim();
     var lines = [];
-    lines.push(worker);
 
-    if (!isFull) {
-      if (state.manualRange && !isSingle) {
-        lines.push(formatShortDate(state.rangeStart) + " – " + formatShortDate(state.rangeEnd));
+    if (worker) lines.push(worker);
+
+    var periodStr = range.start === range.end
+      ? formatHumanDate(range.start)
+      : (formatShortDate(range.start) + " – " + formatShortDate(range.end));
+
+    if (isFull) {
+      lines.push("Период: " + periodStr);
+      var totB = 0;
+      var totW = 0;
+      var totP = 0;
+      for (var i = 0; i < list.length; i++) {
+        var r = list[i];
+        if (r.isOff) {
+          lines.push(formatShortDate(r.date) + " | Выходной");
+        } else {
+          totB += r.boxes;
+          totW = round2(totW + r.weight);
+          totP = round2(totP + r.pay);
+          lines.push(formatShortDate(r.date) + " | " + r.boxes + "кор | " + r.weight + "кг | " + r.pay + "₽");
+        }
       }
-      lines.push("Вес: " + totalWeight + " кг " + totalBoxes + " кор.");
-      return lines.join(NL);
+      lines.push("ИТОГ: " + totB + "кор | " + totW + "кг | " + totP + "₽");
+    } else {
+      if (state.isCustomRange && range.start !== range.end) {
+        lines.push(periodStr);
+      }
+      var sB = 0;
+      var sW = 0;
+      for (var j = 0; j < list.length; j++) {
+        if (!list[j].isOff) {
+          sB += list[j].boxes;
+          sW = round2(sW + list[j].weight);
+        }
+      }
+      lines.push("Вес: " + sW + " кг " + sB + " кор.");
     }
 
-    if (isSingle) {
-      lines.push("Вес: " + totalWeight + " кг " + totalBoxes + " кор.");
-      return lines.join(NL);
-    }
-
-    lines.push("Период: " + formatShortDate(state.rangeStart) + " – " + formatShortDate(state.rangeEnd));
-
-    var byDate = {};
-    var dateOrder = [];
-    for (var j = 0; j < filtered.length; j++) {
-      var r = filtered[j];
-      if (!byDate[r.date]) {
-        byDate[r.date] = { boxes: 0, weight: 0, pay: 0, isOff: false };
-        dateOrder.push(r.date);
-      }
-      if (r.isOff) {
-        byDate[r.date].isOff = true;
-      } else {
-        byDate[r.date].boxes += r.boxes;
-        byDate[r.date].weight = round1(byDate[r.date].weight + r.totalWeight);
-        byDate[r.date].pay = round2(byDate[r.date].pay + r.totalPay);
-      }
-    }
-
-    for (var k = 0; k < dateOrder.length; k++) {
-      var dt = dateOrder[k];
-      var item = byDate[dt];
-      if (item.isOff && item.weight === 0) {
-        lines.push(formatShortDate(dt) + " | Выходной");
-      } else {
-        lines.push(formatShortDate(dt) + " | " + item.boxes + "кор | " + item.weight + "кг | " + item.pay + "₽");
-      }
-    }
-
-    lines.push("ИТОГ: " + totalBoxes + "кор | " + totalWeight + "кг | " + totalPay + "₽");
     return lines.join(NL);
   }
 
   function openReportPreview(isFull) {
-    pendingReportText = buildReportText(isFull);
-    var modal = document.getElementById("reportModal");
-    var box = document.getElementById("reportPreviewText");
-    if (box) box.textContent = pendingReportText;
-    if (modal) modal.style.display = "flex";
+    var txt = buildReport(isFull);
+    document.getElementById("reportText").textContent = txt;
+    document.getElementById("reportModal").classList.add("open");
   }
 
-  function closeReportPreview() {
-    var modal = document.getElementById("reportModal");
-    if (modal) modal.style.display = "none";
-  }
+  function sendCurrentReport() {
+    var txt = document.getElementById("reportText").textContent || "";
+    document.getElementById("reportModal").classList.remove("open");
 
-  function copyTextSilent(text) {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).catch(function() {});
-      }
-    } catch (e) {}
-    try {
-      var ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-    } catch (e) {}
-  }
-
-  function sendReportSystem() {
-    var text = pendingReportText;
-    closeReportPreview();
-    if (!text) return;
-    copyTextSilent(text);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).catch(function () {});
+    }
 
     if (navigator.share) {
-      navigator.share({
-        title: "Отчёт обвалки",
-        text: text
-      }).catch(function() {
-        openAndroidIntent(text);
-      });
-    } else {
-      openAndroidIntent(text);
+      navigator.share({ text: txt }).catch(function () {});
+      return;
     }
-  }
 
-  function openAndroidIntent(text) {
-    var ua = navigator.userAgent || "";
-    if (/Android/i.test(ua)) {
-      var intentUrl = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encodeURIComponent(text) + ";end";
-      window.location.href = intentUrl;
-    } else {
+    try {
+      window.location.href = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encodeURIComponent(txt) + ";end";
+    } catch (e) {
       showToast("Отчёт скопирован в буфер обмена");
     }
   }
 
-  function saveManualBackup() {
-    var now = new Date();
-    var label = pad2(now.getDate()) + "." + pad2(now.getMonth() + 1) + "." + now.getFullYear() + " " + pad2(now.getHours()) + ":" + pad2(now.getMinutes()) + " (" + state.records.length + " зап.)";
-    state.backups.unshift({
-      id: "man_" + Date.now(),
-      label: label,
-      createdAt: Date.now(),
-      workerName: state.workerName,
-      lastRate: state.lastRate,
-      records: JSON.parse(JSON.stringify(state.records))
-    });
-    if (state.backups.length > 30) {
-      state.backups = state.backups.slice(0, 30);
-    }
-    persistState(function() {
-      showToast("База сохранена (" + state.records.length + " записей)");
-    });
-  }
-
-  function openBackupsModal() {
-    var modal = document.getElementById("backupModal");
-    renderBackupsList();
-    if (modal) modal.style.display = "flex";
-  }
-
-  function closeBackupsModal() {
-    var modal = document.getElementById("backupModal");
-    if (modal) modal.style.display = "none";
-  }
-
-  function renderBackupsList() {
-    var listEl = document.getElementById("backupsList");
-    if (!listEl) return;
-    listEl.innerHTML = "";
-
-    if (!state.backups || state.backups.length === 0) {
-      listEl.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:14px;font-size:13px;">Сохранённых копий пока нет</div>';
+  function renderBackupList() {
+    var box = document.getElementById("backupList");
+    box.innerHTML = "";
+    if (!state.backups.length) {
+      box.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:12px;padding:12px;">Резервных копий пока нет</div>';
       return;
     }
-
     for (var i = 0; i < state.backups.length; i++) {
-      (function(bk) {
-        var item = document.createElement("div");
-        item.className = "bk-item";
+      var bk = state.backups[i];
+      var cnt = (bk.data && Array.isArray(bk.data.records)) ? bk.data.records.length : 0;
+      var row = document.createElement("div");
+      row.className = "bk-row";
 
-        var info = document.createElement("div");
-        info.className = "bk-info";
-        info.textContent = bk.label;
+      var title = document.createElement("span");
+      title.textContent = bk.label + " (" + cnt + " зап.)";
 
-        var actions = document.createElement("div");
-        actions.className = "bk-actions";
+      var acts = document.createElement("div");
+      acts.className = "bk-acts";
 
-        var btnRest = document.createElement("button");
-        btnRest.type = "button";
-        btnRest.className = "bk-btn-restore";
-        btnRest.textContent = "Восстановить";
-        btnRest.onclick = function() {
-          var normRecs = [];
-          for (var k = 0; k < bk.records.length; k++) {
-            var nr = normalizeRecord(bk.records[k], bk.lastRate || state.lastRate);
-            if (nr) normRecs.push(nr);
-          }
-          state.records = normRecs;
-          if (bk.workerName) state.workerName = bk.workerName;
-          if (bk.lastRate) state.lastRate = bk.lastRate;
-          var wEl = document.getElementById("inpWorker");
-          var rEl = document.getElementById("inpRate");
-          if (wEl) wEl.value = state.workerName;
-          if (rEl) rEl.value = state.lastRate;
-          persistState();
-          renderAll();
-          closeBackupsModal();
-          showToast("Восстановлено записей: " + normRecs.length);
-        };
+      var useBtn = document.createElement("button");
+      useBtn.className = "bk-use";
+      useBtn.textContent = "Восстановить";
+      useBtn.dataset.idx = String(i);
 
-        var btnDel = document.createElement("button");
-        btnDel.type = "button";
-        btnDel.className = "bk-btn-del";
-        btnDel.textContent = "✕";
-        btnDel.onclick = function() {
-          askConfirm("Удалить копию «" + bk.label + "»?", function() {
-            state.backups = state.backups.filter(function(x) { return x.id !== bk.id; });
-            persistState();
-            renderBackupsList();
-          });
-        };
+      var delBtn = document.createElement("button");
+      delBtn.className = "bk-del";
+      delBtn.textContent = "✕";
+      delBtn.dataset.delIdx = String(i);
 
-        actions.appendChild(btnRest);
-        actions.appendChild(btnDel);
-        item.appendChild(info);
-        item.appendChild(actions);
-        listEl.appendChild(item);
-      })(state.backups[i]);
+      acts.appendChild(useBtn);
+      acts.appendChild(delBtn);
+      row.appendChild(title);
+      row.appendChild(acts);
+      box.appendChild(row);
     }
   }
 
-  function askConfirm(text, onYes) {
-    var modal = document.getElementById("confirmModal");
-    var txtEl = document.getElementById("confirmText");
-    var yesBtn = document.getElementById("confirmYes");
-    var noBtn = document.getElementById("confirmNo");
-    if (!modal || !txtEl || !yesBtn || !noBtn) {
-      if (window.confirm(text)) onYes();
-      return;
-    }
-    txtEl.textContent = text;
-    modal.style.display = "flex";
-    yesBtn.onclick = function() {
-      modal.style.display = "none";
-      onYes();
-    };
-    noBtn.onclick = function() {
-      modal.style.display = "none";
-    };
-  }
-
-  function exportCodeToClipboard() {
-    var payload = {
-      v: APP_VERSION,
-      w: state.workerName,
-      r: state.lastRate,
-      d: state.records
-    };
-    var code = "OBV1:" + btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    copyTextSilent(code);
-    showToast("Код базы скопирован в буфер обмена");
-  }
-
-  function importCodeFromPrompt() {
-    var box = document.getElementById("codeImportArea");
-    if (!box) return;
-    box.style.display = box.style.display === "none" ? "block" : "none";
-  }
-
-  function applyImportedCode() {
-    var inp = document.getElementById("inpImportCode");
-    if (!inp) return;
-    var raw = inp.value.trim();
-    if (!raw) {
-      showToast("Вставьте код базы");
-      return;
-    }
-    try {
-      if (raw.indexOf("OBV1:") === 0) raw = raw.slice(5);
-      var json = decodeURIComponent(escape(atob(raw)));
-      var obj = JSON.parse(json);
-      if (!obj || !Array.isArray(obj.d)) throw new Error("bad format");
-      var list = [];
-      for (var i = 0; i < obj.d.length; i++) {
-        var nr = normalizeRecord(obj.d[i], obj.r || state.lastRate);
-        if (nr) list.push(nr);
+  function runUpdateFlow() {
+    showToast("Шаг 1/3: Сохранение базы...", 2000);
+    createBackupSnapshot("(перед обн.)");
+    saveAllStorages(true).then(function () {
+      showToast("Шаг 2/3: Очистка кэша...", 2000);
+      var tasks = [];
+      if (window.caches && caches.keys) {
+        tasks.push(caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        }));
       }
-      state.records = list;
-      if (obj.w) state.workerName = obj.w;
-      if (obj.r) state.lastRate = obj.r;
-      var wEl = document.getElementById("inpWorker");
-      var rEl = document.getElementById("inpRate");
-      if (wEl) wEl.value = state.workerName;
-      if (rEl) rEl.value = state.lastRate;
-      persistState();
-      renderAll();
-      closeBackupsModal();
-      showToast("База перенесена (" + list.length + " записей)");
-    } catch (e) {
-      showToast("Неверный формат кода базы");
-    }
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        tasks.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all(regs.map(function (r) { return r.unregister(); }));
+        }));
+      }
+      Promise.all(tasks).then(function () {
+        showToast("Шаг 3/3: Перезагрузка...", 1500);
+        setTimeout(function () {
+          var baseUrl = window.location.href.split("?")[0];
+          window.location.replace(baseUrl + "?v=" + Date.now());
+        }, 700);
+      });
+    });
   }
 
-  function runSafeUpdate() {
-    if (window.location.protocol === "file:") {
-      showToast("Локальный режим (v " + APP_VERSION + ")");
-      return;
+  function refreshAll() {
+    applyTheme();
+    document.getElementById("verLabel").textContent = "v " + APP_VERSION;
+    document.getElementById("workerInput").value = state.workerName;
+    if (state.defaultRate && !document.getElementById("rateInput").value) {
+      document.getElementById("rateInput").value = state.defaultRate;
     }
-
-    var now = new Date();
-    var updLabel = pad2(now.getDate()) + "." + pad2(now.getMonth() + 1) + " " + pad2(now.getHours()) + ":" + pad2(now.getMinutes()) + " (перед обн.)";
-    state.backups.unshift({
-      id: "upd_" + Date.now(),
-      label: updLabel,
-      createdAt: Date.now(),
-      workerName: state.workerName,
-      lastRate: state.lastRate,
-      records: JSON.parse(JSON.stringify(state.records))
-    });
-    if (state.backups.length > 30) {
-      state.backups = state.backups.slice(0, 30);
-    }
-
-    showToast("Шаг 1/3: Сохранение базы (" + state.records.length + " зап.)...", 3000);
-    persistState(function() {
-      setTimeout(function() {
-        showToast("Шаг 2/3: Очистка кэша...", 3000);
-        var tasks = [];
-        if (window.caches && window.caches.keys) {
-          tasks.push(window.caches.keys().then(function(keys) {
-            return Promise.all(keys.map(function(k) { return window.caches.delete(k); }));
-          }).catch(function() {}));
-        }
-        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-          tasks.push(navigator.serviceWorker.getRegistrations().then(function(regs) {
-            return Promise.all(regs.map(function(r) { return r.unregister(); }));
-          }).catch(function() {}));
-        }
-        Promise.all(tasks).then(function() {
-          setTimeout(function() {
-            showToast("Шаг 3/3: Перезагрузка...", 2000);
-            try {
-              window.sessionStorage.setItem("obvalka_just_updated", String(state.records.length));
-            } catch (e) {}
-            window.location.reload(true);
-          }, 700);
-        });
-      }, 700);
-    });
+    renderCalendar();
+    renderRecordsAndSummary();
+    updateShiftPreview();
+    updateUndoButton();
   }
 
   function bindEvents() {
-    var tabs = document.querySelectorAll(".mode-tab");
-    for (var i = 0; i < tabs.length; i++) {
-      tabs[i].onclick = function() {
-        applyPeriodMode(this.getAttribute("data-mode"));
-      };
-    }
+    document.getElementById("prevMonthBtn").addEventListener("click", function () {
+      state.viewMonth--;
+      if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
+      renderCalendar();
+    });
 
-    var btnPrev = document.getElementById("btnPrevMonth");
-    if (btnPrev) {
-      btnPrev.onclick = function() {
-        var m = state.viewMonth - 1;
-        var y = state.viewYear;
-        if (m < 0) { m = 11; y--; }
-        window.ObvalkaApp.onMonthChange(y, m);
-      };
-    }
+    document.getElementById("nextMonthBtn").addEventListener("click", function () {
+      state.viewMonth++;
+      if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+      renderCalendar();
+    });
 
-    var btnNext = document.getElementById("btnNextMonth");
-    if (btnNext) {
-      btnNext.onclick = function() {
-        var m = state.viewMonth + 1;
-        var y = state.viewYear;
-        if (m > 11) { m = 0; y++; }
-        window.ObvalkaApp.onMonthChange(y, m);
-      };
-    }
+    document.getElementById("themeBtn").addEventListener("click", function () {
+      state.theme = state.theme === "dark" ? "light" : "dark";
+      applyTheme();
+      saveAllStorages(true);
+    });
 
-    var btnTheme = document.getElementById("btnTheme");
-    if (btnTheme) {
-      btnTheme.onclick = function() {
-        state.theme = state.theme === "dark" ? "light" : "dark";
-        persistState();
-        applyTheme();
-      };
-    }
+    document.getElementById("updateBtn").addEventListener("click", runUpdateFlow);
 
-    var btnUpdate = document.getElementById("btnUpdate");
-    if (btnUpdate) {
-      btnUpdate.onclick = runSafeUpdate;
-    }
+    document.getElementById("periodTabs").addEventListener("click", function (e) {
+      var btn = e.target.closest(".tab-btn");
+      if (!btn) return;
+      applyPeriodPreset(btn.dataset.mode);
+      renderCalendar();
+      renderRecordsAndSummary();
+    });
 
-    var btnDayOff = document.getElementById("btnDayOff");
-    if (btnDayOff) {
-      btnDayOff.onclick = function() { addRecord(true); };
-    }
+    var calGrid = document.getElementById("calGrid");
+    calGrid.addEventListener("pointerdown", function (e) {
+      var cell = e.target.closest(".day-cell");
+      if (!cell || !cell.dataset.key) return;
+      dragActive = true;
+      dragAnchorKey = cell.dataset.key;
+      state.selectedStart = dragAnchorKey;
+      state.selectedEnd = dragAnchorKey;
+      if (state.periodMode !== "day") {
+        applyPeriodPreset(state.periodMode);
+      } else {
+        state.isCustomRange = false;
+      }
+      renderCalendar();
+      renderRecordsAndSummary();
+    });
 
-    var btnAdd = document.getElementById("btnAddRecord");
-    if (btnAdd) {
-      btnAdd.onclick = function() { addRecord(false); };
-    }
+    calGrid.addEventListener("pointermove", function (e) {
+      if (!dragActive) return;
+      var el = document.elementFromPoint(e.clientX, e.clientY);
+      var cell = el ? el.closest(".day-cell") : null;
+      if (!cell || !cell.dataset.key) return;
+      if (cell.dataset.key !== dragAnchorKey) {
+        state.isCustomRange = true;
+        state.selectedStart = dragAnchorKey;
+        state.selectedEnd = cell.dataset.key;
+        renderCalendar();
+        renderRecordsAndSummary();
+      }
+    });
 
-    var btnUndo = document.getElementById("btnUndo");
-    if (btnUndo) {
-      btnUndo.onclick = undoDelete;
-    }
+    window.addEventListener("pointerup", function () { dragActive = false; });
 
-    var inpWorker = document.getElementById("inpWorker");
-    if (inpWorker) {
-      inpWorker.oninput = function() {
-        state.workerName = this.value.trim();
-        persistState();
-      };
-    }
+    document.getElementById("offDayBtn").addEventListener("click", function () {
+      var range = getOrderedRange();
+      ensureDailyAutoBackup();
+      state.records.push({
+        id: Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        date: range.start,
+        isOff: true,
+        boxes: 0,
+        boxWeight: 0,
+        weight: 0,
+        rate: 0,
+        pay: 0
+      });
+      saveAllStorages(true);
+      renderCalendar();
+      renderRecordsAndSummary();
+      showToast("Выходной добавлен");
+    });
 
-    var inpBoxes = document.getElementById("inpBoxes");
-    var inpBoxWeight = document.getElementById("inpBoxWeight");
-    var inpRate = document.getElementById("inpRate");
-    if (inpBoxes) inpBoxes.oninput = updateShiftPreview;
-    if (inpBoxWeight) inpBoxWeight.oninput = updateShiftPreview;
-    if (inpRate) {
-      inpRate.oninput = function() {
-        var v = cleanNum(this.value);
-        if (v > 0) state.lastRate = round2(v);
-        updateShiftPreview();
-      };
-    }
+    document.getElementById("workerInput").addEventListener("input", function (e) {
+      state.workerName = e.target.value;
+      saveAllStorages(true);
+    });
 
-    var btnFullRep = document.getElementById("btnFullReport");
-    if (btnFullRep) btnFullRep.onclick = function() { openReportPreview(true); };
+    document.getElementById("boxesInput").addEventListener("input", updateShiftPreview);
+    document.getElementById("weightInput").addEventListener("input", updateShiftPreview);
+    document.getElementById("rateInput").addEventListener("input", function (e) {
+      state.defaultRate = e.target.value;
+      updateShiftPreview();
+      saveAllStorages(true);
+    });
 
-    var btnShortRep = document.getElementById("btnShortReport");
-    if (btnShortRep) btnShortRep.onclick = function() { openReportPreview(false); };
+    document.getElementById("addRecordBtn").addEventListener("click", function () {
+      var boxes = Math.round(cleanNum(document.getElementById("boxesInput").value));
+      var boxW = cleanNum(document.getElementById("weightInput").value);
+      var rate = cleanNum(document.getElementById("rateInput").value);
 
-    var btnRepCancel = document.getElementById("btnReportCancel");
-    if (btnRepCancel) btnRepCancel.onclick = closeReportPreview;
+      var totalW = (boxes > 0 && boxW > 0) ? round2(boxes * boxW) : round2(boxW);
+      if (totalW <= 0) {
+        showToast("Введите вес коробки или общий вес");
+        return;
+      }
 
-    var btnRepSend = document.getElementById("btnReportSend");
-    if (btnRepSend) btnRepSend.onclick = sendReportSystem;
+      var range = getOrderedRange();
+      ensureDailyAutoBackup();
+      state.records.push({
+        id: Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        date: range.start,
+        isOff: false,
+        boxes: boxes,
+        boxWeight: round2(boxW),
+        weight: totalW,
+        rate: round2(rate),
+        pay: round2(totalW * rate)
+      });
 
-    var btnSaveDb = document.getElementById("btnSaveDb");
-    if (btnSaveDb) btnSaveDb.onclick = saveManualBackup;
+      document.getElementById("boxesInput").value = "";
+      document.getElementById("weightInput").value = "";
+      updateShiftPreview();
+      saveAllStorages(true);
+      renderCalendar();
+      renderRecordsAndSummary();
+      showToast("Запись добавлена");
+    });
 
-    var btnOpenDb = document.getElementById("btnOpenDb");
-    if (btnOpenDb) btnOpenDb.onclick = openBackupsModal;
+    document.getElementById("recordsList").addEventListener("click", function (e) {
+      var btn = e.target.closest(".rec-del");
+      if (!btn) return;
+      var id = btn.dataset.id;
+      for (var i = 0; i < state.records.length; i++) {
+        if (state.records[i].id === id) {
+          deletedHistory.push(state.records[i]);
+          state.records.splice(i, 1);
+          break;
+        }
+      }
+      saveAllStorages(true);
+      renderCalendar();
+      renderRecordsAndSummary();
+      updateUndoButton();
+    });
 
-    var btnCloseBk = document.getElementById("btnCloseBackup");
-    if (btnCloseBk) btnCloseBk.onclick = closeBackupsModal;
+    document.getElementById("undoBtn").addEventListener("click", function () {
+      if (!deletedHistory.length) return;
+      var item = deletedHistory.pop();
+      state.records.push(item);
+      saveAllStorages(true);
+      renderCalendar();
+      renderRecordsAndSummary();
+      updateUndoButton();
+      showToast("Запись возвращена");
+    });
 
-    var btnExpCode = document.getElementById("btnExportCode");
-    if (btnExpCode) btnExpCode.onclick = exportCodeToClipboard;
+    document.getElementById("fullReportBtn").addEventListener("click", function () { openReportPreview(true); });
+    document.getElementById("shortReportBtn").addEventListener("click", function () { openReportPreview(false); });
+    document.getElementById("closeReportBtn").addEventListener("click", function () {
+      document.getElementById("reportModal").classList.remove("open");
+    });
+    document.getElementById("sendReportBtn").addEventListener("click", sendCurrentReport);
 
-    var btnImpToggle = document.getElementById("btnImportToggle");
-    if (btnImpToggle) btnImpToggle.onclick = importCodeFromPrompt;
+    document.getElementById("saveBackupBtn").addEventListener("click", function () {
+      createBackupSnapshot("");
+      saveAllStorages(true);
+      showToast("Резервная копия сохранена");
+    });
 
-    var btnImpApply = document.getElementById("btnImportApply");
-    if (btnImpApply) btnImpApply.onclick = applyImportedCode;
+    document.getElementById("openRestoreBtn").addEventListener("click", function () {
+      renderBackupList();
+      document.getElementById("confirmDeleteBox").classList.remove("open");
+      document.getElementById("restoreModal").classList.add("open");
+    });
+
+    document.getElementById("closeRestoreBtn").addEventListener("click", function () {
+      document.getElementById("restoreModal").classList.remove("open");
+    });
+
+    document.getElementById("backupList").addEventListener("click", function (e) {
+      var useBtn = e.target.closest(".bk-use");
+      if (useBtn) {
+        var idx = Number(useBtn.dataset.idx);
+        var bk = state.backups[idx];
+        if (bk && bk.data) {
+          var norm = normalizePayload(bk.data);
+          if (norm) {
+            state.records = norm.records;
+            if (norm.workerName) state.workerName = norm.workerName;
+            if (norm.defaultRate) {
+              state.defaultRate = norm.defaultRate;
+              document.getElementById("rateInput").value = norm.defaultRate;
+            }
+            saveAllStorages(true);
+            refreshAll();
+            document.getElementById("restoreModal").classList.remove("open");
+            showToast("База восстановлена (" + state.records.length + " зап.)");
+          }
+        }
+        return;
+      }
+
+      var delBtn = e.target.closest(".bk-del");
+      if (delBtn) {
+        pendingDeleteBackupIdx = Number(delBtn.dataset.delIdx);
+        document.getElementById("confirmDeleteBox").classList.add("open");
+      }
+    });
+
+    document.getElementById("cancelDelBkBtn").addEventListener("click", function () {
+      pendingDeleteBackupIdx = -1;
+      document.getElementById("confirmDeleteBox").classList.remove("open");
+    });
+
+    document.getElementById("confirmDelBkBtn").addEventListener("click", function () {
+      if (pendingDeleteBackupIdx >= 0 && pendingDeleteBackupIdx < state.backups.length) {
+        state.backups.splice(pendingDeleteBackupIdx, 1);
+        saveAllStorages(true);
+        renderBackupList();
+        showToast("Копия удалена");
+      }
+      pendingDeleteBackupIdx = -1;
+      document.getElementById("confirmDeleteBox").classList.remove("open");
+    });
+
+    document.getElementById("copyCodeBtn").addEventListener("click", function () {
+      var code = btoa(unescape(encodeURIComponent(JSON.stringify(getSerializableState()))));
+      var inp = document.getElementById("transferCodeInput");
+      inp.value = code;
+      inp.select();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).catch(function () {});
+      }
+      showToast("Код базы скопирован");
+    });
+
+    document.getElementById("importCodeBtn").addEventListener("click", function () {
+      var code = document.getElementById("transferCodeInput").value.trim();
+      if (!code) { showToast("Вставьте код переноса"); return; }
+      try {
+        var json = decodeURIComponent(escape(atob(code)));
+        var norm = normalizePayload(JSON.parse(json));
+        if (!norm) throw new Error("bad");
+        state.records = norm.records;
+        state.workerName = norm.workerName;
+        state.defaultRate = norm.defaultRate;
+        if (norm.backups.length) state.backups = norm.backups;
+        saveAllStorages(true);
+        refreshAll();
+        document.getElementById("restoreModal").classList.remove("open");
+        showToast("База загружена из кода");
+      } catch (e) {
+        showToast("Неверный код переноса");
+      }
+    });
   }
 
-  function init() {
-    var lsData = readFromLocalStorage();
-    var wnData = readFromWindowName();
-
-    readFromIdb(function(idbData) {
-      state = pickBestState([lsData, idbData, wnData]);
-      var today = new Date();
-      state.viewYear = today.getFullYear();
-      state.viewMonth = today.getMonth();
-      state.mode = "day";
-      state.rangeStart = toIso(today);
-      state.rangeEnd = toIso(today);
-      state.manualRange = false;
-
-      var wEl = document.getElementById("inpWorker");
-      var rEl = document.getElementById("inpRate");
-      if (wEl) wEl.value = state.workerName || "";
-      if (rEl) rEl.value = state.lastRate || 9.5;
-
-      bindEvents();
-      persistState();
-      renderAll();
-
-      try {
-        var updCount = window.sessionStorage.getItem("obvalka_just_updated");
-        if (updCount !== null) {
-          window.sessionStorage.removeItem("obvalka_just_updated");
-          showToast("Обновлено до v " + APP_VERSION + " • Записей: " + state.records.length, 2800);
-        }
-      } catch (e) {}
+  function boot() {
+    bindEvents();
+    refreshAll();
+    loadInitialState().then(function () {
+      refreshAll();
     });
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", boot);
   } else {
-    init();
+    boot();
   }
 })();
