@@ -3,646 +3,665 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Обвалка PRO</title>
+<title>Обвалка PRO v 7.7</title>
 <style>
-:root {
-  --bg: #121212;
-  --card: #1e1e1e;
-  --card-2: #262626;
-  --border: #3a3a3a;
-  --cell-border: #383838;
-  --text: #f3f4f6;
-  --muted: #9ca3af;
-  --green: #16a34a;
-  --green-dark: #14532d;
-  --green-soft: rgba(22, 163, 74, 0.14);
-  --yellow: #eab308;
-  --yellow-soft: rgba(234, 179, 8, 0.22);
-  --red: #ef4444;
-  --red-soft: rgba(239, 68, 68, 0.14);
-  --blue: #2563eb;
-  --input-bg: #2a2a2a;
-  --input-border: #525252;
-}
-body.light {
-  --bg: #f3f4f6;
-  --card: #ffffff;
-  --card-2: #f9fafb;
-  --border: #d1d5db;
-  --cell-border: #cbd5e1;
-  --text: #111827;
-  --muted: #6b7280;
-  --green: #16a34a;
-  --green-dark: #15803d;
-  --green-soft: rgba(22, 163, 74, 0.12);
-  --yellow: #eab308;
-  --yellow-soft: rgba(234, 179, 8, 0.26);
-  --red: #dc2626;
-  --red-soft: rgba(220, 38, 38, 0.1);
-  --blue: #2563eb;
-  --input-bg: #ffffff;
-  --input-border: #9ca3af;
-}
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  display: flex;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 6px;
-}
-.app {
-  width: 100%;
-  max-width: 440px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 8px;
-}
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-.nav-btn, .icon-btn {
-  background: var(--card-2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 8px;
-  height: 30px;
-  min-width: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-}
-.month-title-wrap {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  justify-content: center;
-  flex: 1;
-}
-.month-title {
-  font-size: 16px;
-  font-weight: 700;
-}
-.ver-badge {
-  font-size: 10px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.72);
-}
-body.light .ver-badge {
-  color: rgba(17, 24, 39, 0.65);
-}
-.tabs {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-  margin-bottom: 6px;
-}
-.tab {
-  background: var(--card-2);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 7px;
-  padding: 5px 2px;
-  font-size: 11px;
-  font-weight: 600;
-  text-align: center;
-  cursor: pointer;
-}
-.tab.active {
-  background: var(--green);
-  border-color: var(--green);
-  color: #fff;
-}
-.weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--muted);
-  margin-bottom: 3px;
-}
-.days-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  user-select: none;
-  touch-action: pan-y;
-}
-.day-cell {
-  height: 26px;
-  border-radius: 6px;
-  border: 1px solid var(--cell-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 600;
-  position: relative;
-  cursor: pointer;
-  background: var(--card-2);
-}
-.day-cell.other-month {
-  opacity: 0.35;
-}
-.day-cell.in-range {
-  background: var(--yellow-soft);
-  border-color: rgba(234, 179, 8, 0.55);
-}
-.day-cell.active {
-  background: var(--yellow);
-  border-color: var(--yellow);
-  color: #111827;
-  font-weight: 800;
-}
-.day-cell.today {
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.day-cell.has-data::after {
-  content: "";
-  position: absolute;
-  bottom: 2px;
-  left: 24%;
-  right: 24%;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--green);
-}
-.day-cell.active.has-data::after {
-  background: #111827;
-}
-.day-cell.is-off::before {
-  content: "✕";
-  position: absolute;
-  top: 1px;
-  right: 2px;
-  font-size: 8px;
-  color: var(--red);
-  font-weight: 800;
-  line-height: 1;
-}
-.hint-text {
-  text-align: center;
-  font-size: 10px;
-  color: var(--muted);
-  margin: 4px 0 5px;
-}
-.off-btn-wide {
-  width: 100%;
-  height: 24px;
-  border-radius: 7px;
-  border: 1px solid var(--red);
-  background: var(--red-soft);
-  color: var(--red);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-}
-.section-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--muted);
-  margin-bottom: 5px;
-  text-transform: uppercase;
-}
-.records-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: 115px;
-  overflow-y: auto;
-}
-.rec-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--card-2);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 5px 8px;
-  font-size: 12px;
-}
-.rec-del {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--red);
-  border-radius: 5px;
-  width: 22px;
-  height: 22px;
-  cursor: pointer;
-  font-size: 11px;
-}
-.summary-box {
-  background: var(--green-soft);
-  border: 1px solid var(--green);
-  border-radius: 12px;
-  padding: 8px 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.sum-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--green);
-  text-transform: uppercase;
-}
-.sum-sub {
-  font-size: 13px;
-  font-weight: 700;
-  margin: 2px 0;
-}
-.sum-money {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--yellow);
-}
-.report-btns {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 126px;
-}
-.rep-btn {
-  border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  text-align: center;
-}
-.rep-btn.full {
-  background: var(--green);
-  border-color: var(--green);
-  color: #fff;
-}
-.rep-btn.short {
-  background: var(--card);
-  color: var(--text);
-}
-.form-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  margin-bottom: 6px;
-}
-.form-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 5px;
-}
-.form-row label {
-  font-size: 13px;
-  font-weight: 600;
-}
-.form-row input {
-  width: 150px;
-  height: 32px;
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
-  border-radius: 7px;
-  color: var(--text);
-  padding: 0 10px;
-  font-size: 14px;
-  font-weight: 700;
-  text-align: right;
-  outline: none;
-}
-.form-row input:focus {
-  border-color: var(--green);
-}
-.shift-preview {
-  background: var(--card-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 6px 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-.add-btn {
-  width: 100%;
-  height: 36px;
-  background: var(--green);
-  border: none;
-  border-radius: 9px;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.bottom-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-}
-.base-btn {
-  background: var(--card);
-  border: 1px solid var(--input-border);
-  color: var(--text);
-  border-radius: 9px;
-  height: 34px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.undo-bar {
-  display: flex;
-  gap: 6px;
-}
-.undo-btn {
-  flex: 1;
-  background: var(--yellow);
-  color: #111827;
-  border: none;
-  border-radius: 8px;
-  height: 30px;
-  font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.clear-undo-btn {
-  background: var(--red);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 0 10px;
-  height: 30px;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.modal-bg {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.72);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
-  z-index: 1000;
-}
-.modal-bg.top-modal {
-  z-index: 2000;
-}
-.modal-bg.open {
-  display: flex;
-}
-.modal-card {
-  width: 100%;
-  max-width: 400px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.modal-title {
-  font-size: 15px;
-  font-weight: 700;
-}
-.modal-textarea {
-  width: 100%;
-  min-height: 150px;
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
-  border-radius: 8px;
-  color: var(--text);
-  padding: 8px;
-  font-family: monospace;
-  font-size: 12px;
-  resize: none;
-}
-.modal-btns {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-}
-.m-btn {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--card-2);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.m-btn.primary {
-  background: var(--green);
-  border-color: var(--green);
-  color: #fff;
-}
-.m-btn.danger {
-  background: var(--red);
-  border-color: var(--red);
-  color: #fff;
-}
-.backup-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 240px;
-  overflow-y: auto;
-}
-.backup-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  background: var(--card-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 12px;
-}
-.toast {
-  position: fixed;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #1f2937;
-  color: #fff;
-  border: 1px solid #4b5563;
-  padding: 8px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  z-index: 3000;
-  display: none;
-  text-align: center;
-  max-width: 90%;
-}
+  :root {
+    --bg: #121212;
+    --card: #1e1e1e;
+    --border: #2c2c2c;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --input-bg: #262626;
+    --green: #16a34a;
+    --green-dark: #14532d;
+    --yellow: #facc15;
+    --yellow-text: #111827;
+    --red: #dc2626;
+    --day-bg: #262626;
+    --day-border: #383838;
+  }
+  body.light {
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --muted: #64748b;
+    --input-bg: #f8fafc;
+    --green: #16a34a;
+    --green-dark: #dcfce7;
+    --yellow: #facc15;
+    --yellow-text: #111827;
+    --red: #dc2626;
+    --day-bg: #f8fafc;
+    --day-border: #cbd5e1;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  body {
+    margin: 0;
+    padding: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+  }
+  .app {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+  }
+  .cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .nav-btn {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 34px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .month-title-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .month-title {
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .ver-tag {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .top-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .icon-btn {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+  .tab {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 2px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+  }
+  .tab.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+  .weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    touch-action: none;
+  }
+  .day-cell {
+    height: 26px;
+    border-radius: 6px;
+    background: var(--day-bg);
+    border: 1px solid var(--day-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    position: relative;
+    cursor: pointer;
+  }
+  .day-cell.other-month {
+    opacity: 0.35;
+  }
+  .day-cell.in-range {
+    background: rgba(250, 204, 21, 0.22);
+    border-color: rgba(250, 204, 21, 0.55);
+  }
+  .day-cell.selected {
+    background: var(--yellow) !important;
+    border-color: var(--yellow) !important;
+    color: var(--yellow-text) !important;
+    font-weight: 800;
+  }
+  .day-cell.is-off::after {
+    content: "✕";
+    position: absolute;
+    font-size: 17px;
+    color: rgba(239, 68, 68, 0.85);
+    pointer-events: none;
+    line-height: 1;
+  }
+  .day-dot {
+    width: 14px;
+    height: 2px;
+    border-radius: 2px;
+    background: #22c55e;
+    position: absolute;
+    bottom: 2px;
+  }
+  .day-cell.selected .day-dot {
+    background: #111827;
+  }
+  .hint {
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    margin: 5px 0 6px;
+  }
+  .off-btn {
+    width: 100%;
+    height: 25px;
+    background: rgba(220, 38, 38, 0.12);
+    border: 1px solid rgba(220, 38, 38, 0.55);
+    color: #f87171;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  body.light .off-btn {
+    color: #dc2626;
+  }
+  .sec-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .records-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 8px;
+    max-height: 135px;
+    overflow-y: auto;
+  }
+  .rec-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+  .rec-item.off-rec {
+    border-color: rgba(220, 38, 38, 0.45);
+    color: #f87171;
+  }
+  .del-rec-btn {
+    background: rgba(220, 38, 38, 0.16);
+    border: 1px solid rgba(220, 38, 38, 0.5);
+    color: #f87171;
+    border-radius: 6px;
+    padding: 2px 7px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .summary-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(22, 163, 74, 0.14);
+    border: 1px solid rgba(22, 163, 74, 0.45);
+    border-radius: 10px;
+    padding: 8px 10px;
+  }
+  .sum-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #22c55e;
+    text-transform: uppercase;
+  }
+  .sum-sub {
+    font-size: 13px;
+    font-weight: 700;
+    margin: 2px 0;
+  }
+  .sum-money {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--yellow);
+  }
+  body.light .sum-money {
+    color: #ca8a04;
+  }
+  .rep-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .rep-btn {
+    border-radius: 7px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--border);
+  }
+  .rep-full {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+  .rep-short {
+    background: var(--input-bg);
+    color: var(--text);
+  }
+  .undo-bar {
+    display: none;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .undo-btn {
+    flex: 1;
+    background: var(--yellow);
+    color: var(--yellow-text);
+    border: none;
+    border-radius: 7px;
+    padding: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .clear-all-btn {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .form-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .form-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .form-row label {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .form-input {
+    width: 145px;
+    height: 32px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 0 10px;
+    text-align: right;
+    font-size: 14px;
+    font-weight: 700;
+    outline: none;
+    user-select: text;
+    -webkit-appearance: none;
+  }
+  .shift-preview {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    margin: 6px 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .add-btn {
+    width: 100%;
+    height: 36px;
+    background: var(--green);
+    border: none;
+    border-radius: 9px;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .bottom-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .db-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    height: 36px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+  }
+  .modal-bg.top-modal {
+    z-index: 2000;
+  }
+  .modal-box {
+    width: 100%;
+    max-width: 400px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .modal-title {
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .preview-area {
+    width: 100%;
+    height: 170px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 8px;
+    font-family: monospace;
+    font-size: 12px;
+    resize: none;
+    user-select: text;
+    margin-bottom: 10px;
+  }
+  .modal-btns {
+    display: flex;
+    gap: 8px;
+  }
+  .m-btn {
+    flex: 1;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .m-cancel {
+    background: var(--input-bg);
+    color: var(--text);
+  }
+  .m-send {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+  .backup-list {
+    max-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .backup-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  .b-actions {
+    display: flex;
+    gap: 5px;
+  }
+  .b-rest {
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .b-del {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 7px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .toast {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 3000;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="card">
-    <div class="header">
+    <div class="cal-header">
       <button class="nav-btn" id="prevMonthBtn">◀</button>
       <div class="month-title-wrap">
-        <span class="month-title" id="monthTitle">Ноябрь 2026</span>
-        <span class="ver-badge" id="verBadge">v 7.7</span>
+        <span class="month-title" id="monthLabel">Ноябрь 2026</span>
+        <span class="ver-tag">v 7.7</span>
       </div>
-      <button class="icon-btn" id="updateBtn" title="Обновить">🔄</button>
-      <button class="icon-btn" id="themeBtn" title="Тема">☀️</button>
-      <button class="nav-btn" id="nextMonthBtn">▶</button>
+      <div class="top-actions">
+        <button class="icon-btn" id="updateBtn" title="Обновить">🔄</button>
+        <button class="icon-btn" id="themeBtn" title="Тема">☀️</button>
+        <button class="nav-btn" id="nextMonthBtn">▶</button>
+      </div>
     </div>
 
-    <div class="tabs" id="modeTabs">
-      <div class="tab active" data-mode="day">День</div>
-      <div class="tab" data-mode="week">Неделя</div>
-      <div class="tab" data-mode="half">2х недели</div>
-      <div class="tab" data-mode="month">Месяц</div>
-      <div class="tab" data-mode="year">Год</div>
+    <div class="tabs" id="periodTabs">
+      <button class="tab active" data-mode="day">День</button>
+      <button class="tab" data-mode="week">Неделя</button>
+      <button class="tab" data-mode="2week">2х недели</button>
+      <button class="tab" data-mode="month">Месяц</button>
+      <button class="tab" data-mode="year">Год</button>
     </div>
 
     <div class="weekdays">
       <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
     </div>
     <div class="days-grid" id="daysGrid"></div>
-    <div class="hint-text">Нажмите на день или протяните пальцем для выбора периода</div>
-    <button class="off-btn-wide" id="toggleOffBtn">✕ ВЫХОДНОЙ</button>
+    <div class="hint">Нажмите на день или протяните пальцем для выбора периода</div>
+    <button class="off-btn" id="toggleOffBtn">✕ ВЫХОДНОЙ</button>
   </div>
 
   <div class="card">
-    <div class="section-head">
+    <div class="sec-head">
       <span id="recordsHeader">ЗАПИСИ (ДЕНЬ)</span>
-      <span id="recordsCount"></span>
+      <span id="recordsCount">0 ШТ.</span>
     </div>
     <div class="records-list" id="recordsList"></div>
-  </div>
 
-  <div class="summary-box">
-    <div>
-      <div class="sum-label" id="sumTitle">ИТОГ ЗА ДЕНЬ</div>
-      <div class="sum-sub" id="sumStats">0 кор. • 0 кг</div>
-      <div class="sum-money" id="sumMoney">0 ₽</div>
+    <div class="summary-box">
+      <div>
+        <div class="sum-label" id="sumTitle">ИТОГ ЗА ДЕНЬ</div>
+        <div class="sum-sub" id="sumSub">0 кор. • 0 кг</div>
+        <div class="sum-money" id="sumMoney">0 ₽</div>
+      </div>
+      <div class="rep-btns">
+        <button class="rep-btn rep-full" id="fullReportBtn">📤 Полный отчёт</button>
+        <button class="rep-btn rep-short" id="shortReportBtn">📋 Краткий отчёт</button>
+      </div>
     </div>
-    <div class="report-btns">
-      <button class="rep-btn full" id="fullReportBtn">📤 Полный отчёт</button>
-      <button class="rep-btn short" id="shortReportBtn">📋 Краткий отчёт</button>
+
+    <div class="undo-bar" id="undoBar">
+      <button class="undo-btn" id="undoBtn">↩ Отменить (0)</button>
+      <button class="clear-all-btn" id="clearPeriodBtn">🗑 Очистить</button>
     </div>
   </div>
 
   <div class="card">
-    <div class="form-top">
+    <div class="form-head">
       <span style="color:var(--muted)">Выбрана дата:</span>
       <strong id="selectedDateLabel">22 ноября</strong>
     </div>
     <div class="form-row">
-      <label for="workerName">Обвальщик:</label>
-      <input type="text" id="workerName" placeholder="Имя">
+      <label for="workerInput">Обвальщик:</label>
+      <input type="text" class="form-input" id="workerInput" placeholder="Имя">
     </div>
     <div class="form-row">
       <label for="boxesInput">Коробки (шт):</label>
-      <input type="text" inputmode="numeric" id="boxesInput" placeholder="0">
+      <input type="text" inputmode="numeric" class="form-input" id="boxesInput" placeholder="0">
     </div>
     <div class="form-row">
-      <label for="weightInput">Вес коробки (кг):</label>
-      <input type="text" inputmode="decimal" id="weightInput" placeholder="00.0">
+      <label for="boxWeightInput">Вес коробки (кг):</label>
+      <input type="text" inputmode="decimal" class="form-input" id="boxWeightInput" placeholder="00.0">
     </div>
     <div class="form-row">
       <label for="rateInput">Ставка за 1 кг (₽):</label>
-      <input type="text" inputmode="decimal" id="rateInput" placeholder="0.0">
+      <input type="text" inputmode="decimal" class="form-input" id="rateInput" placeholder="0.0">
     </div>
     <div class="shift-preview">
       <span>ИТОГО ЗА СМЕНУ:</span>
-      <span><span id="previewWeight" style="color:var(--green)">0 кг</span> &nbsp; <span id="previewMoney" style="color:var(--yellow)">0 ₽</span></span>
+      <span><span style="color:#22c55e" id="previewWeight">0 кг</span> &nbsp;<span style="color:var(--yellow)" id="previewPay">0 ₽</span></span>
     </div>
     <button class="add-btn" id="addRecordBtn">+ ДОБАВИТЬ ЗАПИСЬ</button>
   </div>
 
-  <div class="undo-bar" id="undoBar" style="display:none;">
-    <button class="undo-btn" id="undoBtn">↩ Отменить удаление (0)</button>
-    <button class="clear-undo-btn" id="clearUndoBtn">Очистить</button>
-  </div>
-
-  <div class="bottom-actions">
-    <button class="base-btn" id="saveBaseBtn">💾 СОХРАНИТЬ БАЗУ</button>
-    <button class="base-btn" id="openRestoreBtn">📂 ВОССТАНОВИТЬ</button>
+  <div class="bottom-bar">
+    <button class="db-btn" id="saveDbBtn">💾 СОХРАНИТЬ БАЗУ</button>
+    <button class="db-btn" id="openRestoreBtn">📂 ВОССТАНОВИТЬ</button>
   </div>
 </div>
 
-<!-- Предпросмотр отчёта -->
+<!-- Окно предпросмотра отчёта -->
 <div class="modal-bg" id="reportModal">
-  <div class="modal-card">
-    <div class="modal-title" id="reportModalTitle">Отчёт</div>
-    <textarea class="modal-textarea" id="reportPreviewText" readonly></textarea>
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>Предпросмотр отчёта</span>
+    </div>
+    <textarea class="preview-area" id="reportText" readonly></textarea>
     <div class="modal-btns">
-      <button class="m-btn" id="cancelReportBtn">Отмена</button>
-      <button class="m-btn primary" id="sendReportBtn">📤 Отправить</button>
+      <button class="m-btn m-cancel" id="closeReportBtn">Отмена</button>
+      <button class="m-btn m-send" id="sendReportBtn">📤 Отправить</button>
     </div>
   </div>
 </div>
 
-<!-- Окно восстановления -->
+<!-- Окно восстановления базы -->
 <div class="modal-bg" id="restoreModal">
-  <div class="modal-card">
-    <div class="modal-title">Сохранённые копии в телефоне</div>
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>Сохранённые копии в телефоне</span>
+      <button class="b-rest" id="transferCodeBtn" style="background:#2563eb;">🔑 Код переноса</button>
+    </div>
     <div class="backup-list" id="backupList"></div>
-    <div class="modal-btns" style="justify-content:space-between;">
-      <button class="m-btn" id="transferCodeBtn">🔑 Перенос / Код</button>
-      <button class="m-btn" id="closeRestoreBtn">Закрыть</button>
-    </div>
-  </div>
-</div>
-
-<!-- Окно переноса по коду -->
-<div class="modal-bg top-modal" id="transferModal">
-  <div class="modal-card">
-    <div class="modal-title">Перенос базы по коду</div>
-    <textarea class="modal-textarea" id="transferTextarea" placeholder="Вставьте код базы сюда для восстановления или скопируйте текущий"></textarea>
-    <div class="modal-btns" style="justify-content:space-between;">
-      <button class="m-btn" id="copyCodeBtn">📋 Копировать код</button>
-      <div style="display:flex;gap:6px;">
-        <button class="m-btn primary" id="applyCodeBtn">Загрузить</button>
-        <button class="m-btn" id="closeTransferBtn">Закрыть</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Подтверждение действия -->
-<div class="modal-bg top-modal" id="confirmModal">
-  <div class="modal-card">
-    <div class="modal-title" id="confirmText">Вы уверены?</div>
     <div class="modal-btns">
-      <button class="m-btn" id="confirmNoBtn">Нет</button>
-      <button class="m-btn danger" id="confirmYesBtn">Да</button>
+      <button class="m-btn m-cancel" id="closeRestoreBtn">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- Окно кода переноса -->
+<div class="modal-bg top-modal" id="codeModal">
+  <div class="modal-box">
+    <div class="modal-title"><span>Перенос базы между телефонами</span></div>
+    <textarea class="preview-area" id="transferCodeArea" placeholder="Вставьте сюда код базы с другого телефона или скопируйте текущий..."></textarea>
+    <div class="modal-btns">
+      <button class="m-btn m-cancel" id="closeCodeBtn">Закрыть</button>
+      <button class="m-btn m-send" id="copyCodeBtn" style="background:#2563eb;">📋 Копировать</button>
+      <button class="m-btn m-send" id="importCodeBtn">📥 Загрузить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Окно подтверждения -->
+<div class="modal-bg top-modal" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-title"><span id="confirmTitle">Подтверждение</span></div>
+    <div id="confirmMsg" style="font-size:13px; margin-bottom:14px;">Вы уверены?</div>
+    <div class="modal-btns">
+      <button class="m-btn m-cancel" id="confirmNoBtn">Нет</button>
+      <button class="m-btn m-send" id="confirmYesBtn" style="background:var(--red);border-color:var(--red);">Да</button>
     </div>
   </div>
 </div>
