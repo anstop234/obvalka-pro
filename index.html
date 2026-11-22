@@ -3,239 +3,412 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Обвалка PRO v 8.4</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>Обвалка PRO v 8.5</title>
 <style>
   :root {
     --bg: #121212;
-    --card: #1b1b1b;
+    --card: #1c1c1c;
     --card-border: #2a2a2a;
-    --text: #f1f5f9;
-    --muted: #94a3b8;
-    --accent: #22c55e;
-    --accent-dark: #16a34a;
-    --yellow: #facc15;
-    --danger: #ef4444;
-    --input-bg: #262626;
-    --cell-bg: #232323;
-    --cell-border: #383838;
+    --input-bg: #252525;
+    --input-border: #383838;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --green: #16a34a;
+    --green-hover: #15803d;
+    --green-soft: rgba(22, 163, 74, 0.14);
+    --orange: #eab308;
+    --orange-bg: rgba(234, 179, 8, 0.22);
+    --orange-border: rgba(234, 179, 8, 0.55);
+    --red: #ef4444;
+    --red-bg: rgba(239, 68, 68, 0.16);
+    --red-border: rgba(239, 68, 68, 0.5);
+    --day-border: #383838;
+    --day-bg: #222222;
   }
+
   body.light {
     --bg: #f1f5f9;
     --card: #ffffff;
-    --card-border: #cbd5e1;
+    --card-border: #e2e8f0;
+    --input-bg: #f8fafc;
+    --input-border: #cbd5e1;
     --text: #0f172a;
     --muted: #64748b;
-    --accent: #16a34a;
-    --accent-dark: #15803d;
-    --yellow: #eab308;
-    --danger: #dc2626;
-    --input-bg: #f8fafc;
-    --cell-bg: #f8fafc;
-    --cell-border: #cbd5e1;
+    --green: #16a34a;
+    --green-hover: #15803d;
+    --green-soft: rgba(22, 163, 74, 0.1);
+    --orange: #d97706;
+    --orange-bg: rgba(245, 158, 11, 0.2);
+    --orange-border: rgba(217, 119, 6, 0.55);
+    --red: #dc2626;
+    --red-bg: rgba(220, 38, 38, 0.12);
+    --red-border: rgba(220, 38, 38, 0.45);
+    --day-border: #cbd5e1;
+    --day-bg: #f8fafc;
   }
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  input, textarea {
+    user-select: text;
+  }
+
   body {
     margin: 0;
-    padding: 8px;
+    padding: 8px 8px 24px;
     background: var(--bg);
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     display: flex;
     justify-content: center;
-    user-select: none;
   }
-  .wrap { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 8px; }
+
+  .app-wrap {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .card {
     background: var(--card);
     border: 1px solid var(--card-border);
     border-radius: 14px;
-    padding: 10px;
+    padding: 8px 10px;
   }
-  .header-row {
+
+  /* Шапка календаря */
+  .cal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 6px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
-  .nav-btn, .icon-btn {
-    background: var(--input-bg);
-    border: 1px solid var(--card-border);
-    color: var(--text);
+
+  .nav-btn {
+    width: 30px;
+    height: 28px;
     border-radius: 8px;
-    height: 30px;
-    min-width: 30px;
-    padding: 0 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
     font-size: 13px;
     cursor: pointer;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
   }
-  .month-title {
-    font-size: 16px;
+
+  .month-title-box {
+    flex: 1;
+    text-align: center;
     font-weight: 700;
+    font-size: 15px;
     display: flex;
-    align-items: baseline;
+    align-items: center;
+    justify-content: center;
     gap: 6px;
   }
-  .ver-badge { font-size: 11px; color: var(--muted); font-weight: 500; }
-  .tabs {
+
+  .ver-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .top-actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  .icon-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Вкладки периодов */
+  .period-tabs {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 4px;
     margin-bottom: 6px;
   }
-  .tab-btn {
-    background: var(--input-bg);
-    border: 1px solid var(--card-border);
-    color: var(--muted);
-    border-radius: 14px;
+
+  .period-btn {
     padding: 5px 2px;
+    border-radius: 16px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
     text-align: center;
+    white-space: nowrap;
   }
-  .tab-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #052e16;
-    font-weight: 700;
+
+  .period-btn.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
   }
+
+  /* Дни недели и сетка */
   .weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     text-align: center;
     font-size: 11px;
+    font-weight: 600;
     color: var(--muted);
     margin-bottom: 4px;
   }
+
   .cal-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 3px;
-    touch-action: none;
+    touch-action: pan-y;
   }
+
   .day-cell {
-    height: 27px;
-    background: var(--cell-bg);
-    border: 1px solid var(--cell-border);
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    height: 26px;
+    border-radius: 7px;
+    border: 1px solid var(--day-border);
+    background: var(--day-bg);
+    color: var(--text);
     font-size: 12px;
     font-weight: 600;
-    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     position: relative;
+    cursor: pointer;
   }
-  .day-cell.other-month { opacity: 0.35; }
-  .day-cell.in-range {
-    background: rgba(34, 197, 94, 0.22);
-    border-color: var(--accent);
+
+  .day-cell.other-month {
+    opacity: 0.35;
   }
-  .day-cell.selected {
-    background: var(--yellow);
-    border-color: var(--yellow);
-    color: #111827;
-    font-weight: 800;
-  }
-  .day-dot {
-    width: 12px;
-    height: 2px;
-    border-radius: 2px;
+
+  .day-cell.has-work::after {
+    content: "";
     position: absolute;
     bottom: 2px;
+    width: 10px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--green);
   }
-  .day-dot.work { background: var(--accent); }
-  .day-dot.off { background: var(--danger); }
+
+  .day-cell.is-off {
+    background: var(--red-bg);
+    border-color: var(--red-border);
+    color: var(--red);
+  }
+
+  .day-cell.is-off .off-x {
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    font-size: 8px;
+    line-height: 1;
+    color: var(--red);
+    font-weight: 800;
+  }
+
+  .day-cell.in-range {
+    background: var(--orange-bg);
+    border-color: var(--orange-border);
+    color: var(--text);
+  }
+
+  .day-cell.selected {
+    background: var(--orange) !important;
+    border-color: var(--orange) !important;
+    color: #111827 !important;
+    font-weight: 800;
+  }
+
   .cal-hint {
     text-align: center;
     font-size: 10px;
     color: var(--muted);
-    margin: 5px 0 6px;
+    margin: 4px 0 5px;
   }
+
   .off-btn {
     width: 100%;
     height: 24px;
-    background: rgba(239, 68, 68, 0.12);
-    border: 1px solid rgba(239, 68, 68, 0.55);
-    color: #f87171;
     border-radius: 8px;
+    border: 1px solid var(--red-border);
+    background: var(--red-bg);
+    color: var(--red);
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
+    letter-spacing: 0.3px;
   }
-  .sec-head {
+
+  /* Блок записей */
+  .section-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 11px;
+    font-weight: 700;
     color: var(--muted);
     margin-bottom: 6px;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
   }
-  .summary-box {
-    background: rgba(34, 197, 94, 0.1);
-    border: 1px solid rgba(34, 197, 94, 0.35);
-    border-radius: 10px;
-    padding: 8px 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-  }
-  .sum-label { font-size: 10px; color: var(--accent); font-weight: 700; }
-  .sum-sub { font-size: 12px; font-weight: 700; margin-top: 2px; }
-  .sum-money { font-size: 17px; font-weight: 800; color: var(--yellow); margin-top: 2px; }
-  .rep-btns { display: flex; flex-direction: column; gap: 5px; }
-  .rep-btn {
-    border: none;
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .rep-btn.full { background: var(--accent); color: #052e16; }
-  .rep-btn.short { background: var(--input-bg); color: var(--text); border: 1px solid var(--card-border); }
+
   .records-list {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    margin-top: 6px;
-    max-height: 170px;
+    margin-bottom: 6px;
+    max-height: 165px;
     overflow-y: auto;
   }
+
   .rec-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: var(--input-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 6px;
+    border: 1px solid var(--input-border);
+    border-radius: 7px;
     padding: 2px 6px;
     min-height: 22px;
-    font-size: 11px;
+    font-size: 11.5px;
   }
-  .rec-item.off-item { border-color: rgba(239, 68, 68, 0.45); color: #f87171; }
+
+  .rec-item.rec-off {
+    border-color: var(--red-border);
+    background: var(--red-bg);
+    color: var(--red);
+  }
+
+  .rec-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 6px;
+  }
+
   .rec-del {
     width: 18px;
     height: 18px;
-    border-radius: 4px;
-    border: 1px solid rgba(239, 68, 68, 0.5);
-    background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
+    border-radius: 5px;
+    border: 1px solid var(--red-border);
+    background: transparent;
+    color: var(--red);
     font-size: 10px;
     cursor: pointer;
-    display: inline-flex;
+    flex-shrink: 0;
+    display: flex;
     align-items: center;
     justify-content: center;
   }
+
+  .undo-bar {
+    display: none;
+    margin-bottom: 6px;
+  }
+
+  .undo-bar.show {
+    display: block;
+  }
+
+  .undo-btn {
+    width: 100%;
+    padding: 5px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--orange-border);
+    background: var(--orange-bg);
+    color: var(--orange);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .summary-box {
+    background: var(--green-soft);
+    border: 1px solid rgba(22, 163, 74, 0.35);
+    border-radius: 10px;
+    padding: 7px 9px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .sum-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sum-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--green);
+    text-transform: uppercase;
+  }
+
+  .sum-sub {
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .sum-money {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--orange);
+  }
+
+  .report-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .rep-btn {
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .rep-btn.primary {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+
+  /* Форма ввода смены */
   .form-row {
     display: flex;
     align-items: center;
@@ -243,21 +416,39 @@
     gap: 8px;
     margin-bottom: 6px;
   }
-  .form-row label { font-size: 12px; color: var(--muted); }
+
+  .form-label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .selected-date-val {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
   .form-input {
-    width: 145px;
+    width: 155px;
     height: 30px;
-    background: var(--input-bg);
-    border: 1px solid var(--card-border);
     border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
     color: var(--text);
     padding: 0 10px;
     font-size: 13px;
     font-weight: 700;
     text-align: right;
+    outline: none;
   }
+
+  .form-input:focus {
+    border-color: var(--green);
+  }
+
   .shift-preview {
     background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: 8px;
     padding: 6px 10px;
     display: flex;
@@ -265,289 +456,378 @@
     align-items: center;
     font-size: 12px;
     font-weight: 700;
-    margin: 6px 0 8px;
+    margin-bottom: 7px;
   }
+
+  .shift-preview-vals {
+    display: flex;
+    gap: 8px;
+  }
+
+  .w-green { color: var(--green); }
+  .p-orange { color: var(--orange); }
+
   .add-btn {
     width: 100%;
     height: 36px;
-    background: var(--accent);
-    border: none;
     border-radius: 10px;
-    color: #052e16;
+    border: none;
+    background: var(--green);
+    color: #fff;
     font-size: 13px;
     font-weight: 800;
     cursor: pointer;
+    letter-spacing: 0.3px;
   }
-  .bottom-grid {
+
+  .add-btn:active {
+    background: var(--green-hover);
+  }
+
+  /* Нижние кнопки базы */
+  .db-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
-  .util-btn {
+
+  .db-btn {
     height: 34px;
-    background: var(--card);
-    border: 1px solid var(--card-border);
     border-radius: 10px;
+    border: 1px solid var(--input-border);
+    background: var(--card);
     color: var(--text);
-    font-size: 11px;
+    font-size: 11.5px;
     font-weight: 700;
     cursor: pointer;
   }
-  .undo-btn {
-    width: 100%;
-    height: 32px;
-    background: var(--yellow);
-    border: none;
-    border-radius: 8px;
-    color: #111827;
-    font-size: 12px;
-    font-weight: 800;
-    cursor: pointer;
-    display: none;
-  }
-  .modal-bg {
+
+  /* Модальные окна */
+  .modal-backdrop {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.72);
     display: none;
     align-items: center;
     justify-content: center;
-    padding: 14px;
-    z-index: 100;
+    padding: 12px;
+    z-index: 1000;
   }
-  .modal-bg.open { display: flex; }
+
+  .modal-backdrop.open {
+    display: flex;
+  }
+
   .modal-box {
     width: 100%;
     max-width: 400px;
     background: var(--card);
     border: 1px solid var(--card-border);
     border-radius: 14px;
-    padding: 14px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     position: relative;
   }
-  .modal-title { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
-  .report-pre {
-    width: 100%;
-    min-height: 120px;
-    max-height: 240px;
-    background: var(--input-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 8px;
-    color: var(--text);
-    padding: 10px;
-    font-family: inherit;
-    font-size: 13px;
-    white-space: pre-wrap;
-    overflow-y: auto;
-    margin-bottom: 10px;
-    user-select: text;
+
+  .modal-title {
+    font-size: 14px;
+    font-weight: 800;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
-  .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .report-textarea {
+    width: 100%;
+    height: 150px;
+    border-radius: 9px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
+    padding: 8px;
+    font-family: monospace;
+    font-size: 12px;
+    resize: none;
+    outline: none;
+  }
+
+  .modal-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
   .m-btn {
-    height: 36px;
-    border-radius: 8px;
-    border: none;
-    font-size: 13px;
+    height: 34px;
+    border-radius: 9px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-size: 12px;
     font-weight: 700;
     cursor: pointer;
   }
-  .m-btn.cancel { background: var(--input-bg); color: var(--text); border: 1px solid var(--card-border); }
-  .m-btn.ok { background: var(--accent); color: #052e16; }
+
+  .m-btn.green {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+  }
+
+  .m-btn.red {
+    background: var(--red-bg);
+    border-color: var(--red-border);
+    color: var(--red);
+  }
+
   .backup-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
     max-height: 220px;
     overflow-y: auto;
-    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
   }
-  .bk-row {
+
+  .backup-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 6px;
     background: var(--input-bg);
-    border: 1px solid var(--card-border);
+    border: 1px solid var(--input-border);
     border-radius: 8px;
     padding: 6px 8px;
-    font-size: 11px;
+    font-size: 11.5px;
   }
-  .bk-acts { display: flex; gap: 4px; }
-  .bk-use {
-    background: var(--accent);
-    color: #052e16;
-    border: none;
+
+  .backup-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+  }
+
+  .backup-acts {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .mini-btn {
+    padding: 4px 7px;
     border-radius: 6px;
-    padding: 4px 8px;
+    border: 1px solid var(--input-border);
+    background: var(--card);
+    color: var(--text);
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
   }
-  .bk-del {
-    background: rgba(239, 68, 68, 0.2);
-    color: #f87171;
-    border: 1px solid rgba(239, 68, 68, 0.5);
-    border-radius: 6px;
-    padding: 4px 7px;
-    font-size: 11px;
-    cursor: pointer;
+
+  .mini-btn.green {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
   }
+
+  .mini-btn.red {
+    border-color: var(--red-border);
+    color: var(--red);
+  }
+
   .confirm-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(18, 18, 18, 0.96);
+    background: rgba(18, 18, 18, 0.94);
     border-radius: 14px;
-    padding: 16px;
     display: none;
     flex-direction: column;
+    align-items: center;
     justify-content: center;
-    gap: 12px;
+    padding: 16px;
+    text-align: center;
+    gap: 10px;
     z-index: 10;
   }
-  .confirm-overlay.open { display: flex; }
+
+  .confirm-overlay.open {
+    display: flex;
+  }
+
   .toast {
     position: fixed;
-    bottom: 16px;
+    bottom: 14px;
     left: 50%;
     transform: translateX(-50%);
-    background: #1e293b;
-    color: #f8fafc;
-    border: 1px solid #334155;
+    background: #1f2937;
+    color: #fff;
+    border: 1px solid #374151;
     padding: 8px 14px;
-    border-radius: 20px;
+    border-radius: 10px;
     font-size: 12px;
     font-weight: 600;
-    z-index: 200;
+    z-index: 2000;
     display: none;
+    max-width: 92%;
     text-align: center;
-    max-width: 90%;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+  }
+
+  .toast.show {
+    display: block;
   }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="app-wrap">
+  <!-- Календарь -->
   <div class="card">
-    <div class="header-row">
-      <button class="nav-btn" id="prevMonthBtn">◀</button>
-      <div class="month-title">
+    <div class="cal-header">
+      <button class="nav-btn" id="prevMonthBtn" title="Предыдущий месяц">◀</button>
+      <div class="month-title-box">
         <span id="monthLabel">Ноябрь 2026</span>
-        <span class="ver-badge" id="verLabel">v 8.4</span>
+        <span class="ver-badge" id="verBadge">v 8.5</span>
       </div>
-      <div style="display:flex;gap:5px;">
-        <button class="icon-btn" id="updateBtn" title="Обновить">🔄</button>
-        <button class="icon-btn" id="themeBtn" title="Тема">☀️</button>
-        <button class="nav-btn" id="nextMonthBtn">▶</button>
+      <div class="top-actions">
+        <button class="icon-btn" id="updateBtn" title="Обновить приложение">🔄</button>
+        <button class="icon-btn" id="themeBtn" title="Сменить тему">☀️</button>
+        <button class="nav-btn" id="nextMonthBtn" title="Следующий месяц">▶</button>
       </div>
     </div>
 
-    <div class="tabs" id="periodTabs">
-      <button class="tab-btn active" data-mode="day">День</button>
-      <button class="tab-btn" data-mode="week">Неделя</button>
-      <button class="tab-btn" data-mode="twoWeeks">2х недели</button>
-      <button class="tab-btn" data-mode="month">Месяц</button>
-      <button class="tab-btn" data-mode="year">Год</button>
+    <div class="period-tabs" id="periodTabs">
+      <button class="period-btn active" data-mode="day">День</button>
+      <button class="period-btn" data-mode="week">Неделя</button>
+      <button class="period-btn" data-mode="two_weeks">2х недели</button>
+      <button class="period-btn" data-mode="month">Месяц</button>
+      <button class="period-btn" data-mode="year">Год</button>
     </div>
 
     <div class="weekdays">
       <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
     </div>
+
     <div class="cal-grid" id="calGrid"></div>
+
     <div class="cal-hint">Нажмите на день или протяните пальцем для выбора периода</div>
-    <button class="off-btn" id="offDayBtn">✕ ВЫХОДНОЙ</button>
+    <button class="off-btn" id="dayOffBtn">✕ ВЫХОДНОЙ</button>
   </div>
 
+  <!-- Записи и итог -->
   <div class="card">
-    <div class="sec-head">
-      <span id="recordsHeader">ЗАПИСИ (ДЕНЬ)</span>
+    <div class="section-head">
+      <span id="recordsTitle">ЗАПИСИ (ДЕНЬ)</span>
       <span id="recordsCount">0 ШТ.</span>
     </div>
+
+    <div class="undo-bar" id="undoBar">
+      <button class="undo-btn" id="undoBtn">↩ Отменить удаление (0)</button>
+    </div>
+
+    <div class="records-list" id="recordsList"></div>
+
     <div class="summary-box">
-      <div>
-        <div class="sum-label" id="sumPeriodTitle">ИТОГ ЗА ДЕНЬ</div>
-        <div class="sum-sub" id="sumBoxesWeight">0 кор. • 0 кг</div>
+      <div class="sum-info">
+        <div class="sum-label" id="sumTitle">ИТОГ ЗА ДЕНЬ</div>
+        <div class="sum-sub" id="sumSub">0 кор. • 0 кг</div>
         <div class="sum-money" id="sumMoney">0 ₽</div>
       </div>
-      <div class="rep-btns">
-        <button class="rep-btn full" id="fullReportBtn">📤 Полный отчёт</button>
-        <button class="rep-btn short" id="shortReportBtn">📋 Краткий отчёт</button>
+      <div class="report-btns">
+        <button class="rep-btn primary" id="fullReportBtn">📋 Полный отчёт</button>
+        <button class="rep-btn" id="shortReportBtn">📑 Краткий отчёт</button>
       </div>
     </div>
-    <div class="records-list" id="recordsList"></div>
   </div>
 
+  <!-- Форма смены -->
   <div class="card">
     <div class="form-row">
-      <span style="font-size:12px;color:var(--muted);">Выбрано:</span>
-      <span style="font-size:13px;font-weight:700;" id="selectedDateLabel">22 ноября</span>
+      <span class="form-label">Выбрана дата:</span>
+      <span class="selected-date-val" id="selectedDateLabel">23 ноября</span>
     </div>
     <div class="form-row">
-      <label for="workerInput">Обвальщик:</label>
+      <label class="form-label" for="workerInput">Обвальщик:</label>
       <input class="form-input" id="workerInput" type="text" placeholder="Имя">
     </div>
     <div class="form-row">
-      <label for="boxesInput">Коробки (шт):</label>
+      <label class="form-label" for="boxesInput">Коробки (шт):</label>
       <input class="form-input" id="boxesInput" type="number" inputmode="numeric" placeholder="0">
     </div>
     <div class="form-row">
-      <label for="weightInput">Вес коробки (кг):</label>
-      <input class="form-input" id="weightInput" type="text" inputmode="decimal" placeholder="00.0">
+      <label class="form-label" for="boxWeightInput">Вес коробки (кг):</label>
+      <input class="form-input" id="boxWeightInput" type="text" inputmode="decimal" placeholder="00.0">
     </div>
     <div class="form-row">
-      <label for="rateInput">Ставка за 1 кг (₽):</label>
+      <label class="form-label" for="rateInput">Ставка за 1 кг (₽):</label>
       <input class="form-input" id="rateInput" type="text" inputmode="decimal" placeholder="0.0">
     </div>
+
     <div class="shift-preview">
       <span>ИТОГО ЗА СМЕНУ:</span>
-      <span><span style="color:var(--accent);" id="prevWeight">0 кг</span> &nbsp;<span style="color:var(--yellow);" id="prevMoney">0 ₽</span></span>
+      <div class="shift-preview-vals">
+        <span class="w-green" id="previewWeight">0 кг</span>
+        <span class="p-orange" id="previewPay">0 ₽</span>
+      </div>
     </div>
+
     <button class="add-btn" id="addRecordBtn">+ ДОБАВИТЬ ЗАПИСЬ</button>
   </div>
 
-  <button class="undo-btn" id="undoBtn">↩ ОТМЕНИТЬ УДАЛЕНИЕ</button>
-
-  <div class="bottom-grid">
-    <button class="util-btn" id="saveBackupBtn">💾 СОХРАНИТЬ БАЗУ</button>
-    <button class="util-btn" id="openRestoreBtn">📂 ВОССТАНОВИТЬ</button>
+  <!-- Резервные копии -->
+  <div class="db-actions">
+    <button class="db-btn" id="saveBackupBtn">💾 СОХРАНИТЬ БАЗУ</button>
+    <button class="db-btn" id="openRestoreBtn">📂 ВОССТАНОВИТЬ</button>
   </div>
 </div>
 
-<div class="modal-bg" id="reportModal">
+<!-- Окно предпросмотра отчёта -->
+<div class="modal-backdrop" id="reportModal">
   <div class="modal-box">
-    <div class="modal-title">Предпросмотр отчёта</div>
-    <div class="report-pre" id="reportText"></div>
-    <div class="modal-actions">
-      <button class="m-btn cancel" id="closeReportBtn">Отмена</button>
-      <button class="m-btn ok" id="sendReportBtn">📤 Отправить</button>
+    <div class="modal-title">
+      <span>Предпросмотр отчёта</span>
+    </div>
+    <textarea class="report-textarea" id="reportPreviewText" readonly></textarea>
+    <div class="modal-btns">
+      <button class="m-btn" id="closeReportBtn">Отмена</button>
+      <button class="m-btn green" id="sendReportBtn">📤 Отправить</button>
     </div>
   </div>
 </div>
 
-<div class="modal-bg" id="restoreModal">
+<!-- Окно восстановления и переноса базы -->
+<div class="modal-backdrop" id="restoreModal">
   <div class="modal-box">
-    <div class="modal-title">Резервные копии и перенос</div>
+    <div class="modal-title">
+      <span>Резервные копии</span>
+      <button class="mini-btn" id="toggleTransferBtn">🔑 Код переноса</button>
+    </div>
+
+    <div id="transferPane" style="display:none; flex-direction:column; gap:6px;">
+      <textarea class="report-textarea" id="transferCodeArea" style="height:90px;" placeholder="Вставьте код базы сюда или скопируйте текущий..."></textarea>
+      <div class="modal-btns">
+        <button class="m-btn" id="copyCodeBtn">📋 Скопировать код</button>
+        <button class="m-btn green" id="importCodeBtn">📥 Загрузить из кода</button>
+      </div>
+    </div>
+
     <div class="backup-list" id="backupList"></div>
-    <div style="margin-bottom:8px;">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Код переноса базы (для нового телефона):</div>
-      <div style="display:flex;gap:6px;">
-        <input class="form-input" id="transferCodeInput" style="width:100%;text-align:left;font-size:11px;" placeholder="Вставьте код или нажмите Копировать">
-        <button class="bk-use" id="copyCodeBtn">Копия</button>
-        <button class="bk-use" id="importCodeBtn" style="background:var(--yellow);">Загрузить</button>
-      </div>
-    </div>
-    <button class="m-btn cancel" style="width:100%;" id="closeRestoreBtn">Закрыть</button>
 
-    <div class="confirm-overlay" id="confirmDeleteBox">
-      <div style="font-size:14px;font-weight:700;text-align:center;" id="confirmDeleteText">Удалить эту резервную копию?</div>
-      <div class="modal-actions">
-        <button class="m-btn cancel" id="cancelDelBkBtn">Отмена</button>
-        <button class="m-btn ok" style="background:var(--danger);color:#fff;" id="confirmDelBkBtn">Удалить</button>
+    <button class="m-btn" id="closeRestoreBtn">Закрыть</button>
+
+    <div class="confirm-overlay" id="confirmDeleteOverlay">
+      <div style="font-size:13px; font-weight:700;" id="confirmDeleteText">Удалить эту резервную копию?</div>
+      <div class="modal-btns" style="width:100%;">
+        <button class="m-btn" id="cancelDelBackupBtn">Отмена</button>
+        <button class="m-btn red" id="confirmDelBackupBtn">Удалить</button>
       </div>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toastBox"></div>
+<div class="toast" id="toast"></div>
 
-<script src="app.js?v=8.4"></script>
+<script src="app.js?v=8.5"></script>
 </body>
 </html>
