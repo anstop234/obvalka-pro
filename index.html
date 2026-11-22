@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Обвалка PRO</title>
+<title>Обвалка PRO v 5.1</title>
 <style>
   :root {
     --bg: #121212;
@@ -11,33 +11,25 @@
     --accent: #00c853;
     --accent-dark: #009624;
     --yellow: #ffab00;
+    --yellow-soft: rgba(255, 171, 0, 0.22);
     --text: #ffffff;
     --muted: #9e9e9e;
     --border: #333333;
     --input-border: #555555;
-    --input-bg: #252525;
     --day-bg: #252525;
-    --day-text: #ffffff;
     --danger: #ff5252;
-    --summary-bg: #16261a;
-    --range-bg: rgba(255, 171, 0, 0.16);
+    --ver-color: #e0e0e0;
   }
   body.light-theme {
     --bg: #f2f3f5;
     --card: #ffffff;
-    --accent: #00c853;
-    --accent-dark: #009624;
-    --yellow: #ffab00;
-    --text: #111111;
-    --muted: #666666;
-    --border: #d0d0d0;
+    --text: #000000;
+    --muted: #555555;
+    --border: #cccccc;
     --input-border: #888888;
-    --input-bg: #f8f9fa;
-    --day-bg: #eaecef;
-    --day-text: #000000;
-    --danger: #e53935;
-    --summary-bg: #e8f5e9;
-    --range-bg: rgba(255, 171, 0, 0.25);
+    --day-bg: #e8eaed;
+    --yellow-soft: rgba(255, 171, 0, 0.35);
+    --ver-color: #333333;
   }
   * {
     box-sizing: border-box;
@@ -59,18 +51,28 @@
     margin-bottom: 6px;
     border: 1px solid var(--border);
   }
-  /* Шапка календаря */
   .month-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 6px;
   }
-  .month-title {
+  .month-title-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  #monthLabel {
     font-size: 16px;
     font-weight: 700;
   }
-  .header-controls {
+  .ver-badge {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ver-color);
+    letter-spacing: 0.2px;
+  }
+  .header-right {
     display: flex;
     align-items: center;
     gap: 5px;
@@ -79,33 +81,36 @@
     background: var(--day-bg);
     color: var(--text);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 7px;
     padding: 4px 10px;
-    font-size: 13px;
+    font-size: 14px;
     cursor: pointer;
   }
   .icon-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 4px 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 13px;
     cursor: pointer;
-    line-height: 1.1;
+    padding: 0;
+  }
+  .update-btn {
+    background: #1e88e5;
+    color: #fff;
+    border: none;
   }
   .theme-btn {
     background: #f0f0f0;
-    color: #111111;
+    color: #121212;
   }
   body.light-theme .theme-btn {
     background: #252525;
     color: #ffffff;
   }
-  .update-btn {
-    background: var(--day-bg);
-    color: var(--text);
-  }
-
-  /* Вкладки периодов */
   .tabs {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -116,8 +121,8 @@
     background: var(--day-bg);
     color: var(--muted);
     border: 1px solid var(--border);
-    padding: 5px 2px;
-    border-radius: 6px;
+    padding: 6px 2px;
+    border-radius: 7px;
     font-weight: 600;
     font-size: 11px;
     cursor: pointer;
@@ -127,87 +132,87 @@
     color: #000000;
     border-color: var(--accent);
   }
-
-  /* Календарь */
-  .weekdays, .days-grid {
+  .weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     text-align: center;
-    column-gap: 3px;
-    row-gap: 1px;
+    gap: 2px;
+    margin-bottom: 2px;
   }
   .weekdays div {
     font-size: 11px;
     color: var(--muted);
-    padding-bottom: 2px;
     font-weight: 600;
   }
+  .days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    gap: 2px 3px;
+    touch-action: none;
+  }
   .day {
-    padding: 3px 0 4px 0;
+    padding: 3px 0;
+    line-height: 1.2;
     border-radius: 6px;
-    font-size: 12px;
-    line-height: 1.15;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
     position: relative;
     background: var(--day-bg);
-    color: var(--day-text);
-    font-weight: 600;
+    color: var(--text);
+    border: 1px solid transparent;
   }
   .day.empty {
     background: transparent;
     cursor: default;
   }
   .day.in-range {
-    background: var(--range-bg);
+    background: var(--yellow-soft);
+    color: var(--text);
   }
   .day.selected {
-    background: var(--yellow) !important;
-    color: #000000 !important;
+    background: var(--yellow);
+    color: #000000;
     font-weight: 800;
   }
-  .day.holiday {
-    border: 1px solid var(--danger);
-    color: var(--danger);
+  .day.day-off {
+    border-color: var(--danger);
   }
-  body.light-theme .day.holiday {
-    color: #000000;
-  }
-  .day.holiday::before {
+  .day.day-off::before {
     content: '✕';
     position: absolute;
     top: 0px;
     right: 2px;
     font-size: 8px;
     color: var(--danger);
-    line-height: 1;
+    font-weight: bold;
   }
   .day.has-data::after {
     content: '';
     position: absolute;
-    bottom: 1.5px;
+    bottom: 1px;
     left: 50%;
     transform: translateX(-50%);
     width: 14px;
     height: 2px;
     border-radius: 1px;
-    background: var(--yellow);
+    background: var(--accent);
   }
   .day.selected.has-data::after {
     background: #000000;
   }
-  .hint-text {
-    font-size: 11px;
-    color: var(--muted);
+  .hint-line {
     text-align: center;
-    margin: 4px 0 4px 0;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
   }
-
-  /* Заголовок и список записей */
   .records-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
     min-height: 20px;
   }
   .records-title {
@@ -216,8 +221,8 @@
     color: var(--muted);
     text-transform: uppercase;
   }
-  .undo-group {
-    display: flex;
+  .undo-wrap {
+    display: none;
     align-items: center;
     gap: 4px;
   }
@@ -246,69 +251,71 @@
     justify-content: space-between;
     align-items: center;
     padding: 2px 0;
+    line-height: 1.15;
     border-bottom: 1px solid var(--border);
     font-size: 12px;
-    line-height: 1.15;
   }
   .record-item:last-child {
     border-bottom: none;
-  }
-  .record-text {
-    flex: 1;
-    padding-right: 6px;
   }
   .del-btn {
     background: transparent;
     border: 1px solid var(--danger);
     color: var(--danger);
     border-radius: 5px;
-    padding: 2px 6px;
+    padding: 1px 6px;
     font-size: 11px;
     cursor: pointer;
-    flex-shrink: 0;
   }
-
-  /* Блок итогов */
   .summary-box {
-    background: var(--summary-bg);
+    background: #1b2e20;
     border: 1px solid var(--accent);
-    padding: 7px 8px;
+    padding: 8px 10px;
     border-radius: 10px;
     margin-bottom: 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+  }
+  body.light-theme .summary-box {
+    background: #e8f5e9;
   }
   .summary-left {
     flex: 1;
-    min-width: 0;
   }
   .summary-title {
     font-size: 11px;
-    color: var(--accent);
+    color: #a5d6a7;
     font-weight: 700;
     margin-bottom: 2px;
     text-transform: uppercase;
   }
-  .summary-stats {
-    font-size: 13px;
-    font-weight: 700;
-    margin-bottom: 2px;
+  body.light-theme .summary-title {
+    color: #1b5e20;
   }
-  .summary-zp {
+  .summary-stats {
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .salary-highlight {
+    color: var(--yellow);
     font-size: 18px;
     font-weight: 800;
-    color: var(--yellow);
-    line-height: 1.1;
   }
-  .summary-actions {
+  body.light-theme .salary-highlight {
+    color: #d87a00;
+  }
+  .report-btns {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    flex-shrink: 0;
   }
-  .report-btn {
+  .rep-btn {
     border: none;
     border-radius: 6px;
     padding: 5px 8px;
@@ -316,23 +323,21 @@
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    text-align: left;
+    text-align: center;
   }
-  .report-btn.full {
+  .rep-full {
     background: var(--accent);
     color: #000000;
   }
-  .report-btn.short {
-    background: var(--day-bg);
-    color: var(--text);
-    border: 1px solid var(--input-border);
+  .rep-short {
+    background: #2c2c2c;
+    color: #ffffff;
+    border: 1px solid #444;
   }
-
-  /* Форма ввода */
-  .date-label {
-    font-size: 12px;
-    color: var(--muted);
-    margin-bottom: 5px;
+  body.light-theme .rep-short {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #999;
   }
   .input-row {
     display: flex;
@@ -345,30 +350,40 @@
     font-weight: 600;
   }
   .input-row input {
-    width: 125px;
+    width: 115px;
     height: 30px;
-    padding: 2px 8px;
+    padding: 0 10px;
+    margin: 0;
     font-size: 15px;
     font-weight: 700;
+    line-height: 28px;
     text-align: right;
     border-radius: 7px;
     border: 1px solid var(--input-border);
-    background: var(--input-bg);
+    background: var(--bg);
     color: var(--text);
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: none;
+  }
+  .input-row input::-webkit-outer-spin-button,
+  .input-row input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
   .preview-sum {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px 8px;
-    background: var(--input-bg);
+    padding: 5px 10px;
+    background: var(--day-bg);
     border: 1px solid var(--input-border);
     border-radius: 7px;
-    margin: 5px 0 6px 0;
+    margin: 5px 0;
     font-size: 13px;
     font-weight: 600;
   }
-  .preview-values {
+  .preview-right {
     display: flex;
     align-items: baseline;
     gap: 8px;
@@ -378,17 +393,20 @@
     font-weight: 700;
     font-size: 14px;
   }
-  .preview-money {
+  .preview-pay {
     color: var(--yellow);
     font-weight: 800;
-    font-size: 18px;
+    font-size: 16px;
   }
-  .btn-row {
+  body.light-theme .preview-pay {
+    color: #d87a00;
+  }
+  .action-btns {
     display: grid;
-    grid-template-columns: 1fr 1.35fr;
+    grid-template-columns: 1fr 1.6fr;
     gap: 6px;
   }
-  .holiday-btn {
+  .off-btn {
     padding: 8px 4px;
     background: transparent;
     color: var(--danger);
@@ -408,496 +426,444 @@
     font-weight: 800;
     cursor: pointer;
   }
-  .add-btn:active {
-    background: var(--accent-dark);
-  }
-
-  /* Резервная копия в телефоне */
-  .backup-card {
-    padding: 6px 8px;
-    margin-bottom: 4px;
-  }
   .backup-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 6px;
   }
   .backup-btn {
-    background: var(--input-bg);
+    padding: 7px 6px;
+    background: var(--card);
     color: var(--text);
     border: 1px solid var(--input-border);
-    border-radius: 7px;
-    padding: 7px 4px;
+    border-radius: 8px;
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
   }
-  .backup-status {
-    font-size: 11px;
-    color: var(--muted);
-    text-align: center;
-    margin-top: 4px;
-  }
-
-  /* Модальные окна */
   .modal-overlay {
     display: none;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.72);
-    z-index: 999;
+    background: rgba(0,0,0,0.75);
+    z-index: 1000;
     align-items: center;
     justify-content: center;
-    padding: 14px;
+    padding: 16px;
+  }
+  .modal-overlay.top-modal {
+    z-index: 2000;
   }
   .modal-box {
     background: var(--card);
-    color: var(--text);
     border: 1px solid var(--input-border);
     border-radius: 12px;
     padding: 14px;
     width: 100%;
-    max-width: 340px;
+    max-width: 360px;
     text-align: center;
   }
   .modal-title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
-    margin-bottom: 6px;
-  }
-  .modal-desc {
-    font-size: 12px;
-    color: var(--muted);
     margin-bottom: 10px;
-    line-height: 1.35;
   }
-  .modal-btns {
+  .modal-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+    margin-top: 12px;
   }
-  .modal-btn {
-    padding: 9px 6px;
-    border-radius: 8px;
-    font-size: 13px;
+  .btn-yes {
+    background: var(--danger);
+    color: #fff;
+    border: none;
+    padding: 8px;
+    border-radius: 7px;
     font-weight: 700;
-    border: 1px solid var(--input-border);
     cursor: pointer;
   }
-  .modal-btn.yes {
-    background: var(--danger);
-    color: #ffffff;
-    border-color: var(--danger);
-  }
-  .modal-btn.green {
-    background: var(--accent);
-    color: #000000;
-    border-color: var(--accent);
-  }
-  .modal-btn.no {
-    background: var(--input-bg);
+  .btn-no {
+    background: var(--day-bg);
     color: var(--text);
-  }
-  .backup-slot {
-    background: var(--input-bg);
     border: 1px solid var(--input-border);
-    border-radius: 8px;
     padding: 8px;
-    margin-bottom: 8px;
-    text-align: left;
+    border-radius: 7px;
+    font-weight: 700;
+    cursor: pointer;
   }
-  .slot-top {
+  .backup-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 7px 8px;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    text-align: left;
+    gap: 6px;
+  }
+  .backup-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .restore-item-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 9px;
     font-size: 12px;
     font-weight: 700;
-    margin-bottom: 3px;
+    cursor: pointer;
   }
-  .slot-meta {
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 6px;
-  }
-  .slot-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
+  .del-backup-btn {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
   }
   .toast {
     position: fixed;
-    bottom: 16px;
+    bottom: 14px;
     left: 50%;
     transform: translateX(-50%);
-    background: #222222;
-    color: #ffffff;
-    border: 1px solid var(--accent);
+    background: #323232;
+    color: #fff;
     padding: 7px 14px;
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
-    z-index: 1200;
+    z-index: 3000;
     display: none;
-    white-space: nowrap;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4);
   }
 </style>
 </head>
 <body>
 
-  <!-- Календарь + Записи -->
   <div class="card">
     <div class="month-header">
       <button class="nav-btn" onclick="changeMonth(-1)">&#9664;</button>
-      <span class="month-title" id="monthLabel">Ноябрь 2026</span>
-      <div class="header-controls">
-        <button class="icon-btn update-btn" title="Обновить из HTML" onclick="document.getElementById('updateFileInput').click()">🔄</button>
+      <div class="month-title-wrap">
+        <span id="monthLabel">Ноябрь 2026</span>
+        <span class="ver-badge">v 5.1</span>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn update-btn" title="Проверить обновление" onclick="checkOnlineUpdate(true)">🔄</button>
         <button class="icon-btn theme-btn" id="themeBtn" onclick="toggleTheme()">☀️</button>
         <button class="nav-btn" onclick="changeMonth(1)">&#9654;</button>
       </div>
     </div>
 
     <div class="tabs">
-      <button class="tab active" data-mode="day" onclick="setMode('day', this)">День</button>
-      <button class="tab" data-mode="week" onclick="setMode('week', this)">Неделя</button>
-      <button class="tab" data-mode="two_weeks" onclick="setMode('two_weeks', this)">2х недели</button>
-      <button class="tab" data-mode="month" onclick="setMode('month', this)">Месяц</button>
-      <button class="tab" data-mode="year" onclick="setMode('year', this)">Год</button>
+      <button class="tab active" id="tab-day" onclick="setMode('day')">День</button>
+      <button class="tab" id="tab-week" onclick="setMode('week')">Неделя</button>
+      <button class="tab" id="tab-two_weeks" onclick="setMode('two_weeks')">2х недели</button>
+      <button class="tab" id="tab-month" onclick="setMode('month')">Месяц</button>
+      <button class="tab" id="tab-year" onclick="setMode('year')">Год</button>
     </div>
 
     <div class="weekdays">
       <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
     </div>
     <div class="days-grid" id="calendarGrid"></div>
-    <div class="hint-text">Нажмите на день или проведите пальцем для выбора периода</div>
+    <div class="hint-line">Нажмите на день или протяните пальцем для выбора периода</div>
 
-    <div class="records-header">
-      <span class="records-title" id="recordsTitle">ЗАПИСИ:</span>
-      <div class="undo-group" id="undoGroup" style="display:none;">
-        <button class="undo-btn" id="undoBtn" onclick="undoDelete()">↩ Отменить удаление (0)</button>
-        <button class="clear-undo-btn" onclick="askClearUndo()">✕</button>
+    <div style="border-top: 1px solid var(--border); margin-top: 6px; padding-top: 5px;">
+      <div class="records-header">
+        <span class="records-title" id="recordsTitle">ЗАПИСИ (ДЕНЬ)</span>
+        <div class="undo-wrap" id="undoWrap">
+          <button class="undo-btn" id="undoBtn" onclick="undoDelete()">↩ Отменить удаление (0)</button>
+          <button class="clear-undo-btn" onclick="askClearUndo()">✕</button>
+        </div>
       </div>
+      <div id="recordsList"></div>
     </div>
-    <div id="recordsList"></div>
   </div>
 
-  <!-- Итоги + Отчёты -->
   <div class="summary-box">
     <div class="summary-left">
       <div class="summary-title" id="summaryTitle">ИТОГ ЗА ДЕНЬ</div>
-      <div class="summary-stats" id="summaryStats">Коробок: 0 шт | Вес: 0 кг</div>
-      <div class="summary-zp">ЗП: <span id="summaryMoney">0 ₽</span></div>
+      <div class="summary-stats" id="summaryStats">0 кор. | 0 кг <span class="salary-highlight">0 ₽</span></div>
     </div>
-    <div class="summary-actions">
-      <button class="report-btn full" onclick="shareFullReport()">📤 Полный отчёт</button>
-      <button class="report-btn short" onclick="shareShortReport()">📋 Краткий отчёт</button>
+    <div class="report-btns">
+      <button class="rep-btn rep-full" onclick="shareFullReport()">📤 Полный отчёт</button>
+      <button class="rep-btn rep-short" onclick="shareShortReport()">📋 Краткий отчёт</button>
     </div>
   </div>
 
-  <!-- Ввод данных -->
   <div class="card">
-    <div class="date-label" id="selectedDateLabel">Дата ввода:</div>
+    <div style="font-size: 11px; color: var(--muted); margin-bottom: 5px;" id="selectedDateLabel"></div>
 
     <div class="input-row">
-      <label>Коробки (шт):</label>
-      <input type="number" id="boxCount" inputmode="numeric" placeholder="0" oninput="calcPreview()">
+      <label for="boxCount">Коробки (шт):</label>
+      <input type="text" id="boxCount" inputmode="numeric" placeholder="0" oninput="sanitizeInt(this); calcPreview()">
     </div>
 
     <div class="input-row">
-      <label>Вес коробки (кг):</label>
-      <input type="text" id="boxWeight" inputmode="decimal" placeholder="00.0" oninput="calcPreview()">
+      <label for="boxWeight">Вес коробки (кг):</label>
+      <input type="text" id="boxWeight" inputmode="decimal" placeholder="00.0" oninput="sanitizeDec(this); calcPreview()">
     </div>
 
     <div class="input-row">
-      <label>Ставка за 1 кг (₽):</label>
-      <input type="text" id="ratePerKg" inputmode="decimal" placeholder="0.0" oninput="onRateChange()">
+      <label for="ratePerKg">Ставка за 1 кг (₽):</label>
+      <input type="text" id="ratePerKg" inputmode="decimal" placeholder="0.0" oninput="sanitizeDec(this); saveRate(); calcPreview()">
     </div>
 
     <div class="preview-sum">
       <span>ИТОГО ЗА СМЕНУ:</span>
-      <div class="preview-values">
+      <div class="preview-right">
         <span class="preview-weight" id="previewWeight">0 кг</span>
-        <span class="preview-money" id="previewMoney">0 ₽</span>
+        <span class="preview-pay" id="previewPay">0 ₽</span>
       </div>
     </div>
 
-    <div class="btn-row">
-      <button class="holiday-btn" onclick="toggleHoliday()">✕ ВЫХОДНОЙ</button>
+    <div class="action-btns">
+      <button class="off-btn" onclick="toggleDayOff()">✕ ВЫХОДНОЙ</button>
       <button class="add-btn" onclick="addRecord()">+ ДОБАВИТЬ ЗАПИСЬ</button>
     </div>
   </div>
 
-  <!-- Резервное копирование в памяти телефона -->
-  <div class="card backup-card">
-    <div class="backup-row">
-      <button class="backup-btn" onclick="savePhoneBackup()">💾 СОХРАНИТЬ БАЗУ</button>
-      <button class="backup-btn" onclick="openRestoreModal()">📂 ВОССТАНОВИТЬ</button>
-    </div>
-    <div class="backup-status" id="backupStatus">Автосохранение в телефоне включено</div>
+  <div class="backup-row">
+    <button class="backup-btn" onclick="saveLocalBackup()">💾 СОХРАНИТЬ БАЗУ</button>
+    <button class="backup-btn" onclick="openRestoreModal()">📂 ВОССТАНОВИТЬ</button>
   </div>
 
-  <!-- Скрытый input для обновления HTML -->
-  <input type="file" id="updateFileInput" accept=".html,.htm" style="display:none" onchange="applyHtmlUpdate(this)">
-
-  <!-- Модальное окно очистки отмен -->
-  <div class="modal-overlay" id="confirmClearModal">
+  <div class="modal-overlay top-modal" id="confirmModal">
     <div class="modal-box">
-      <div class="modal-title">Все удаленные данные сотрутся</div>
-      <div class="modal-desc">Вы уверены?</div>
-      <div class="modal-btns">
-        <button class="modal-btn yes" onclick="confirmClearUndo()">Да</button>
-        <button class="modal-btn no" onclick="closeModal('confirmClearModal')">Нет</button>
+      <div class="modal-title" id="confirmText">Все удаленные данные сотрутся.<br>Вы уверены?</div>
+      <div class="modal-actions">
+        <button class="btn-yes" id="confirmYesBtn">Да</button>
+        <button class="btn-no" onclick="closeConfirmModal()">Нет</button>
       </div>
     </div>
   </div>
 
-  <!-- Модальное окно восстановления базы из телефона -->
   <div class="modal-overlay" id="restoreModal">
     <div class="modal-box">
-      <div class="modal-title">Резервные копии в телефоне</div>
-      <div class="modal-desc">Выберите сохранённую копию из памяти устройства:</div>
-      <div id="backupSlotsContainer"></div>
-      <button class="modal-btn no" style="width:100%;" onclick="closeModal('restoreModal')">Закрыть</button>
+      <div class="modal-title">Сохранённые копии в телефоне</div>
+      <div id="backupListContainer" style="max-height: 240px; overflow-y: auto;"></div>
+      <button class="btn-no" style="width: 100%; margin-top: 8px;" onclick="closeRestoreModal()">Закрыть</button>
     </div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toastBox"></div>
 
 <script>
-  // Двойное хранилище (localStorage + IndexedDB) для надёжного сохранения в памяти телефона
-  const memStore = {};
-  function safeGet(key) {
+  var APP_VERSION = 5.1;
+  var memStore = {};
+
+  function safeGet(key, defVal) {
     try {
-      const v = localStorage.getItem(key);
-      if (v !== null) return v;
-    } catch (e) {}
-    return memStore[key] !== undefined ? memStore[key] : null;
+      var v = localStorage.getItem(key);
+      return v !== null ? v : (memStore[key] || defVal);
+    } catch (e) {
+      return memStore[key] || defVal;
+    }
   }
+
   function safeSet(key, val) {
     memStore[key] = val;
-    try { localStorage.setItem(key, val); } catch (e) {}
-    idbSet(key, val);
-  }
-
-  let dbInstance = null;
-  function openIDB() {
-    return new Promise((resolve) => {
-      try {
-        if (dbInstance) { resolve(dbInstance); return; }
-        const req = indexedDB.open('ObvalkaProDB', 1);
-        req.onupgradeneeded = function(e) {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('kv')) {
-            db.createObjectStore('kv');
-          }
-        };
-        req.onsuccess = function(e) {
-          dbInstance = e.target.result;
-          resolve(dbInstance);
-        };
-        req.onerror = function() { resolve(null); };
-      } catch (e) { resolve(null); }
-    });
-  }
-  function idbSet(key, val) {
-    openIDB().then(db => {
-      if (!db) return;
-      try {
-        const tx = db.transaction('kv', 'readwrite');
-        tx.objectStore('kv').put(val, key);
-      } catch (e) {}
-    });
-  }
-  function idbGet(key) {
-    return new Promise((resolve) => {
-      openIDB().then(db => {
-        if (!db) { resolve(null); return; }
-        try {
-          const tx = db.transaction('kv', 'readonly');
-          const req = tx.objectStore('kv').get(key);
-          req.onsuccess = () => resolve(req.result !== undefined ? req.result : null);
-          req.onerror = () => resolve(null);
-        } catch (e) { resolve(null); }
-      });
-    });
-  }
-
-  // Названия месяцев
-  const monthsNom = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-  const monthsGen = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-  const monthsShort = ['янв','фев','март','апр','май','июнь','июль','авг','сен','окт','ноя','дек'];
-
-  let selectedDate = new Date();
-  let viewDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
-  let periodMode = 'day'; // day, week, two_weeks, month, year, custom
-  let customRange = null; // { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' }
-  let isDragging = false;
-  let dragStartKey = null;
-
-  let records = [];
-  let holidays = [];
-  let deletedStack = [];
-  let backupSlots = [];
-
-  function parseNum(val) {
-    if (val === null || val === undefined) return 0;
-    const s = String(val).replace(',', '.').replace(/[^0-9.\-]/g, '');
-    const n = parseFloat(s);
-    return isFinite(n) ? n : 0;
-  }
-
-  function fmtNum(n) {
-    const val = isFinite(n) ? n : 0;
-    return Number(val.toFixed(2)).toString();
-  }
-
-  function formatDateKey(date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }
-
-  function parseDateKey(key) {
-    const p = key.split('-').map(Number);
-    return new Date(p[0], p[1] - 1, p[2]);
-  }
-
-  function formatHumanDate(key) {
-    const d = parseDateKey(key);
-    return `${d.getDate()} ${monthsGen[d.getMonth()]}`;
-  }
-
-  function formatShortDate(key) {
-    const d = parseDateKey(key);
-    return `${d.getDate()} ${monthsShort[d.getMonth()]}`;
+    try {
+      localStorage.setItem(key, val);
+    } catch (e) {}
   }
 
   function showToast(msg) {
-    const t = document.getElementById('toast');
+    var t = document.getElementById('toastBox');
     t.innerText = msg;
     t.style.display = 'block';
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => { t.style.display = 'none'; }, 2200);
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(function() {
+      t.style.display = 'none';
+    }, 2400);
   }
 
-  function loadAllState() {
+  var monthsNom = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  var monthsGen = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  var monthsShort = ['янв','фев','март','апр','май','июнь','июль','авг','сен','окт','ноя','дек'];
+
+  var selectedDate = new Date();
+  var viewDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+  var periodMode = 'day';
+  var customStart = null;
+  var customEnd = null;
+  var isDragging = false;
+  var dragStartKey = null;
+
+  var records = [];
+  var dayOffs = [];
+  var undoStack = [];
+  var confirmCallback = null;
+
+  function loadData() {
     try {
-      const rawRec = JSON.parse(safeGet('obvalka_records') || '[]');
+      var rawRec = JSON.parse(safeGet('obvalka_records', '[]'));
       if (Array.isArray(rawRec)) {
-        records = rawRec.filter(r => r && r.date && parseNum(r.count) > 0 && parseNum(r.boxWeight) > 0).map(r => {
-          const c = Math.round(parseNum(r.count));
-          const bw = parseNum(r.boxWeight);
-          const rt = parseNum(r.rate);
-          const tw = Number((c * bw).toFixed(3));
-          const tm = Number((tw * rt).toFixed(2));
+        records = rawRec.filter(function(r) {
+          return r && typeof r.date === 'string' && !isNaN(Number(r.count)) && Number(r.count) > 0 && !isNaN(Number(r.weightKg)) && Number(r.weightKg) > 0;
+        }).map(function(r) {
+          var c = Number(r.count);
+          var w = Number(r.weightKg);
+          var rt = isNaN(Number(r.rate)) ? 0 : Number(r.rate);
+          var totW = Math.round(c * w * 1000) / 1000;
+          var totP = Math.round(totW * rt * 100) / 100;
           return {
             id: r.id || (Date.now() + Math.random()),
             date: r.date,
             count: c,
-            boxWeight: bw,
+            weightKg: w,
             rate: rt,
-            totalWeight: tw,
-            totalMoney: tm
+            totalWeight: totW,
+            totalPay: totP
           };
         });
       }
-    } catch (e) { records = []; }
+    } catch (e) {
+      records = [];
+    }
 
     try {
-      const rawHol = JSON.parse(safeGet('obvalka_holidays') || '[]');
-      if (Array.isArray(rawHol)) holidays = rawHol.filter(x => typeof x === 'string');
-    } catch (e) { holidays = []; }
+      var rawOff = JSON.parse(safeGet('obvalka_dayoffs', '[]'));
+      if (Array.isArray(rawOff)) {
+        dayOffs = rawOff.filter(function(d) { return typeof d === 'string'; });
+      }
+    } catch (e) {
+      dayOffs = [];
+    }
 
-    try {
-      const rawSlots = JSON.parse(safeGet('obvalka_phone_backups') || '[]');
-      if (Array.isArray(rawSlots)) backupSlots = rawSlots;
-    } catch (e) { backupSlots = []; }
-
-    const savedRate = safeGet('obvalka_rate');
-    if (savedRate !== null && savedRate !== '') {
+    var savedRate = safeGet('obvalka_rate', '');
+    if (savedRate && !isNaN(parseFloat(savedRate))) {
       document.getElementById('ratePerKg').value = savedRate;
     }
 
-    const savedTheme = safeGet('obvalka_theme');
-    if (savedTheme === 'light') {
+    if (safeGet('obvalka_theme', 'dark') === 'light') {
       document.body.classList.add('light-theme');
       document.getElementById('themeBtn').innerText = '🌙';
     }
-
-    updateBackupStatusText();
-    saveState();
   }
 
-  function saveState() {
+  function persistData() {
     safeSet('obvalka_records', JSON.stringify(records));
-    safeSet('obvalka_holidays', JSON.stringify(holidays));
+    safeSet('obvalka_dayoffs', JSON.stringify(dayOffs));
+    mirrorToIDB();
   }
 
-  // Восстановление из IndexedDB если localStorage был очищен системой
-  async function syncFromIDB() {
-    const idbRec = await idbGet('obvalka_records');
-    if ((!records || records.length === 0) && idbRec) {
-      safeSet('obvalka_records', idbRec);
-      const idbHol = await idbGet('obvalka_holidays');
-      if (idbHol) safeSet('obvalka_holidays', idbHol);
-      const idbRate = await idbGet('obvalka_rate');
-      if (idbRate) safeSet('obvalka_rate', idbRate);
-      const idbBackups = await idbGet('obvalka_phone_backups');
-      if (idbBackups) safeSet('obvalka_phone_backups', idbBackups);
-      loadAllState();
-      renderAll();
+  function mirrorToIDB() {
+    try {
+      var req = indexedDB.open('ObvalkaProDB', 1);
+      req.onupgradeneeded = function(ev) {
+        var db = ev.target.result;
+        if (!db.objectStoreNames.contains('state')) {
+          db.createObjectStore('state');
+        }
+      };
+      req.onsuccess = function(ev) {
+        var db = ev.target.result;
+        var tx = db.transaction('state', 'readwrite');
+        tx.objectStore('state').put({
+          records: records,
+          dayOffs: dayOffs,
+          rate: document.getElementById('ratePerKg').value
+        }, 'latest');
+      };
+    } catch (e) {}
+  }
+
+  function sanitizeInt(el) {
+    el.value = el.value.replace(/[^0-9]/g, '');
+  }
+
+  function sanitizeDec(el) {
+    var v = el.value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+    var parts = v.split('.');
+    if (parts.length > 2) {
+      v = parts[0] + '.' + parts.slice(1).join('');
     }
+    el.value = v;
   }
 
-  function toggleTheme() {
-    const isLight = document.body.classList.toggle('light-theme');
-    document.getElementById('themeBtn').innerText = isLight ? '🌙' : '☀️';
-    safeSet('obvalka_theme', isLight ? 'light' : 'dark');
+  function parseNum(val) {
+    if (!val) return 0;
+    var n = parseFloat(String(val).replace(',', '.'));
+    return isNaN(n) ? 0 : n;
   }
 
-  function onRateChange() {
-    const val = document.getElementById('ratePerKg').value.trim();
+  function fmtWeight(w) {
+    var r = Math.round(w * 1000) / 1000;
+    return r + ' кг';
+  }
+
+  function fmtMoney(m) {
+    var r = Math.round(m * 100) / 100;
+    return r.toLocaleString('ru-RU') + ' ₽';
+  }
+
+  function formatDateKey(d) {
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + day;
+  }
+
+  function parseDateKey(key) {
+    var p = key.split('-');
+    return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+  }
+
+  function formatHumanDate(key) {
+    var d = parseDateKey(key);
+    return d.getDate() + ' ' + monthsGen[d.getMonth()];
+  }
+
+  function formatReportDate(key) {
+    var d = parseDateKey(key);
+    return d.getDate() + ' ' + monthsShort[d.getMonth()];
+  }
+
+  function saveRate() {
+    var val = document.getElementById('ratePerKg').value;
     safeSet('obvalka_rate', val);
-    calcPreview();
   }
 
   function calcPreview() {
-    const count = parseNum(document.getElementById('boxCount').value);
-    const weight = parseNum(document.getElementById('boxWeight').value);
-    const rate = parseNum(document.getElementById('ratePerKg').value);
-    const totalWeight = Number((count * weight).toFixed(3));
-    const totalMoney = Number((totalWeight * rate).toFixed(2));
-    document.getElementById('previewWeight').innerText = `${fmtNum(totalWeight)} кг`;
-    document.getElementById('previewMoney').innerText = `${fmtNum(totalMoney)} ₽`;
+    var count = parseInt(document.getElementById('boxCount').value, 10) || 0;
+    var weight = parseNum(document.getElementById('boxWeight').value);
+    var rate = parseNum(document.getElementById('ratePerKg').value);
+    var totW = Math.round(count * weight * 1000) / 1000;
+    var totP = Math.round(totW * rate * 100) / 100;
+    document.getElementById('previewWeight').innerText = fmtWeight(totW);
+    document.getElementById('previewPay').innerText = fmtMoney(totP);
   }
 
   function addRecord() {
-    const count = Math.round(parseNum(document.getElementById('boxCount').value));
-    const boxWeight = parseNum(document.getElementById('boxWeight').value);
-    const rate = parseNum(document.getElementById('ratePerKg').value);
-
-    if (count <= 0 || boxWeight <= 0) {
+    var count = parseInt(document.getElementById('boxCount').value, 10) || 0;
+    var weight = parseNum(document.getElementById('boxWeight').value);
+    var rate = parseNum(document.getElementById('ratePerKg').value);
+    if (count <= 0 || weight <= 0) {
       showToast('Введите коробки и вес');
       return;
     }
-
-    const dateKey = formatDateKey(selectedDate);
-    holidays = holidays.filter(h => h !== dateKey);
-
-    const totalWeight = Number((count * boxWeight).toFixed(3));
-    const totalMoney = Number((totalWeight * rate).toFixed(2));
-
+    var key = formatDateKey(selectedDate);
+    dayOffs = dayOffs.filter(function(d) { return d !== key; });
+    var totW = Math.round(count * weight * 1000) / 1000;
+    var totP = Math.round(totW * rate * 100) / 100;
     records.push({
       id: Date.now() + Math.random(),
-      date: dateKey,
+      date: key,
       count: count,
-      boxWeight: boxWeight,
+      weightKg: weight,
       rate: rate,
-      totalWeight: totalWeight,
-      totalMoney: totalMoney
+      totalWeight: totW,
+      totalPay: totP
     });
-
-    saveState();
+    persistData();
     document.getElementById('boxCount').value = '';
     document.getElementById('boxWeight').value = '';
     calcPreview();
@@ -905,574 +871,583 @@
     showToast('Запись добавлена');
   }
 
-  function toggleHoliday() {
-    const dateKey = formatDateKey(selectedDate);
-    if (holidays.includes(dateKey)) {
-      holidays = holidays.filter(h => h !== dateKey);
+  function toggleDayOff() {
+    var key = formatDateKey(selectedDate);
+    var idx = dayOffs.indexOf(key);
+    if (idx !== -1) {
+      dayOffs.splice(idx, 1);
       showToast('Выходной снят');
     } else {
-      holidays.push(dateKey);
+      dayOffs.push(key);
       showToast('Отмечен выходной');
     }
-    saveState();
+    persistData();
     renderAll();
   }
 
   function deleteRecord(id) {
-    const idx = records.findIndex(r => r.id === id);
+    var idx = -1;
+    for (var i = 0; i < records.length; i++) {
+      if (records[i].id === id) { idx = i; break; }
+    }
     if (idx !== -1) {
-      const removed = records.splice(idx, 1)[0];
-      deletedStack.push({ type: 'record', data: removed });
-      saveState();
+      undoStack.push({ type: 'record', item: records[idx] });
+      records.splice(idx, 1);
+      persistData();
       renderAll();
     }
   }
 
-  function deleteHoliday(dateKey) {
-    if (holidays.includes(dateKey)) {
-      holidays = holidays.filter(h => h !== dateKey);
-      deletedStack.push({ type: 'holiday', data: dateKey });
-      saveState();
+  function deleteDayOff(key) {
+    var idx = dayOffs.indexOf(key);
+    if (idx !== -1) {
+      undoStack.push({ type: 'dayoff', item: key });
+      dayOffs.splice(idx, 1);
+      persistData();
       renderAll();
     }
   }
 
   function undoDelete() {
-    if (deletedStack.length === 0) return;
-    const last = deletedStack.pop();
+    if (undoStack.length === 0) return;
+    var last = undoStack.pop();
     if (last.type === 'record') {
-      records.push(last.data);
-    } else if (last.type === 'holiday') {
-      if (!holidays.includes(last.data)) holidays.push(last.data);
+      records.push(last.item);
+    } else if (last.type === 'dayoff') {
+      if (dayOffs.indexOf(last.item) === -1) dayOffs.push(last.item);
     }
-    saveState();
+    persistData();
     renderAll();
-    showToast('Запись восстановлена');
   }
 
   function askClearUndo() {
-    if (deletedStack.length === 0) return;
-    document.getElementById('confirmClearModal').style.display = 'flex';
+    openConfirm('Все удаленные данные сотрутся.<br>Вы уверены?', function() {
+      undoStack = [];
+      renderUndoBar();
+    });
   }
 
-  function confirmClearUndo() {
-    deletedStack = [];
-    closeModal('confirmClearModal');
+  function renderUndoBar() {
+    var wrap = document.getElementById('undoWrap');
+    var btn = document.getElementById('undoBtn');
+    if (undoStack.length > 0) {
+      wrap.style.display = 'flex';
+      btn.innerText = '↩ Отменить удаление (' + undoStack.length + ')';
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+
+  function getActiveRange() {
+    if (periodMode === 'custom' && customStart && customEnd) {
+      return customStart <= customEnd ? { start: customStart, end: customEnd } : { start: customEnd, end: customStart };
+    }
+    var y = selectedDate.getFullYear();
+    var m = selectedDate.getMonth();
+    var d = selectedDate.getDate();
+    if (periodMode === 'day') {
+      var k = formatDateKey(selectedDate);
+      return { start: k, end: k };
+    }
+    if (periodMode === 'week') {
+      var dow = selectedDate.getDay();
+      var diff = d - dow + (dow === 0 ? -6 : 1);
+      var s = new Date(y, m, diff);
+      var e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
+      return { start: formatDateKey(s), end: formatDateKey(e) };
+    }
+    if (periodMode === 'two_weeks') {
+      var lastDay = new Date(y, m + 1, 0).getDate();
+      if (d <= 15) {
+        return { start: formatDateKey(new Date(y, m, 1)), end: formatDateKey(new Date(y, m, 15)) };
+      } else {
+        return { start: formatDateKey(new Date(y, m, 16)), end: formatDateKey(new Date(y, m, lastDay)) };
+      }
+    }
+    if (periodMode === 'month') {
+      var lastM = new Date(y, m + 1, 0).getDate();
+      return { start: formatDateKey(new Date(y, m, 1)), end: formatDateKey(new Date(y, m, lastM)) };
+    }
+    if (periodMode === 'year') {
+      return { start: y + '-01-01', end: y + '-12-31' };
+    }
+    var defK = formatDateKey(selectedDate);
+    return { start: defK, end: defK };
+  }
+
+  function setMode(mode) {
+    periodMode = mode;
+    customStart = null;
+    customEnd = null;
+    var tabs = document.querySelectorAll('.tab');
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    var activeTab = document.getElementById('tab-' + mode);
+    if (activeTab) activeTab.classList.add('active');
     renderAll();
-    showToast('Список удалённых очищен');
-  }
-
-  function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
   }
 
   function changeMonth(delta) {
     viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + delta, 1);
-    renderCalendar();
-  }
-
-  function setMode(mode, btn) {
-    periodMode = mode;
-    customRange = null;
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    if (btn) btn.classList.add('active');
+    if (periodMode === 'month' || periodMode === 'year') {
+      var lastDay = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
+      var targetDay = Math.min(selectedDate.getDate(), lastDay);
+      selectedDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), targetDay);
+    }
     renderAll();
   }
 
-  function getActiveRange() {
-    const y = selectedDate.getFullYear();
-    const m = selectedDate.getMonth();
-    const d = selectedDate.getDate();
-
-    if (periodMode === 'custom' && customRange) {
-      const s = customRange.start <= customRange.end ? customRange.start : customRange.end;
-      const e = customRange.start <= customRange.end ? customRange.end : customRange.start;
-      return { start: s, end: e };
-    }
-    if (periodMode === 'day') {
-      const k = formatDateKey(selectedDate);
-      return { start: k, end: k };
-    }
-    if (periodMode === 'week') {
-      const dayOfWeek = selectedDate.getDay();
-      const diffToMon = d - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-      const mon = new Date(y, m, diffToMon);
-      const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
-      return { start: formatDateKey(mon), end: formatDateKey(sun) };
-    }
-    if (periodMode === 'two_weeks') {
-      const lastDay = new Date(y, m + 1, 0).getDate();
-      if (d <= 15) {
-        return {
-          start: formatDateKey(new Date(y, m, 1)),
-          end: formatDateKey(new Date(y, m, 15))
-        };
-      } else {
-        return {
-          start: formatDateKey(new Date(y, m, 16)),
-          end: formatDateKey(new Date(y, m, lastDay))
-        };
-      }
-    }
-    if (periodMode === 'month') {
-      const lastDay = new Date(y, m + 1, 0).getDate();
-      return {
-        start: formatDateKey(new Date(y, m, 1)),
-        end: formatDateKey(new Date(y, m, lastDay))
-      };
-    }
-    if (periodMode === 'year') {
-      return {
-        start: `${y}-01-01`,
-        end: `${y}-12-31`
-      };
-    }
-    const k = formatDateKey(selectedDate);
-    return { start: k, end: k };
-  }
-
   function renderCalendar() {
-    const year = viewDate.getFullYear();
-    const month = viewDate.getMonth();
-    document.getElementById('monthLabel').innerText = `${monthsNom[month]} ${year}`;
+    var year = viewDate.getFullYear();
+    var month = viewDate.getMonth();
+    document.getElementById('monthLabel').innerText = monthsNom[month] + ' ' + year;
 
-    const grid = document.getElementById('calendarGrid');
-    while (grid.firstChild) grid.removeChild(grid.firstChild);
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    const dataSet = new Set(records.map(r => r.date));
-    const holSet = new Set(holidays);
-    const selKey = formatDateKey(selectedDate);
-    const range = getActiveRange();
-
-    for (let i = 0; i < startOffset; i++) {
-      const empty = document.createElement('div');
-      empty.className = 'day empty';
-      grid.appendChild(empty);
+    var grid = document.getElementById('calendarGrid');
+    while (grid.firstChild) {
+      grid.removeChild(grid.firstChild);
     }
 
-    for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-      const curDate = new Date(year, month, dayNum);
-      const key = formatDateKey(curDate);
-      const cell = document.createElement('div');
-      cell.className = 'day';
-      cell.innerText = String(dayNum);
-      cell.dataset.key = key;
+    var firstDay = new Date(year, month, 1).getDay();
+    var offset = firstDay === 0 ? 6 : firstDay - 1;
+    var daysInMonth = new Date(year, month + 1, 0).getDate();
 
+    var dataSet = {};
+    for (var i = 0; i < records.length; i++) dataSet[records[i].date] = true;
+    var offSet = {};
+    for (var j = 0; j < dayOffs.length; j++) offSet[dayOffs[j]] = true;
+
+    var selKey = formatDateKey(selectedDate);
+    var range = getActiveRange();
+
+    for (var e = 0; e < offset; e++) {
+      var emptyDiv = document.createElement('div');
+      emptyDiv.className = 'day empty';
+      grid.appendChild(emptyDiv);
+    }
+
+    for (var d = 1; d <= daysInMonth; d++) {
+      var curDate = new Date(year, month, d);
+      var key = formatDateKey(curDate);
+      var cell = document.createElement('div');
+      var cls = 'day';
       if (periodMode !== 'day' && key >= range.start && key <= range.end) {
-        cell.classList.add('in-range');
+        cls += ' in-range';
       }
       if (key === selKey) {
-        cell.classList.add('selected');
+        cls += ' selected';
       }
-      if (holSet.has(key)) {
-        cell.classList.add('holiday');
+      if (offSet[key]) {
+        cls += ' day-off';
       }
-      if (dataSet.has(key)) {
-        cell.classList.add('has-data');
+      if (dataSet[key]) {
+        cls += ' has-data';
       }
+      cell.className = cls;
+      cell.innerText = String(d);
+      cell.setAttribute('data-key', key);
 
-      cell.addEventListener('pointerdown', (e) => {
-        isDragging = true;
-        dragStartKey = key;
-        selectedDate = parseDateKey(key);
-        if (periodMode === 'custom') {
-          periodMode = 'day';
-          customRange = null;
-          document.querySelectorAll('.tab').forEach(t => {
-            t.classList.toggle('active', t.dataset.mode === 'day');
-          });
-        }
-        renderAll();
-      });
-
-      cell.addEventListener('pointerenter', () => {
-        if (isDragging && dragStartKey && dragStartKey !== key) {
-          periodMode = 'custom';
-          customRange = { start: dragStartKey, end: key };
-          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      (function(k, yVal, mVal, dVal) {
+        cell.addEventListener('pointerdown', function(ev) {
+          ev.preventDefault();
+          isDragging = true;
+          dragStartKey = k;
+          selectedDate = new Date(yVal, mVal, dVal);
+          if (periodMode === 'custom') {
+            periodMode = 'day';
+            var tabs = document.querySelectorAll('.tab');
+            for (var t = 0; t < tabs.length; t++) tabs[t].classList.remove('active');
+            document.getElementById('tab-day').classList.add('active');
+          }
+          customStart = null;
+          customEnd = null;
           renderAll();
-        }
-      });
+        });
+      })(key, year, month, d);
 
       grid.appendChild(cell);
     }
   }
 
-  document.addEventListener('pointerup', () => {
+  document.addEventListener('pointermove', function(ev) {
+    if (!isDragging) return;
+    var el = document.elementFromPoint(ev.clientX, ev.clientY);
+    if (el && el.getAttribute && el.getAttribute('data-key')) {
+      var hoverKey = el.getAttribute('data-key');
+      if (hoverKey !== dragStartKey) {
+        periodMode = 'custom';
+        customStart = dragStartKey;
+        customEnd = hoverKey;
+        var tabs = document.querySelectorAll('.tab');
+        for (var t = 0; t < tabs.length; t++) tabs[t].classList.remove('active');
+        renderAll();
+      }
+    }
+  });
+
+  document.addEventListener('pointerup', function() {
     isDragging = false;
   });
 
-  document.getElementById('calendarGrid').addEventListener('touchmove', (e) => {
-    if (!isDragging) return;
-    const touch = e.touches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (el && el.dataset && el.dataset.key && el.dataset.key !== dragStartKey) {
-      periodMode = 'custom';
-      customRange = { start: dragStartKey, end: el.dataset.key };
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      renderAll();
-    }
-  }, { passive: true });
+  function renderSummaryAndList() {
+    var selKey = formatDateKey(selectedDate);
+    document.getElementById('selectedDateLabel').innerText = 'Выбрано: ' + formatHumanDate(selKey);
 
-  function getPeriodLabel() {
-    const range = getActiveRange();
+    var range = getActiveRange();
+    var periodTitle = '';
     if (periodMode === 'day') {
-      return formatHumanDate(range.start);
-    }
-    if (periodMode === 'month') {
-      return `${monthsNom[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`;
-    }
-    if (periodMode === 'year') {
-      return `${selectedDate.getFullYear()} год`;
-    }
-    return `${formatHumanDate(range.start)} – ${formatHumanDate(range.end)}`;
-  }
-
-  function renderRecordsAndSummary() {
-    const range = getActiveRange();
-    const label = getPeriodLabel();
-
-    document.getElementById('selectedDateLabel').innerText = `Дата ввода: ${formatHumanDate(formatDateKey(selectedDate))}`;
-
-    let recHeader = 'ЗАПИСИ:';
-    let sumHeader = 'ИТОГ ЗА ДЕНЬ';
-    if (periodMode === 'day') {
-      recHeader = `ЗАПИСИ (${label.toUpperCase()}):`;
-      sumHeader = `ИТОГ ЗА ${label.toUpperCase()}`;
+      periodTitle = 'ДЕНЬ (' + formatHumanDate(selKey) + ')';
     } else if (periodMode === 'week') {
-      recHeader = `ЗАПИСИ ЗА НЕДЕЛЮ (${label.toUpperCase()}):`;
-      sumHeader = `ИТОГ ЗА НЕДЕЛЮ (${label.toUpperCase()})`;
+      periodTitle = 'НЕДЕЛЯ (' + formatHumanDate(range.start) + ' – ' + formatHumanDate(range.end) + ')';
     } else if (periodMode === 'two_weeks') {
-      recHeader = `ЗАПИСИ ЗА 2 НЕДЕЛИ (${label.toUpperCase()}):`;
-      sumHeader = `ИТОГ ЗА 2 НЕДЕЛИ (${label.toUpperCase()})`;
+      periodTitle = '2Х НЕДЕЛИ (' + formatHumanDate(range.start) + ' – ' + formatHumanDate(range.end) + ')';
     } else if (periodMode === 'month') {
-      recHeader = `ЗАПИСИ ЗА МЕСЯЦ (${label.toUpperCase()}):`;
-      sumHeader = `ИТОГ ЗА МЕСЯЦ (${label.toUpperCase()})`;
+      periodTitle = 'МЕСЯЦ (' + monthsNom[selectedDate.getMonth()].toUpperCase() + ' ' + selectedDate.getFullYear() + ')';
     } else if (periodMode === 'year') {
-      recHeader = `ЗАПИСИ ЗА ГОД (${label.toUpperCase()}):`;
-      sumHeader = `ИТОГ ЗА ГОД (${label.toUpperCase()})`;
-    } else if (periodMode === 'custom') {
-      recHeader = `ЗАПИСИ ЗА ПЕРИОД (${label.toUpperCase()}):`;
-      sumHeader = `ИТОГ ЗА ПЕРИОД (${label.toUpperCase()})`;
-    }
-
-    document.getElementById('recordsTitle').innerText = recHeader;
-    document.getElementById('summaryTitle').innerText = sumHeader;
-
-    // Кнопка отмены удаления
-    const undoGroup = document.getElementById('undoGroup');
-    if (deletedStack.length > 0) {
-      undoGroup.style.display = 'flex';
-      document.getElementById('undoBtn').innerText = `↩ Отменить удаление (${deletedStack.length})`;
+      periodTitle = 'ГОД (' + selectedDate.getFullYear() + ')';
     } else {
-      undoGroup.style.display = 'none';
+      periodTitle = 'ПЕРИОД (' + formatHumanDate(range.start) + ' – ' + formatHumanDate(range.end) + ')';
     }
 
-    const filteredRecs = records
-      .filter(r => r.date >= range.start && r.date <= range.end)
-      .sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
+    document.getElementById('recordsTitle').innerText = 'ЗАПИСИ (' + periodTitle + ')';
+    document.getElementById('summaryTitle').innerText = 'ИТОГ ЗА ' + periodTitle;
 
-    const filteredHols = holidays
-      .filter(h => h >= range.start && h <= range.end)
-      .sort();
-
-    let totalBoxes = 0;
-    let totalWeight = 0;
-    let totalMoney = 0;
-
-    filteredRecs.forEach(r => {
-      totalBoxes += r.count;
-      totalWeight += r.totalWeight;
-      totalMoney += r.totalMoney;
+    var filteredRecs = records.filter(function(r) {
+      return r.date >= range.start && r.date <= range.end;
+    });
+    var filteredOffs = dayOffs.filter(function(d) {
+      return d >= range.start && d <= range.end;
     });
 
-    totalWeight = Number(totalWeight.toFixed(3));
-    totalMoney = Number(totalMoney.toFixed(2));
-
-    document.getElementById('summaryStats').innerText = `Коробок: ${totalBoxes} шт | Вес: ${fmtNum(totalWeight)} кг`;
-    document.getElementById('summaryMoney').innerText = `${fmtNum(totalMoney)} ₽`;
-
-    const listEl = document.getElementById('recordsList');
-    while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
-
-    if (filteredRecs.length === 0 && filteredHols.length === 0) {
-      const empty = document.createElement('div');
-      empty.style.cssText = 'color: var(--muted); font-size: 12px; padding: 2px 0;';
-      empty.innerText = 'Записей нет';
-      listEl.appendChild(empty);
-      return;
+    var totBoxes = 0;
+    var totWeight = 0;
+    var totPay = 0;
+    for (var i = 0; i < filteredRecs.length; i++) {
+      totBoxes += filteredRecs[i].count;
+      totWeight += filteredRecs[i].totalWeight;
+      totPay += filteredRecs[i].totalPay;
     }
 
-    // Объединяем записи и выходные по датам
-    const items = [];
-    filteredRecs.forEach(r => items.push({ date: r.date, kind: 'rec', obj: r }));
-    filteredHols.forEach(h => items.push({ date: h, kind: 'hol', obj: h }));
-    items.sort((a, b) => a.date.localeCompare(b.date));
+    document.getElementById('summaryStats').innerHTML =
+      totBoxes + ' кор. | ' + fmtWeight(totWeight) + ' <span class="salary-highlight">' + fmtMoney(totPay) + '</span>';
 
-    items.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'record-item';
+    var listEl = document.getElementById('recordsList');
+    while (listEl.firstChild) {
+      listEl.removeChild(listEl.firstChild);
+    }
 
-      const left = document.createElement('div');
-      left.className = 'record-text';
+    var combined = [];
+    for (var rIdx = 0; rIdx < filteredRecs.length; rIdx++) {
+      combined.push({ kind: 'rec', date: filteredRecs[rIdx].date, data: filteredRecs[rIdx] });
+    }
+    for (var oIdx = 0; oIdx < filteredOffs.length; oIdx++) {
+      combined.push({ kind: 'off', date: filteredOffs[oIdx], data: filteredOffs[oIdx] });
+    }
 
-      const del = document.createElement('button');
-      del.className = 'del-btn';
-      del.innerText = 'Удалить';
+    combined.sort(function(a, b) {
+      return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0);
+    });
 
-      if (item.kind === 'rec') {
-        const r = item.obj;
-        left.innerHTML = `<b>${formatHumanDate(r.date)}:</b> ${r.count} кор. × ${fmtNum(r.boxWeight)} кг = <b>${fmtNum(r.totalWeight)} кг</b> (${fmtNum(r.totalMoney)} ₽)`;
-        del.onclick = () => deleteRecord(r.id);
-      } else {
-        const h = item.obj;
-        left.innerHTML = `<b>${formatHumanDate(h)}:</b> <span style="color:var(--danger);font-weight:700;">Выходной</span>`;
-        del.onclick = () => deleteHoliday(h);
+    if (combined.length === 0) {
+      var emptyMsg = document.createElement('div');
+      emptyMsg.style.fontSize = '11px';
+      emptyMsg.style.color = 'var(--muted)';
+      emptyMsg.innerText = 'Записей за выбранный период нет';
+      listEl.appendChild(emptyMsg);
+    } else {
+      for (var cIdx = 0; cIdx < combined.length; cIdx++) {
+        var entry = combined[cIdx];
+        var row = document.createElement('div');
+        row.className = 'record-item';
+
+        var leftSpan = document.createElement('span');
+        var btn = document.createElement('button');
+        btn.className = 'del-btn';
+        btn.innerText = '✕';
+
+        if (entry.kind === 'rec') {
+          var rec = entry.data;
+          leftSpan.innerText = formatHumanDate(rec.date) + ': ' + rec.count + ' кор × ' + rec.weightKg + ' = ' + fmtWeight(rec.totalWeight) + ' (' + fmtMoney(rec.totalPay) + ')';
+          (function(idVal) {
+            btn.onclick = function() { deleteRecord(idVal); };
+          })(rec.id);
+        } else {
+          leftSpan.style.color = 'var(--danger)';
+          leftSpan.innerText = formatHumanDate(entry.date) + ': Выходной';
+          (function(kVal) {
+            btn.onclick = function() { deleteDayOff(kVal); };
+          })(entry.date);
+        }
+
+        row.appendChild(leftSpan);
+        row.appendChild(btn);
+        listEl.appendChild(row);
       }
+    }
 
-      row.appendChild(left);
-      row.appendChild(del);
-      listEl.appendChild(row);
-    });
+    renderUndoBar();
   }
 
   function renderAll() {
     renderCalendar();
-    renderRecordsAndSummary();
+    renderSummaryAndList();
   }
 
-  // Отчёты
-  function sendText(text) {
+  function padRight(str, len) {
+    while (str.length < len) str += ' ';
+    return str;
+  }
+
+  function shareText(txt) {
     if (navigator.share) {
-      navigator.share({ text: text }).catch(() => copyFallback(text));
+      navigator.share({ text: txt }).catch(function() {});
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function() {
+        showToast('Отчёт скопирован');
+      }).catch(function() {
+        alert(txt);
+      });
     } else {
-      copyFallback(text);
+      alert(txt);
     }
-  }
-
-  function copyFallback(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => {
-        showToast('Отчёт скопирован в буфер');
-      }).catch(() => legacyCopy(text));
-    } else {
-      legacyCopy(text);
-    }
-  }
-
-  function legacyCopy(text) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); showToast('Отчёт скопирован в буфер'); } catch (e) {}
-    document.body.removeChild(ta);
   }
 
   function shareFullReport() {
-    const range = getActiveRange();
-    const label = getPeriodLabel();
+    var range = getActiveRange();
+    var title = document.getElementById('summaryTitle').innerText;
+    var byDate = {};
 
-    const filteredRecs = records.filter(r => r.date >= range.start && r.date <= range.end);
-    const filteredHols = holidays.filter(h => h >= range.start && h <= range.end);
-
-    const byDate = {};
-    filteredRecs.forEach(r => {
-      if (!byDate[r.date]) byDate[r.date] = { boxes: 0, weight: 0, money: 0, hol: false };
-      byDate[r.date].boxes += r.count;
-      byDate[r.date].weight += r.totalWeight;
-      byDate[r.date].money += r.totalMoney;
-    });
-    filteredHols.forEach(h => {
-      if (!byDate[h]) byDate[h] = { boxes: 0, weight: 0, money: 0, hol: true };
-      else byDate[h].hol = true;
-    });
-
-    const dates = Object.keys(byDate).sort();
-    if (dates.length === 0) {
-      showToast('Нет данных для отчёта');
-      return;
+    for (var i = 0; i < records.length; i++) {
+      var r = records[i];
+      if (r.date >= range.start && r.date <= range.end) {
+        if (!byDate[r.date]) byDate[r.date] = { boxes: 0, weight: 0, pay: 0, off: false };
+        byDate[r.date].boxes += r.count;
+        byDate[r.date].weight += r.totalWeight;
+        byDate[r.date].pay += r.totalPay;
+      }
+    }
+    for (var j = 0; j < dayOffs.length; j++) {
+      var d = dayOffs[j];
+      if (d >= range.start && d <= range.end) {
+        if (!byDate[d]) byDate[d] = { boxes: 0, weight: 0, pay: 0, off: true };
+        else byDate[d].off = true;
+      }
     }
 
-    let totBoxes = 0;
-    let totWeight = 0;
-    let totMoney = 0;
+    var keys = Object.keys(byDate).sort();
+    var lines = [title];
+    var totB = 0, totW = 0, totP = 0;
 
-    const lines = [`📊 Отчёт (${label}):`, ''];
-    dates.forEach(dt => {
-      const d = byDate[dt];
-      const dStr = formatShortDate(dt).padEnd(8, ' ');
-      if (d.hol && d.boxes === 0) {
-        lines.push(`${dStr} | вых`);
+    for (var k = 0; k < keys.length; k++) {
+      var dt = keys[k];
+      var item = byDate[dt];
+      var dStr = padRight(formatReportDate(dt), 7);
+      if (item.off && item.boxes === 0) {
+        lines.push(dStr + ' | вых');
       } else {
-        const bStr = `${d.boxes} кор.`.padEnd(8, ' ');
-        const wStr = `${fmtNum(d.weight)} кг`.padEnd(10, ' ');
-        const mStr = `${fmtNum(d.money)} ₽`;
-        lines.push(`${dStr} | ${bStr} | ${wStr} | ${mStr}`);
-        totBoxes += d.boxes;
-        totWeight += d.weight;
-        totMoney += d.money;
+        totB += item.boxes;
+        totW += item.weight;
+        totP += item.pay;
+        var bStr = padRight(item.boxes + ' к', 5);
+        var wStr = padRight((Math.round(item.weight * 1000) / 1000) + ' кг', 9);
+        var pStr = Math.round(item.pay) + ' ₽';
+        lines.push(dStr + ' | ' + bStr + ' | ' + wStr + ' | ' + pStr);
       }
-    });
+    }
 
-    lines.push('');
-    lines.push(`ИТОГ: ${totBoxes} кор. | ${fmtNum(totWeight)} кг | ${fmtNum(totMoney)} ₽`);
-
-    sendText(lines.join('\n'));
+    lines.push('------------------------');
+    lines.push('ИТОГ: ' + totB + ' кор | ' + (Math.round(totW * 1000) / 1000) + ' кг | ' + Math.round(totP) + ' ₽');
+    shareText(lines.join('\n'));
   }
 
   function shareShortReport() {
-    const range = getActiveRange();
-    const label = getPeriodLabel();
-    const filteredRecs = records.filter(r => r.date >= range.start && r.date <= range.end);
-
-    let totWeight = 0;
-    filteredRecs.forEach(r => { totWeight += r.totalWeight; });
-
-    const text = `Период: ${label}\nОбщий вес: ${fmtNum(totWeight)} кг`;
-    sendText(text);
+    var range = getActiveRange();
+    var filteredRecs = records.filter(function(r) {
+      return r.date >= range.start && r.date <= range.end;
+    });
+    var totW = 0;
+    for (var i = 0; i < filteredRecs.length; i++) totW += filteredRecs[i].totalWeight;
+    var periodText = formatHumanDate(range.start) + ' – ' + formatHumanDate(range.end);
+    if (range.start === range.end) periodText = formatHumanDate(range.start);
+    var txt = periodText + '\nОбщий вес: ' + (Math.round(totW * 1000) / 1000) + ' кг';
+    shareText(txt);
   }
 
-  // Резервное копирование в памяти телефона (до 5 точек сохранения без интернета и разрешений)
-  function updateBackupStatusText() {
-    const el = document.getElementById('backupStatus');
-    if (backupSlots.length === 0) {
-      el.innerText = 'В памяти телефона пока нет ручных копий';
-    } else {
-      const last = backupSlots[0];
-      el.innerText = `Последняя копия в телефоне: ${last.label} (${last.records.length} зап.)`;
+  function toggleTheme() {
+    var isLight = document.body.classList.toggle('light-theme');
+    document.getElementById('themeBtn').innerText = isLight ? '🌙' : '☀️';
+    safeSet('obvalka_theme', isLight ? 'light' : 'dark');
+  }
+
+  function openConfirm(htmlMsg, onYes) {
+    document.getElementById('confirmText').innerHTML = htmlMsg;
+    confirmCallback = onYes;
+    document.getElementById('confirmModal').style.display = 'flex';
+  }
+
+  function closeConfirmModal() {
+    document.getElementById('confirmModal').style.display = 'none';
+    confirmCallback = null;
+  }
+
+  document.getElementById('confirmYesBtn').onclick = function() {
+    if (confirmCallback) confirmCallback();
+    closeConfirmModal();
+  };
+
+  function getBackups() {
+    try {
+      var arr = JSON.parse(safeGet('obvalka_backups', '[]'));
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
     }
   }
 
-  function savePhoneBackup() {
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, '0');
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const hh = String(now.getHours()).padStart(2, '0');
-    const min = String(now.getMinutes()).padStart(2, '0');
-    const label = `${dd}.${mm}.${now.getFullYear()} в ${hh}:${min}`;
-
-    const snapshot = {
+  function saveLocalBackup() {
+    var now = new Date();
+    var stamp = String(now.getDate()).padStart(2, '0') + '.' +
+                String(now.getMonth() + 1).padStart(2, '0') + '.' +
+                now.getFullYear() + ' ' +
+                String(now.getHours()).padStart(2, '0') + ':' +
+                String(now.getMinutes()).padStart(2, '0');
+    var list = getBackups();
+    list.unshift({
       id: Date.now(),
-      label: label,
-      rate: document.getElementById('ratePerKg').value.trim(),
-      records: JSON.parse(JSON.stringify(records)),
-      holidays: JSON.parse(JSON.stringify(holidays))
-    };
-
-    backupSlots.unshift(snapshot);
-    if (backupSlots.length > 5) backupSlots = backupSlots.slice(0, 5);
-
-    safeSet('obvalka_phone_backups', JSON.stringify(backupSlots));
-    saveState();
-    updateBackupStatusText();
-    showToast(`База сохранена в телефоне (${records.length} зап.)`);
+      stamp: stamp,
+      recCount: records.length,
+      offCount: dayOffs.length,
+      records: records,
+      dayOffs: dayOffs,
+      rate: document.getElementById('ratePerKg').value
+    });
+    if (list.length > 8) list = list.slice(0, 8);
+    safeSet('obvalka_backups', JSON.stringify(list));
+    showToast('База сохранена (' + records.length + ' зап.)');
   }
 
   function openRestoreModal() {
-    const container = document.getElementById('backupSlotsContainer');
-    while (container.firstChild) container.removeChild(container.firstChild);
-
-    if (backupSlots.length === 0) {
-      const msg = document.createElement('div');
-      msg.style.cssText = 'font-size:12px; color:var(--muted); margin-bottom:10px;';
-      msg.innerText = 'Нет сохранённых копий. Сначала нажмите «СОХРАНИТЬ БАЗУ».';
-      container.appendChild(msg);
-    } else {
-      backupSlots.forEach((slot, index) => {
-        const box = document.createElement('div');
-        box.className = 'backup-slot';
-
-        const top = document.createElement('div');
-        top.className = 'slot-top';
-        top.innerHTML = `<span>Копия #${index + 1} — ${slot.label}</span>`;
-
-        const meta = document.createElement('div');
-        meta.className = 'slot-meta';
-        meta.innerText = `Записей: ${slot.records.length} | Выходных: ${slot.holidays.length} | Ставка: ${slot.rate || '0'} ₽`;
-
-        const acts = document.createElement('div');
-        acts.className = 'slot-actions';
-
-        const restBtn = document.createElement('button');
-        restBtn.className = 'modal-btn green';
-        restBtn.style.padding = '5px';
-        restBtn.style.fontSize = '12px';
-        restBtn.innerText = 'Восстановить';
-        restBtn.onclick = () => restoreFromSlot(slot.id);
-
-        const delBtn = document.createElement('button');
-        delBtn.className = 'modal-btn no';
-        delBtn.style.padding = '5px';
-        delBtn.style.fontSize = '12px';
-        delBtn.style.color = 'var(--danger)';
-        delBtn.innerText = 'Удалить';
-        delBtn.onclick = () => deleteBackupSlot(slot.id);
-
-        acts.appendChild(restBtn);
-        acts.appendChild(delBtn);
-
-        box.appendChild(top);
-        box.appendChild(meta);
-        box.appendChild(acts);
-        container.appendChild(box);
-      });
-    }
-
+    renderBackupList();
     document.getElementById('restoreModal').style.display = 'flex';
   }
 
-  function restoreFromSlot(id) {
-    const slot = backupSlots.find(s => s.id === id);
-    if (!slot) return;
-    records = JSON.parse(JSON.stringify(slot.records || []));
-    holidays = JSON.parse(JSON.stringify(slot.holidays || []));
-    if (slot.rate !== undefined) {
-      document.getElementById('ratePerKg').value = slot.rate;
-      safeSet('obvalka_rate', slot.rate);
+  function closeRestoreModal() {
+    document.getElementById('restoreModal').style.display = 'none';
+  }
+
+  function renderBackupList() {
+    var container = document.getElementById('backupListContainer');
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    var list = getBackups();
+    if (list.length === 0) {
+      var p = document.createElement('div');
+      p.style.fontSize = '12px';
+      p.style.color = 'var(--muted)';
+      p.style.padding = '12px 0';
+      p.innerText = 'Сохранённых копий пока нет';
+      container.appendChild(p);
+      return;
     }
-    deletedStack = [];
-    saveState();
-    closeModal('restoreModal');
-    renderAll();
-    showToast('База успешно восстановлена');
+
+    for (var i = 0; i < list.length; i++) {
+      var b = list[i];
+      var rCnt = Array.isArray(b.records) ? b.records.length : (b.recCount || 0);
+      var oCnt = Array.isArray(b.dayOffs) ? b.dayOffs.length : (b.offCount || 0);
+      var titleText = b.stamp || 'Резервная копия #' + (i + 1);
+
+      var itemDiv = document.createElement('div');
+      itemDiv.className = 'backup-item';
+
+      var infoDiv = document.createElement('div');
+      var tDiv = document.createElement('div');
+      tDiv.style.fontSize = '13px';
+      tDiv.style.fontWeight = '700';
+      tDiv.innerText = titleText;
+
+      var sDiv = document.createElement('div');
+      sDiv.style.fontSize = '11px';
+      sDiv.style.color = 'var(--muted)';
+      sDiv.innerText = 'Записей: ' + rCnt + ', вых: ' + oCnt;
+
+      infoDiv.appendChild(tDiv);
+      infoDiv.appendChild(sDiv);
+
+      var actDiv = document.createElement('div');
+      actDiv.className = 'backup-item-actions';
+
+      var restBtn = document.createElement('button');
+      restBtn.className = 'restore-item-btn';
+      restBtn.innerText = 'Восстановить';
+      (function(idx) {
+        restBtn.onclick = function() {
+          var curList = getBackups();
+          var chosen = curList[idx];
+          if (chosen) {
+            records = Array.isArray(chosen.records) ? chosen.records : [];
+            dayOffs = Array.isArray(chosen.dayOffs) ? chosen.dayOffs : [];
+            if (chosen.rate !== undefined) {
+              document.getElementById('ratePerKg').value = chosen.rate;
+              saveRate();
+            }
+            persistData();
+            calcPreview();
+            renderAll();
+            closeRestoreModal();
+            showToast('База восстановлена');
+          }
+        };
+      })(i);
+
+      var delBtn = document.createElement('button');
+      delBtn.className = 'del-backup-btn';
+      delBtn.innerText = '✕';
+      (function(idx) {
+        delBtn.onclick = function() {
+          openConfirm('Удалить эту сохранённую базу?<br>Вы уверены?', function() {
+            var curList = getBackups();
+            curList.splice(idx, 1);
+            safeSet('obvalka_backups', JSON.stringify(curList));
+            renderBackupList();
+            showToast('Копия удалена');
+          });
+        };
+      })(i);
+
+      actDiv.appendChild(restBtn);
+      actDiv.appendChild(delBtn);
+
+      itemDiv.appendChild(infoDiv);
+      itemDiv.appendChild(actDiv);
+      container.appendChild(itemDiv);
+    }
   }
 
-  function deleteBackupSlot(id) {
-    backupSlots = backupSlots.filter(s => s.id !== id);
-    safeSet('obvalka_phone_backups', JSON.stringify(backupSlots));
-    updateBackupStatusText();
-    openRestoreModal();
-  }
-
-  // Внутреннее обновление из нового HTML файла
-  function applyHtmlUpdate(input) {
-    const file = input.files && input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const htmlContent = e.target.result;
-      if (htmlContent && htmlContent.includes('<!DOCTYPE html>')) {
-        safeSet('obvalka_custom_html', htmlContent);
-        document.open();
-        document.write(htmlContent);
-        document.close();
-      } else {
-        showToast('Неверный HTML файл');
+  function checkOnlineUpdate(manual) {
+    if (!navigator.onLine) {
+      if (manual) showToast('Нет подключения к сети');
+      return;
+    }
+    var url = window.location.href.split('?')[0] + '?t=' + Date.now();
+    fetch(url, { cache: 'no-store' }).then(function(resp) {
+      return resp.text();
+    }).then(function(html) {
+      var m = html.match(/APP_VERSION\s*=\s*([0-9.]+)/);
+      if (m && parseFloat(m[1]) > APP_VERSION) {
+        showToast('Доступна v ' + m[1] + ', обновляю...');
+        setTimeout(function() {
+          window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
+        }, 1200);
+      } else if (manual) {
+        showToast('У вас актуальная версия v ' + APP_VERSION);
       }
-    };
-    reader.readAsText(file, 'UTF-8');
+    }).catch(function() {
+      if (manual) showToast('Не удалось проверить обновление');
+    });
   }
 
-  // Инициализация
-  loadAllState();
+  loadData();
   calcPreview();
   renderAll();
-  syncFromIDB();
+  setTimeout(function() { checkOnlineUpdate(false); }, 1500);
 </script>
 </body>
 </html>
