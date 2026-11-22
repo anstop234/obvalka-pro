@@ -1,961 +1,1165 @@
-(function() {
+(function () {
   "use strict";
 
-  var APP_VERSION = "v 8.6";
-  var LS_KEY = "obvalka_pro_db_v1";
-  var IDB_NAME = "obvalka_pro_idb";
-  var IDB_STORE = "kv";
-  var IDB_KEY = "main_db";
+  var APP_VERSION = "v 8.7";
+  var STORAGE_KEY = "obvalka_pro_db_v1";
+  var IDB_NAME = "ObvalkaProDB";
+  var IDB_STORE = "stateStore";
+  var IDB_KEY = "mainState";
   var NL = String.fromCharCode(10);
 
-  var MONTHS_NOM = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-  var MONTHS_GEN = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
-  var MONTHS_SHORT = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
-
-  var state = {
-    viewYear: 2026,
-    viewMonth: 10,
-    periodMode: "day",
-    selectedStart: "2026-11-22",
-    selectedEnd: "2026-11-22",
-    workerName: "",
-    defaultRate: 9.5,
-    theme: "dark",
-    records: {},
-    backups: [],
-    updatedAt: 0,
-    lastAutoBackupDate: ""
-  };
-
-  var isDragging = false;
-  var dragAnchorDate = null;
-  var undoBuffer = null;
-  var undoTimer = null;
-  var currentReportText = "";
+  var MONTHS_NOM = [
+    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+  ];
+  var MONTHS_GEN = [
+    "января", "февраля", "марта", "апреля", "мая", "июня",
+    "июля", "августа", "сентября", "октября", "ноября", "декабря"
+  ];
+  var MONTHS_SHORT = [
+    "янв", "фев", "мар", "апр", "май", "июн",
+    "июл", "авг", "сен", "окт", "ноя", "дек"
+  ];
 
   function pad2(n) {
-    return n < 10 ? "0" + n : "" + n;
+    return n < 10 ? "0" + n : String(n);
   }
 
-  function toIso(y, m, d) {
-    return y + "-" + pad2(m + 1) + "-" + pad2(d);
+  function toDateStr(d) {
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
   }
 
-  function parseIso(iso) {
-    var parts = String(iso || "").split("-");
-    return new Date(parseInt(parts[0], 10) || 2026, (parseInt(parts[1], 10) || 1) - 1, parseInt(parts[2], 10) || 1);
-  }
-
-  function formatShortDate(iso) {
-    var dt = parseIso(iso);
-    return dt.getDate() + " " + MONTHS_SHORT[dt.getMonth()];
-  }
-
-  function formatFullDate(iso) {
-    var dt = parseIso(iso);
-    return dt.getDate() + " " + MONTHS_GEN[dt.getMonth()];
+  function parseDateStr(s) {
+    var p = String(s || "").split("-");
+    if (p.length !== 3) return new Date();
+    return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]), 12, 0, 0);
   }
 
   function parseNum(val) {
     if (typeof val === "number") return isFinite(val) ? val : 0;
     var s = String(val || "").replace(",", ".").trim();
     var out = "";
-    var dotSeen = false;
+    var dot = false;
     for (var i = 0; i < s.length; i++) {
-      var ch = s.charAt(i);
-      if (ch >= "0" && ch <= "9") out += ch;
-      else if (ch === "." && !dotSeen) { out += "."; dotSeen = true; }
+      var c = s.charAt(i);
+      if (c >= "0" && c <= "9") out += c;
+      else if (c === "." && !dot) { out += c; dot = true; }
     }
     var n = parseFloat(out);
     return isFinite(n) ? n : 0;
   }
 
   function round2(n) {
-    return Math.round((n + Number.EPSILON) * 100) / 100;
+    return Math.round((Number(n) || 0) * 100) / 100;
   }
 
-  function fmtMoney(n) {
+  function fmtNum(n) {
     var r = round2(n);
-    return (r % 1 === 0 ? r.toString() : r.toFixed(2)) + " ₽";
+    return Number.isInteger(r) ? String(r) : String(r);
   }
 
-  function fmtWeight(n) {
-    var r = round2(n);
-    return (r % 1 === 0 ? r.toString() : r.toFixed(2)) + " кг";
+  function fmtDateShort(ds) {
+    var d = parseDateStr(ds);
+    return d.getDate() + " " + MONTHS_SHORT[d.getMonth()];
   }
+
+  function fmtDateFull(ds) {
+    var d = parseDateStr(ds);
+    return d.getDate() + " " + MONTHS_GEN[d.getMonth()];
+  }
+
+  function defaultState() {
+    var today = toDateStr(new Date());
+    var now = new Date();
+    return {
+      records: [],
+      backups: [],
+      workerName: "",
+      defaultRate: 9.5,
+      theme: "dark",
+      viewYear: now.getFullYear(),
+      viewMonth: now.getMonth(),
+      mode: "day",
+      activeDate: today,
+      rangeStart: today,
+      rangeEnd: today,
+      lastAutoBackupDate: "",
+      updatedAt: 0
+    };
+  }
+
+  var state = defaultState();
+  var undoBuffer = [];
+  var undoTimer = null;
+  var undoCountdown = 0;
+  var isDragging = false;
+  var dragStartDate = null;
+  var currentReportText = "";
+  var pendingDeleteBackupIdx = -1;
 
   function normalizeRecord(rec, fallbackRate) {
     if (!rec || typeof rec !== "object") return null;
-    if (rec.isOff || rec.off || rec.type === "off") {
-      return { isOff: true, boxes: 0, boxWeight: 0, weight: 0, rate: 0, pay: 0 };
-    }
-    var boxes = parseNum(rec.boxes !== undefined ? rec.boxes : rec.b);
+    var date = rec.date || rec.d || toDateStr(new Date());
+    var isOff = Boolean(rec.isOff || rec.off || rec.type === "off");
+    var boxes = Math.round(parseNum(rec.boxes !== undefined ? rec.boxes : rec.b));
     var boxWeight = parseNum(rec.boxWeight !== undefined ? rec.boxWeight : rec.bw);
-    var weight = parseNum(rec.weight !== undefined ? rec.weight : (rec.totalWeight !== undefined ? rec.totalWeight : rec.w));
-    if (weight <= 0 && boxes > 0 && boxWeight > 0) {
+    var weight = parseNum(
+      rec.weight !== undefined ? rec.weight :
+      (rec.totalWeight !== undefined ? rec.totalWeight : rec.w)
+    );
+    if (!isOff && weight <= 0 && boxes > 0 && boxWeight > 0) {
       weight = round2(boxes * boxWeight);
     }
     var rate = parseNum(rec.rate !== undefined ? rec.rate : rec.r);
-    if (rate <= 0 && weight > 0) {
-      rate = fallbackRate || 9.5;
+    if (!isOff && rate <= 0) {
+      rate = fallbackRate > 0 ? fallbackRate : 9.5;
     }
-    var pay = parseNum(rec.pay !== undefined ? rec.pay : (rec.totalPay !== undefined ? rec.totalPay : rec.sum));
-    if (pay <= 0 && weight > 0 && rate > 0) {
+    var pay = parseNum(
+      rec.pay !== undefined ? rec.pay :
+      (rec.totalPay !== undefined ? rec.totalPay : rec.sum)
+    );
+    if (!isOff && pay <= 0 && weight > 0 && rate > 0) {
       pay = round2(weight * rate);
     }
-    if (boxes <= 0 && weight <= 0 && pay <= 0) {
-      return { isOff: true, boxes: 0, boxWeight: 0, weight: 0, rate: 0, pay: 0 };
+    if (!isOff && boxes === 0 && weight === 0 && pay === 0) {
+      isOff = true;
     }
     return {
-      isOff: false,
-      boxes: boxes,
-      boxWeight: boxWeight,
-      weight: round2(weight),
-      rate: round2(rate),
-      pay: round2(pay)
+      id: rec.id || (String(Date.now()) + "_" + Math.random().toString(36).slice(2, 7)),
+      date: date,
+      isOff: isOff,
+      boxes: isOff ? 0 : boxes,
+      boxWeight: isOff ? 0 : round2(boxWeight),
+      weight: isOff ? 0 : round2(weight),
+      rate: isOff ? 0 : round2(rate),
+      pay: isOff ? 0 : round2(pay)
     };
   }
 
-  function normalizeDb(raw, fallbackRate) {
-    var rateDef = parseNum(raw && raw.defaultRate) || fallbackRate || 9.5;
-    var outRecords = {};
-    var src = (raw && raw.records) || {};
-    var keys = Object.keys(src);
-    for (var i = 0; i < keys.length; i++) {
-      var d = keys[i];
-      var arr = Array.isArray(src[d]) ? src[d] : [src[d]];
-      var cleanArr = [];
-      for (var j = 0; j < arr.length; j++) {
-        var item = normalizeRecord(arr[j], rateDef);
-        if (item) cleanArr.push(item);
-      }
-      if (cleanArr.length > 0) outRecords[d] = cleanArr;
+  function normalizeState(raw) {
+    var base = defaultState();
+    if (!raw || typeof raw !== "object") return base;
+    var defRate = parseNum(raw.defaultRate);
+    if (defRate <= 0) defRate = 9.5;
+    base.defaultRate = defRate;
+    base.workerName = typeof raw.workerName === "string" ? raw.workerName : "";
+    base.theme = raw.theme === "light" ? "light" : "dark";
+    base.updatedAt = Number(raw.updatedAt) || 0;
+    base.lastAutoBackupDate = typeof raw.lastAutoBackupDate === "string" ? raw.lastAutoBackupDate : "";
+    if (Array.isArray(raw.records)) {
+      base.records = raw.records.map(function (r) { return normalizeRecord(r, defRate); }).filter(Boolean);
     }
-    return {
-      workerName: (raw && raw.workerName) || "",
-      defaultRate: rateDef,
-      theme: (raw && raw.theme) || "dark",
-      records: outRecords,
-      backups: Array.isArray(raw && raw.backups) ? raw.backups : [],
-      updatedAt: Number(raw && raw.updatedAt) || 0,
-      lastAutoBackupDate: (raw && raw.lastAutoBackupDate) || ""
-    };
+    if (Array.isArray(raw.backups)) {
+      base.backups = raw.backups.map(function (b) {
+        if (!b || typeof b !== "object") return null;
+        var recs = Array.isArray(b.records) ? b.records.map(function (r) { return normalizeRecord(r, defRate); }).filter(Boolean) : [];
+        return {
+          id: b.id || String(Date.now() + Math.random()),
+          label: b.label || "Копия",
+          createdAt: Number(b.createdAt) || Date.now(),
+          workerName: typeof b.workerName === "string" ? b.workerName : base.workerName,
+          defaultRate: parseNum(b.defaultRate) || defRate,
+          records: recs
+        };
+      }).filter(Boolean);
+    }
+    return base;
   }
 
-  function countRecords(db) {
-    if (!db || !db.records) return 0;
-    var total = 0;
-    var ks = Object.keys(db.records);
-    for (var i = 0; i < ks.length; i++) {
-      total += Array.isArray(db.records[ks[i]]) ? db.records[ks[i]].length : 0;
-    }
-    return total;
-  }
-
-  function openIdb() {
-    return new Promise(function(resolve) {
+  function openIDB() {
+    return new Promise(function (resolve) {
       if (!window.indexedDB) { resolve(null); return; }
       try {
         var req = window.indexedDB.open(IDB_NAME, 1);
-        req.onupgradeneeded = function(e) {
+        req.onupgradeneeded = function (e) {
           var db = e.target.result;
-          if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+          if (!db.objectStoreNames.contains(IDB_STORE)) {
+            db.createObjectStore(IDB_STORE);
+          }
         };
-        req.onsuccess = function(e) { resolve(e.target.result); };
-        req.onerror = function() { resolve(null); };
-      } catch (e) { resolve(null); }
+        req.onsuccess = function (e) { resolve(e.target.result); };
+        req.onerror = function () { resolve(null); };
+      } catch (err) {
+        resolve(null);
+      }
     });
   }
 
-  function readIdb() {
-    return openIdb().then(function(db) {
+  function readIDB() {
+    return openIDB().then(function (db) {
       if (!db) return null;
-      return new Promise(function(resolve) {
+      return new Promise(function (resolve) {
         try {
           var tx = db.transaction(IDB_STORE, "readonly");
-          var st = tx.objectStore(IDB_STORE);
-          var rq = st.get(IDB_KEY);
-          rq.onsuccess = function() { resolve(rq.result || null); };
-          rq.onerror = function() { resolve(null); };
-        } catch (e) { resolve(null); }
+          var store = tx.objectStore(IDB_STORE);
+          var req = store.get(IDB_KEY);
+          req.onsuccess = function () { resolve(req.result || null); };
+          req.onerror = function () { resolve(null); };
+        } catch (err) {
+          resolve(null);
+        }
       });
     });
   }
 
-  function writeIdb(payload) {
-    return openIdb().then(function(db) {
+  function writeIDB(payload) {
+    return openIDB().then(function (db) {
       if (!db) return false;
-      return new Promise(function(resolve) {
+      return new Promise(function (resolve) {
         try {
           var tx = db.transaction(IDB_STORE, "readwrite");
-          var st = tx.objectStore(IDB_STORE);
-          st.put(payload, IDB_KEY);
-          tx.oncomplete = function() { resolve(true); };
-          tx.onerror = function() { resolve(false); };
-        } catch (e) { resolve(false); }
+          var store = tx.objectStore(IDB_STORE);
+          store.put(payload, IDB_KEY);
+          tx.oncomplete = function () { resolve(true); };
+          tx.onerror = function () { resolve(false); };
+        } catch (err) {
+          resolve(false);
+        }
       });
     });
   }
 
-  function serializeState() {
-    return {
+  function readWindowName() {
+    try {
+      if (window.name && window.name.indexOf("OBVALKA_DB:") === 0) {
+        return JSON.parse(window.name.slice(11));
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function writeWindowName(payload) {
+    try {
+      window.name = "OBVALKA_DB:" + JSON.stringify(payload);
+    } catch (e) {}
+  }
+
+  function persistState(touchTime) {
+    if (touchTime !== false) {
+      state.updatedAt = Date.now();
+    }
+    var snapshot = {
+      records: state.records,
+      backups: state.backups,
       workerName: state.workerName,
       defaultRate: state.defaultRate,
       theme: state.theme,
-      records: state.records,
-      backups: state.backups,
-      updatedAt: state.updatedAt,
-      lastAutoBackupDate: state.lastAutoBackupDate
+      lastAutoBackupDate: state.lastAutoBackupDate,
+      updatedAt: state.updatedAt
     };
-  }
-
-  function saveAllStorages(touchTime) {
-    if (touchTime !== false) state.updatedAt = Date.now();
-    var payload = serializeState();
-    var json = JSON.stringify(payload);
-    try { localStorage.setItem(LS_KEY, json); } catch (e) {}
-    try { window.name = "OBVALKA_DB:" + json; } catch (e) {}
-    return writeIdb(payload);
-  }
-
-  function pickBestDb(candidates) {
-    var best = null;
-    var bestScore = -1;
-    for (var i = 0; i < candidates.length; i++) {
-      var c = candidates[i];
-      if (!c) continue;
-      var norm = normalizeDb(c, 9.5);
-      var cnt = countRecords(norm);
-      var bkp = norm.backups.length;
-      var score = cnt * 100000 + bkp * 1000 + (norm.updatedAt > 0 ? 1 : 0);
-      if (score > bestScore || (score === bestScore && norm.updatedAt > (best ? best.updatedAt : 0))) {
-        best = norm;
-        bestScore = score;
-      }
-    }
-    return best;
-  }
-
-  function loadAllStorages() {
-    var lsObj = null;
-    var wnObj = null;
     try {
-      var s = localStorage.getItem(LS_KEY);
-      if (s) lsObj = JSON.parse(s);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
     } catch (e) {}
+    writeWindowName(snapshot);
+    return writeIDB(snapshot);
+  }
+
+  function pickBestCandidate(candidates) {
+    var valid = candidates.filter(Boolean).map(normalizeState);
+    if (!valid.length) return defaultState();
+    valid.sort(function (a, b) {
+      if (b.updatedAt !== a.updatedAt) return b.updatedAt - a.updatedAt;
+      if (b.records.length !== a.records.length) return b.records.length - a.records.length;
+      return b.backups.length - a.backups.length;
+    });
+    return valid[0];
+  }
+
+  function loadInitialState() {
+    var lsData = null;
     try {
-      if (window.name && window.name.indexOf("OBVALKA_DB:") === 0) {
-        wnObj = JSON.parse(window.name.slice("OBVALKA_DB:".length));
-      }
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) lsData = JSON.parse(raw);
     } catch (e) {}
-    return readIdb().then(function(idbObj) {
-      var chosen = pickBestDb([lsObj, idbObj, wnObj]);
-      if (chosen) {
-        state.workerName = chosen.workerName;
-        state.defaultRate = chosen.defaultRate;
-        state.theme = chosen.theme;
-        state.records = chosen.records;
-        state.backups = chosen.backups;
-        state.updatedAt = chosen.updatedAt;
-        state.lastAutoBackupDate = chosen.lastAutoBackupDate;
-      }
-      return saveAllStorages(false);
+    var wnData = readWindowName();
+    return readIDB().then(function (idbData) {
+      var chosen = pickBestCandidate([lsData, idbData, wnData]);
+      var now = new Date();
+      var today = toDateStr(now);
+      state.records = chosen.records;
+      state.backups = chosen.backups;
+      state.workerName = chosen.workerName;
+      state.defaultRate = chosen.defaultRate;
+      state.theme = chosen.theme;
+      state.lastAutoBackupDate = chosen.lastAutoBackupDate;
+      state.updatedAt = chosen.updatedAt || Date.now();
+      state.viewYear = now.getFullYear();
+      state.viewMonth = now.getMonth();
+      state.mode = "day";
+      state.activeDate = today;
+      state.rangeStart = today;
+      state.rangeEnd = today;
+      return persistState(false);
     });
   }
 
-  function createBackupSnapshot(tag) {
-    var now = new Date();
-    var label = pad2(now.getDate()) + "." + pad2(now.getMonth() + 1) + "." + now.getFullYear() + " " + pad2(now.getHours()) + ":" + pad2(now.getMinutes()) + (tag ? " " + tag : "");
-    var snap = {
-      id: "bkp_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
-      label: label,
-      createdAt: Date.now(),
-      data: normalizeDb(serializeState(), state.defaultRate)
-    };
-    state.backups.unshift(snap);
-    if (state.backups.length > 25) state.backups = state.backups.slice(0, 25);
-  }
-
-  function ensureDailyAutoBackup() {
-    var now = new Date();
-    var todayKey = toIso(now.getFullYear(), now.getMonth(), now.getDate());
-    if (state.lastAutoBackupDate !== todayKey && countRecords(state) > 0) {
-      createBackupSnapshot("(авто)");
-      state.lastAutoBackupDate = todayKey;
-    }
-  }
-
-  function computePeriodBounds(mode, anchorIso) {
-    var dt = parseIso(anchorIso);
-    var y = dt.getFullYear();
-    var m = dt.getMonth();
-    var d = dt.getDate();
-    if (mode === "day") {
-      return { start: anchorIso, end: anchorIso };
-    }
-    if (mode === "week") {
-      var dow = (dt.getDay() + 6) % 7;
-      var sDt = new Date(y, m, d - dow);
-      var eDt = new Date(y, m, d - dow + 6);
-      return {
-        start: toIso(sDt.getFullYear(), sDt.getMonth(), sDt.getDate()),
-        end: toIso(eDt.getFullYear(), eDt.getMonth(), eDt.getDate())
-      };
-    }
-    if (mode === "2weeks") {
-      var lastDay = new Date(y, m + 1, 0).getDate();
-      if (d <= 15) {
-        return { start: toIso(y, m, 1), end: toIso(y, m, 15) };
-      }
-      return { start: toIso(y, m, 16), end: toIso(y, m, lastDay) };
-    }
-    if (mode === "month") {
-      var lastM = new Date(y, m + 1, 0).getDate();
-      return { start: toIso(y, m, 1), end: toIso(y, m, lastM) };
-    }
-    if (mode === "year") {
-      return { start: toIso(y, 0, 1), end: toIso(y, 11, 31) };
-    }
-    return { start: anchorIso, end: anchorIso };
-  }
-
-  function setPeriodMode(mode) {
-    state.periodMode = mode;
-    var bounds = computePeriodBounds(mode, state.selectedStart);
-    state.selectedStart = bounds.start;
-    state.selectedEnd = bounds.end;
-    var dt = parseIso(state.selectedStart);
-    state.viewYear = dt.getFullYear();
-    state.viewMonth = dt.getMonth();
-    refreshAll();
-  }
-
-  function getOrderedRange() {
-    return state.selectedStart <= state.selectedEnd
-      ? { start: state.selectedStart, end: state.selectedEnd }
-      : { start: state.selectedEnd, end: state.selectedStart };
-  }
-
-  function renderCalendar() {
-    var titleEl = document.getElementById("calMonthTitle");
-    var verEl = document.getElementById("appVersionBadge");
-    if (titleEl) titleEl.textContent = MONTHS_NOM[state.viewMonth] + " " + state.viewYear;
-    if (verEl) verEl.textContent = APP_VERSION;
-
-    var tabs = document.querySelectorAll(".period-tab");
-    for (var t = 0; t < tabs.length; t++) {
-      var m = tabs[t].getAttribute("data-mode");
-      tabs[t].classList.toggle("active", m === state.periodMode);
-    }
-
-    var grid = document.getElementById("calGrid");
-    if (!grid) return;
-
-    var firstDay = new Date(state.viewYear, state.viewMonth, 1);
-    var startOffset = (firstDay.getDay() + 6) % 7;
-    var daysInMonth = new Date(state.viewYear, state.viewMonth + 1, 0).getDate();
-    var prevMonthDays = new Date(state.viewYear, state.viewMonth, 0).getDate();
-
-    var range = getOrderedRange();
-    var cells = [];
-
-    for (var p = startOffset - 1; p >= 0; p--) {
-      var pd = prevMonthDays - p;
-      var pm = state.viewMonth - 1;
-      var py = state.viewYear;
-      if (pm < 0) { pm = 11; py--; }
-      cells.push({ iso: toIso(py, pm, pd), day: pd, other: true });
-    }
-    for (var d = 1; d <= daysInMonth; d++) {
-      cells.push({ iso: toIso(state.viewYear, state.viewMonth, d), day: d, other: false });
-    }
-    var rem = (7 - (cells.length % 7)) % 7;
-    for (var n = 1; n <= rem; n++) {
-      var nm = state.viewMonth + 1;
-      var ny = state.viewYear;
-      if (nm > 11) { nm = 0; ny++; }
-      cells.push({ iso: toIso(ny, nm, n), day: n, other: true });
-    }
-
-    var html = "";
-    for (var i = 0; i < cells.length; i++) {
-      var c = cells[i];
-      var dayRecs = state.records[c.iso] || [];
-      var hasOff = false;
-      var hasWork = false;
-      for (var r = 0; r < dayRecs.length; r++) {
-        if (dayRecs[r].isOff) hasOff = true;
-        else hasWork = true;
-      }
-
-      var isStart = c.iso === range.start;
-      var isEnd = c.iso === range.end;
-      var inRange = c.iso >= range.start && c.iso <= range.end;
-
-      var cls = "day-cell";
-      if (c.other) cls += " other-month";
-      if (hasOff) cls += " is-off";
-      else if (hasWork) cls += " has-work";
-
-      if (isStart || isEnd) {
-        cls += " selected-edge";
-      } else if (inRange) {
-        cls += " in-range";
-      }
-
-      var badge = hasOff ? '<span class="off-x">✕</span>' : (hasWork ? '<span class="work-dot"></span>' : "");
-      html += '<div class="' + cls + '" data-iso="' + c.iso + '"><span class="day-num">' + c.day + "</span>" + badge + "</div>";
-    }
-    grid.innerHTML = html;
-  }
-
-  function getPeriodLabel() {
-    var range = getOrderedRange();
-    if (state.periodMode === "day" && range.start === range.end) {
-      return "ДЕНЬ (" + formatShortDate(range.start).toUpperCase() + ")";
-    }
-    if (state.periodMode === "week") return "НЕДЕЛЯ (" + formatShortDate(range.start) + " – " + formatShortDate(range.end) + ")";
-    if (state.periodMode === "2weeks") return "2Х НЕДЕЛИ (" + formatShortDate(range.start) + " – " + formatShortDate(range.end) + ")";
-    if (state.periodMode === "month") return "МЕСЯЦ (" + MONTHS_NOM[parseIso(range.start).getMonth()].toUpperCase() + ")";
-    if (state.periodMode === "year") return "ГОД (" + parseIso(range.start).getFullYear() + ")";
-    return formatShortDate(range.start).toUpperCase() + " – " + formatShortDate(range.end).toUpperCase();
-  }
-
-  function renderRecordsAndTotals() {
-    var range = getOrderedRange();
-    var pLabel = getPeriodLabel();
-    var recTitle = document.getElementById("recordsPeriodLabel");
-    var totTitle = document.getElementById("totalsPeriodLabel");
-    if (recTitle) recTitle.textContent = "ЗАПИСИ (" + pLabel + ")";
-    if (totTitle) totTitle.textContent = "ИТОГ ЗА " + pLabel;
-
-    var listEl = document.getElementById("recordsList");
-    var countBadge = document.getElementById("recordsCountBadge");
-    var allDates = Object.keys(state.records).sort();
-    var rows = [];
-    var totBoxes = 0;
-    var totWeight = 0;
-    var totPay = 0;
-
-    for (var i = 0; i < allDates.length; i++) {
-      var iso = allDates[i];
-      if (iso < range.start || iso > range.end) continue;
-      var arr = state.records[iso] || [];
-      for (var j = 0; j < arr.length; j++) {
-        var rec = arr[j];
-        rows.push({ iso: iso, idx: j, rec: rec });
-        if (!rec.isOff) {
-          totBoxes += rec.boxes || 0;
-          totWeight = round2(totWeight + (rec.weight || 0));
-          totPay = round2(totPay + (rec.pay || 0));
-        }
-      }
-    }
-
-    if (countBadge) countBadge.textContent = rows.length + " ШТ.";
-    var totBoxesEl = document.getElementById("totalBoxes");
-    var totWeightEl = document.getElementById("totalWeight");
-    var totPayEl = document.getElementById("totalPay");
-    if (totBoxesEl) totBoxesEl.textContent = totBoxes + " кор.";
-    if (totWeightEl) totWeightEl.textContent = fmtWeight(totWeight);
-    if (totPayEl) totPayEl.textContent = fmtMoney(totPay);
-
-    if (!listEl) return;
-    if (rows.length === 0) {
-      listEl.innerHTML = "";
-      return;
-    }
-
-    var html = "";
-    for (var k = 0; k < rows.length; k++) {
-      var item = rows[k];
-      var r = item.rec;
-      if (r.isOff) {
-        html += '<div class="record-row off-row">' +
-          '<span class="rec-text">' + formatShortDate(item.iso) + ': <strong class="off-label">Выходной</strong></span>' +
-          '<button class="del-rec-btn" data-iso="' + item.iso + '" data-idx="' + item.idx + '">✕</button>' +
-          "</div>";
-      } else {
-        var boxPart = r.boxes > 0 ? r.boxes + " кор. • " : "";
-        html += '<div class="record-row">' +
-          '<span class="rec-text">' + formatShortDate(item.iso) + ": " + boxPart + fmtWeight(r.weight) + " × " + r.rate + ' ₽ = <strong class="rec-pay">' + fmtMoney(r.pay) + "</strong></span>" +
-          '<button class="del-rec-btn" data-iso="' + item.iso + '" data-idx="' + item.idx + '">✕</button>' +
-          "</div>";
-      }
-    }
-    listEl.innerHTML = html;
-
-    var formDateEl = document.getElementById("selectedDateLabel");
-    if (formDateEl) {
-      formDateEl.textContent = range.start === range.end
-        ? formatFullDate(range.start)
-        : formatShortDate(range.start) + " – " + formatShortDate(range.end);
-    }
-  }
-
-  function updateLiveCalc() {
-    var boxes = parseNum(document.getElementById("inputBoxes").value);
-    var boxWeight = parseNum(document.getElementById("inputBoxWeight").value);
-    var rate = parseNum(document.getElementById("inputRate").value);
-
-    var totalWeight = 0;
-    if (boxes > 0 && boxWeight > 0) {
-      totalWeight = round2(boxes * boxWeight);
-    } else if (boxWeight > 0) {
-      totalWeight = round2(boxWeight);
-    }
-    var totalPay = round2(totalWeight * rate);
-
-    var wEl = document.getElementById("previewWeight");
-    var pEl = document.getElementById("previewPay");
-    if (wEl) wEl.textContent = fmtWeight(totalWeight);
-    if (pEl) pEl.textContent = fmtMoney(totalPay);
+  function showToast(msg, duration) {
+    var el = document.getElementById("toast");
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function () {
+      el.classList.remove("show");
+    }, duration || 2400);
   }
 
   function applyTheme() {
-    document.body.classList.toggle("light-theme", state.theme === "light");
+    if (state.theme === "light") {
+      document.body.classList.add("light");
+    } else {
+      document.body.classList.remove("light");
+    }
     var btn = document.getElementById("btnTheme");
-    if (btn) btn.textContent = state.theme === "light" ? "🌙" : "☀";
+    if (btn) btn.textContent = state.theme === "light" ? "🌙" : "☀️";
   }
 
-  function refreshAll() {
+  function computeRangeForMode(mode, anchorStr) {
+    var d = parseDateStr(anchorStr);
+    var y = d.getFullYear();
+    var m = d.getMonth();
+    var day = d.getDate();
+    if (mode === "day") {
+      return { start: anchorStr, end: anchorStr };
+    }
+    if (mode === "week") {
+      var dow = d.getDay();
+      var diffToMon = dow === 0 ? -6 : 1 - dow;
+      var mon = new Date(y, m, day + diffToMon, 12, 0, 0);
+      var sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6, 12, 0, 0);
+      return { start: toDateStr(mon), end: toDateStr(sun) };
+    }
+    if (mode === "2weeks") {
+      var lastDay = new Date(y, m + 1, 0).getDate();
+      if (day <= 15) {
+        return { start: toDateStr(new Date(y, m, 1, 12)), end: toDateStr(new Date(y, m, 15, 12)) };
+      } else {
+        return { start: toDateStr(new Date(y, m, 16, 12)), end: toDateStr(new Date(y, m, lastDay, 12)) };
+      }
+    }
+    if (mode === "month") {
+      var ld = new Date(y, m + 1, 0).getDate();
+      return { start: toDateStr(new Date(y, m, 1, 12)), end: toDateStr(new Date(y, m, ld, 12)) };
+    }
+    if (mode === "year") {
+      return { start: y + "-01-01", end: y + "-12-31" };
+    }
+    return { start: anchorStr, end: anchorStr };
+  }
+
+  function setPeriodMode(mode, anchorStr) {
+    state.mode = mode;
+    var baseDate = anchorStr || state.activeDate;
+    var r = computeRangeForMode(mode, baseDate);
+    state.rangeStart = r.start;
+    state.rangeEnd = r.end;
+    var ad = parseDateStr(baseDate);
+    state.viewYear = ad.getFullYear();
+    state.viewMonth = ad.getMonth();
+    refreshUI();
+  }
+
+  function updateTabsUI() {
+    var tabs = document.querySelectorAll(".period-tab");
+    for (var i = 0; i < tabs.length; i++) {
+      var t = tabs[i];
+      if (t.getAttribute("data-mode") === state.mode) {
+        t.classList.add("active");
+      } else {
+        t.classList.remove("active");
+      }
+    }
+  }
+
+  function renderCalendar() {
+    var titleEl = document.getElementById("monthTitle");
+    var verEl = document.getElementById("appVerBadge");
+    var gridEl = document.getElementById("calGrid");
+    if (titleEl) titleEl.textContent = MONTHS_NOM[state.viewMonth] + " " + state.viewYear;
+    if (verEl) verEl.textContent = APP_VERSION;
+    if (!gridEl) return;
+
+    var dayMap = {};
+    for (var i = 0; i < state.records.length; i++) {
+      var rec = state.records[i];
+      if (!dayMap[rec.date]) dayMap[rec.date] = { hasWork: false, hasOff: false };
+      if (rec.isOff) dayMap[rec.date].hasOff = true;
+      else dayMap[rec.date].hasWork = true;
+    }
+
+    var firstOfMonth = new Date(state.viewYear, state.viewMonth, 1, 12, 0, 0);
+    var startDow = firstOfMonth.getDay();
+    var offset = startDow === 0 ? 6 : startDow - 1;
+    var startCellDate = new Date(state.viewYear, state.viewMonth, 1 - offset, 12, 0, 0);
+
+    var rStart = state.rangeStart <= state.rangeEnd ? state.rangeStart : state.rangeEnd;
+    var rEnd = state.rangeStart <= state.rangeEnd ? state.rangeEnd : state.rangeStart;
+    var todayStr = toDateStr(new Date());
+
+    gridEl.innerHTML = "";
+    for (var cellIdx = 0; cellIdx < 42; cellIdx++) {
+      var cur = new Date(startCellDate.getFullYear(), startCellDate.getMonth(), startCellDate.getDate() + cellIdx, 12, 0, 0);
+      var ds = toDateStr(cur);
+      var cell = document.createElement("div");
+      cell.className = "day-cell";
+      cell.setAttribute("data-date", ds);
+
+      if (cur.getMonth() !== state.viewMonth) {
+        cell.classList.add("other-month");
+      }
+      if (ds === todayStr) {
+        cell.classList.add("today");
+      }
+      if (ds >= rStart && ds <= rEnd) {
+        if (ds === rStart || ds === rEnd) {
+          cell.classList.add("selected");
+        } else {
+          cell.classList.add("in-range");
+        }
+      }
+      if (ds === state.activeDate && state.mode === "day") {
+        cell.classList.add("selected");
+      }
+
+      var info = dayMap[ds];
+      if (info && info.hasOff && !info.hasWork) {
+        cell.classList.add("is-off");
+        var numSpan = document.createElement("span");
+        numSpan.textContent = String(cur.getDate());
+        cell.appendChild(numSpan);
+        var cross = document.createElement("span");
+        cross.className = "off-cross";
+        cross.textContent = "✕";
+        cell.appendChild(cross);
+      } else {
+        cell.textContent = String(cur.getDate());
+        if (info && info.hasWork) {
+          var dot = document.createElement("span");
+          dot.className = "dot-work";
+          cell.appendChild(dot);
+        }
+      }
+      gridEl.appendChild(cell);
+    }
+  }
+
+  function getFilteredRecords() {
+    var rStart = state.rangeStart <= state.rangeEnd ? state.rangeStart : state.rangeEnd;
+    var rEnd = state.rangeStart <= state.rangeEnd ? state.rangeEnd : state.rangeStart;
+    return state.records.filter(function (rec) {
+      return rec.date >= rStart && rec.date <= rEnd;
+    }).sort(function (a, b) {
+      return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0);
+    });
+  }
+
+  function getPeriodLabel() {
+    var rStart = state.rangeStart <= state.rangeEnd ? state.rangeStart : state.rangeEnd;
+    var rEnd = state.rangeStart <= state.rangeEnd ? state.rangeEnd : state.rangeStart;
+    if (rStart === rEnd) {
+      return "ДЕНЬ (" + fmtDateShort(rStart).toUpperCase() + ")";
+    }
+    if (state.mode === "week") return "НЕДЕЛЯ";
+    if (state.mode === "2weeks") return "2Х НЕДЕЛИ";
+    if (state.mode === "month") return "МЕСЯЦ";
+    if (state.mode === "year") return "ГОД";
+    return fmtDateShort(rStart).toUpperCase() + " — " + fmtDateShort(rEnd).toUpperCase();
+  }
+
+  function renderRecordsAndTotals() {
+    var recs = getFilteredRecords();
+    var pLabel = getPeriodLabel();
+    var headerTitle = document.getElementById("recordsHeaderTitle");
+    var countBadge = document.getElementById("recordsCountBadge");
+    var totalTitle = document.getElementById("totalBoxTitle");
+    var totalBoxesWeight = document.getElementById("totalBoxesWeight");
+    var totalMoney = document.getElementById("totalMoney");
+    var listEl = document.getElementById("recordsList");
+
+    if (headerTitle) headerTitle.textContent = "ЗАПИСИ (" + pLabel + ")";
+    if (countBadge) countBadge.textContent = recs.length + " ШТ.";
+    if (totalTitle) totalTitle.textContent = "ИТОГ ЗА " + pLabel;
+
+    var sumBoxes = 0;
+    var sumWeight = 0;
+    var sumPay = 0;
+    for (var i = 0; i < recs.length; i++) {
+      if (!recs[i].isOff) {
+        sumBoxes += recs[i].boxes;
+        sumWeight = round2(sumWeight + recs[i].weight);
+        sumPay = round2(sumPay + recs[i].pay);
+      }
+    }
+
+    if (totalBoxesWeight) {
+      totalBoxesWeight.textContent = sumBoxes + " кор. • " + fmtNum(sumWeight) + " кг";
+    }
+    if (totalMoney) {
+      totalMoney.textContent = fmtNum(sumPay) + " ₽";
+    }
+
+    if (!listEl) return;
+    listEl.innerHTML = "";
+    for (var j = 0; j < recs.length; j++) {
+      (function (item) {
+        var row = document.createElement("div");
+        row.className = "record-item" + (item.isOff ? " off-item" : "");
+        var txt = document.createElement("div");
+        txt.className = "record-text";
+        if (item.isOff) {
+          txt.textContent = fmtDateShort(item.date) + ": Выходной";
+        } else {
+          var parts = [];
+          if (item.boxes > 0) parts.push(item.boxes + " кор.");
+          parts.push(fmtNum(item.weight) + " кг × " + fmtNum(item.rate) + " ₽ = " + fmtNum(item.pay) + " ₽");
+          txt.textContent = fmtDateShort(item.date) + ": " + parts.join(" • ");
+        }
+        var delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "btn-del-rec";
+        delBtn.textContent = "✕";
+        delBtn.addEventListener("click", function () {
+          deleteRecord(item.id);
+        });
+        row.appendChild(txt);
+        row.appendChild(delBtn);
+        listEl.appendChild(row);
+      })(recs[j]);
+    }
+  }
+
+  function updateShiftPreview() {
+    var boxesEl = document.getElementById("inpBoxes");
+    var weightEl = document.getElementById("inpWeight");
+    var rateEl = document.getElementById("inpRate");
+    var prevEl = document.getElementById("shiftPreview");
+    var dateEl = document.getElementById("selectedDateLabel");
+    if (dateEl) dateEl.textContent = fmtDateFull(state.activeDate);
+    if (!prevEl) return;
+
+    var boxes = Math.round(parseNum(boxesEl ? boxesEl.value : 0));
+    var bw = parseNum(weightEl ? weightEl.value : 0);
+    var rate = parseNum(rateEl ? rateEl.value : state.defaultRate);
+    var totalW = boxes > 0 ? round2(boxes * bw) : round2(bw);
+    var totalP = round2(totalW * rate);
+    prevEl.innerHTML = fmtNum(totalW) + " кг <span>" + fmtNum(totalP) + " ₽</span>";
+  }
+
+  function syncInputsFromState() {
+    var nameEl = document.getElementById("inpWorker");
+    var rateEl = document.getElementById("inpRate");
+    if (nameEl && nameEl.value !== state.workerName) nameEl.value = state.workerName;
+    if (rateEl && !rateEl.value) rateEl.value = fmtNum(state.defaultRate);
+    updateShiftPreview();
+  }
+
+  function refreshUI() {
     applyTheme();
-    var nameInput = document.getElementById("inputWorkerName");
-    var rateInput = document.getElementById("inputRate");
-    if (nameInput && nameInput.value !== state.workerName) nameInput.value = state.workerName;
-    if (rateInput && !rateInput.dataset.edited) rateInput.value = state.defaultRate;
+    updateTabsUI();
     renderCalendar();
     renderRecordsAndTotals();
-    updateLiveCalc();
+    syncInputsFromState();
   }
 
-  function showToast(msg) {
-    var t = document.getElementById("toastBox");
-    if (!t) return;
-    t.textContent = msg;
-    t.classList.add("show");
-    clearTimeout(t._timer);
-    t._timer = setTimeout(function() { t.classList.remove("show"); }, 2600);
+  function triggerDailyAutoBackup() {
+    var today = toDateStr(new Date());
+    if (state.lastAutoBackupDate === today) return;
+    state.lastAutoBackupDate = today;
+    createBackupSnapshot("Авто " + fmtDateShort(today));
   }
 
-  function triggerUndoBar(iso, idx, rec) {
-    undoBuffer = { iso: iso, idx: idx, rec: rec };
-    var bar = document.getElementById("undoBar");
-    var cntEl = document.getElementById("undoCountdown");
-    if (!bar) return;
-    bar.classList.remove("hidden");
-    var sec = 5;
-    if (cntEl) cntEl.textContent = sec;
+  function createBackupSnapshot(label) {
+    var snap = {
+      id: String(Date.now()) + "_" + Math.random().toString(36).slice(2, 6),
+      label: label || ("Копия " + fmtDateShort(toDateStr(new Date()))),
+      createdAt: Date.now(),
+      workerName: state.workerName,
+      defaultRate: state.defaultRate,
+      records: JSON.parse(JSON.stringify(state.records))
+    };
+    state.backups.unshift(snap);
+    if (state.backups.length > 25) state.backups.length = 25;
+  }
+
+  function addShiftRecord() {
+    var boxesEl = document.getElementById("inpBoxes");
+    var weightEl = document.getElementById("inpWeight");
+    var rateEl = document.getElementById("inpRate");
+    var workerEl = document.getElementById("inpWorker");
+
+    if (workerEl) state.workerName = workerEl.value.trim();
+    var boxes = Math.round(parseNum(boxesEl ? boxesEl.value : 0));
+    var bw = parseNum(weightEl ? weightEl.value : 0);
+    var rate = parseNum(rateEl ? rateEl.value : state.defaultRate);
+    if (rate > 0) state.defaultRate = rate;
+
+    var totalW = boxes > 0 ? round2(boxes * bw) : round2(bw);
+    if (totalW <= 0) {
+      showToast("Введите вес коробки");
+      return;
+    }
+    var totalP = round2(totalW * rate);
+    var rec = {
+      id: String(Date.now()) + "_" + Math.random().toString(36).slice(2, 6),
+      date: state.activeDate,
+      isOff: false,
+      boxes: boxes,
+      boxWeight: round2(bw),
+      weight: totalW,
+      rate: round2(rate),
+      pay: totalP
+    };
+    state.records.push(rec);
+    triggerDailyAutoBackup();
+    if (boxesEl) boxesEl.value = "";
+    if (weightEl) weightEl.value = "";
+    persistState(true);
+    refreshUI();
+    showToast("Запись добавлена");
+  }
+
+  function addOffDay() {
+    var targetDate = state.activeDate;
+    var exists = state.records.some(function (r) { return r.date === targetDate && r.isOff; });
+    if (exists) {
+      showToast("Выходной уже отмечен");
+      return;
+    }
+    state.records.push({
+      id: String(Date.now()) + "_" + Math.random().toString(36).slice(2, 6),
+      date: targetDate,
+      isOff: true,
+      boxes: 0,
+      boxWeight: 0,
+      weight: 0,
+      rate: 0,
+      pay: 0
+    });
+    triggerDailyAutoBackup();
+    persistState(true);
+    refreshUI();
+    showToast("Отмечен выходной: " + fmtDateShort(targetDate));
+  }
+
+  function deleteRecord(id) {
+    var idx = -1;
+    for (var i = 0; i < state.records.length; i++) {
+      if (state.records[i].id === id) { idx = i; break; }
+    }
+    if (idx === -1) return;
+    var removed = state.records.splice(idx, 1)[0];
+    undoBuffer.push(removed);
+    persistState(true);
+    refreshUI();
+    startUndoTimer();
+  }
+
+  function startUndoTimer() {
+    var btn = document.getElementById("btnUndoDelete");
+    var cntEl = document.getElementById("undoCount");
+    if (!btn) return;
+    undoCountdown = 7;
+    btn.classList.add("show");
+    if (cntEl) cntEl.textContent = undoCountdown + "с";
     clearInterval(undoTimer);
-    undoTimer = setInterval(function() {
-      sec--;
-      if (cntEl) cntEl.textContent = sec;
-      if (sec <= 0) {
+    undoTimer = setInterval(function () {
+      undoCountdown--;
+      if (cntEl) cntEl.textContent = undoCountdown + "с";
+      if (undoCountdown <= 0) {
         clearInterval(undoTimer);
-        bar.classList.add("hidden");
-        undoBuffer = null;
+        undoBuffer = [];
+        btn.classList.remove("show");
       }
     }, 1000);
   }
 
-  function buildReport(isShort) {
-    var range = getOrderedRange();
+  function undoLastDelete() {
+    if (!undoBuffer.length) return;
+    var item = undoBuffer.pop();
+    state.records.push(item);
+    persistState(true);
+    refreshUI();
+    if (!undoBuffer.length) {
+      clearInterval(undoTimer);
+      var btn = document.getElementById("btnUndoDelete");
+      if (btn) btn.classList.remove("show");
+    }
+    showToast("Запись возвращена");
+  }
+
+  function buildReportText(isFull) {
+    var recs = getFilteredRecords();
+    var rStart = state.rangeStart <= state.rangeEnd ? state.rangeStart : state.rangeEnd;
+    var rEnd = state.rangeStart <= state.rangeEnd ? state.rangeEnd : state.rangeStart;
+    var isCustomRange = state.mode === "day" && rStart !== rEnd;
     var lines = [];
-    if (state.workerName.trim()) lines.push(state.workerName.trim());
-
-    var isStandardSinglePeriod = (state.periodMode === "day" && range.start === range.end) ||
-      state.periodMode === "week" || state.periodMode === "2weeks" ||
-      state.periodMode === "month" || state.periodMode === "year";
-
-    var allDates = Object.keys(state.records).sort();
-    var totBoxes = 0;
-    var totWeight = 0;
-    var totPay = 0;
-    var dayLines = [];
-
-    for (var i = 0; i < allDates.length; i++) {
-      var iso = allDates[i];
-      if (iso < range.start || iso > range.end) continue;
-      var arr = state.records[iso] || [];
-      for (var j = 0; j < arr.length; j++) {
-        var r = arr[j];
-        if (r.isOff) {
-          dayLines.push(formatShortDate(iso) + " | Выходной");
-        } else {
-          totBoxes += r.boxes || 0;
-          totWeight = round2(totWeight + (r.weight || 0));
-          totPay = round2(totPay + (r.pay || 0));
-          var bStr = r.boxes > 0 ? r.boxes + "кор | " : "";
-          dayLines.push(formatShortDate(iso) + " | " + bStr + fmtWeight(r.weight).replace(" ", "") + " | " + fmtMoney(r.pay).replace(" ", ""));
-        }
+    if (state.workerName) {
+      lines.push(state.workerName);
+    }
+    var sumBoxes = 0;
+    var sumWeight = 0;
+    var sumPay = 0;
+    for (var i = 0; i < recs.length; i++) {
+      if (!recs[i].isOff) {
+        sumBoxes += recs[i].boxes;
+        sumWeight = round2(sumWeight + recs[i].weight);
+        sumPay = round2(sumPay + recs[i].pay);
       }
     }
-
-    if (isShort) {
-      if (!isStandardSinglePeriod && range.start !== range.end) {
-        lines.push("Период: " + formatShortDate(range.start) + " – " + formatShortDate(range.end));
+    if (!isFull) {
+      if (isCustomRange) {
+        lines.push("Период: " + fmtDateShort(rStart) + " — " + fmtDateShort(rEnd));
       }
-      lines.push("Вес: " + fmtWeight(totWeight) + (totBoxes > 0 ? " (" + totBoxes + " кор.)" : ""));
-      lines.push("Итого: " + fmtMoney(totPay));
-    } else {
-      var pText = range.start === range.end ? formatFullDate(range.start) : formatShortDate(range.start) + " – " + formatShortDate(range.end);
-      lines.push("Период: " + pText);
-      for (var k = 0; k < dayLines.length; k++) lines.push(dayLines[k]);
-      lines.push("ИТОГ: " + (totBoxes > 0 ? totBoxes + "кор | " : "") + fmtWeight(totWeight).replace(" ", "") + " | " + fmtMoney(totPay).replace(" ", ""));
+      var wLine = "Вес: " + fmtNum(sumWeight) + " кг";
+      if (sumBoxes > 0) wLine += " (" + sumBoxes + " кор.)";
+      lines.push(wLine);
+      lines.push("Итого: " + fmtNum(sumPay) + " ₽");
+      return lines.join(NL);
     }
+    var periodHeader = rStart === rEnd ? fmtDateFull(rStart) : (fmtDateShort(rStart) + " — " + fmtDateShort(rEnd));
+    lines.push("Период: " + periodHeader);
+    for (var j = 0; j < recs.length; j++) {
+      var r = recs[j];
+      if (r.isOff) {
+        lines.push(fmtDateShort(r.date) + " | Выходной");
+      } else {
+        var seg = [fmtDateShort(r.date)];
+        if (r.boxes > 0) seg.push(r.boxes + "кор");
+        seg.push(fmtNum(r.weight) + "кг");
+        seg.push(fmtNum(r.pay) + "₽");
+        lines.push(seg.join(" | "));
+      }
+    }
+    var totSeg = ["ИТОГ:"];
+    if (sumBoxes > 0) totSeg.push(sumBoxes + "кор");
+    totSeg.push(fmtNum(sumWeight) + "кг");
+    totSeg.push(fmtNum(sumPay) + "₽");
+    lines.push(totSeg.join(" | "));
     return lines.join(NL);
   }
 
-  function openReportPreview(isShort) {
-    currentReportText = buildReport(isShort);
-    var pre = document.getElementById("reportPreviewText");
+  function openReportPreview(isFull) {
+    currentReportText = buildReportText(isFull);
+    var box = document.getElementById("reportPreviewText");
     var modal = document.getElementById("reportModal");
-    if (pre) pre.textContent = currentReportText;
-    if (modal) modal.classList.remove("hidden");
+    if (box) box.textContent = currentReportText;
+    if (modal) modal.classList.add("open");
   }
 
-  function shareReportText(text) {
+  function closeReportModal() {
+    var modal = document.getElementById("reportModal");
+    if (modal) modal.classList.remove("open");
+  }
+
+  function copyToClipboard(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(function() {});
-    }
-    if (navigator.share) {
-      navigator.share({ text: text }).catch(function() {});
+      navigator.clipboard.writeText(text).catch(function () {});
       return;
     }
-    try {
-      var intentUrl = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encodeURIComponent(text) + ";end";
-      window.location.href = intentUrl;
-    } catch (e) {
-      showToast("Отчёт скопирован в буфер обмена");
-    }
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
   }
 
-  function runSafeUpdate() {
-    var ov = document.getElementById("updateOverlay");
-    var st = document.getElementById("updateStepText");
-    if (ov) ov.classList.remove("hidden");
-    if (st) st.textContent = "Шаг 1/4: Сохранение базы в память...";
+  function shareReportText() {
+    if (!currentReportText) return;
+    copyToClipboard(currentReportText);
+    if (navigator.share) {
+      navigator.share({ text: currentReportText }).catch(function () {});
+      return;
+    }
+    var encoded = encodeURIComponent(currentReportText);
+    window.location.href = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encoded + ";end";
+    showToast("Текст скопирован");
+  }
 
-    createBackupSnapshot("(перед обн.)");
-    saveAllStorages(true).then(function() {
-      setTimeout(function() {
-        if (st) st.textContent = "Шаг 2/4: Проверка целостности данных...";
-        setTimeout(function() {
-          if (st) st.textContent = "Шаг 3/4: Очистка старого кэша...";
-          var tasks = [];
-          if (window.caches && window.caches.keys) {
-            tasks.push(window.caches.keys().then(function(names) {
-              return Promise.all(names.map(function(n) { return window.caches.delete(n); }));
-            }));
-          }
-          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-            tasks.push(navigator.serviceWorker.getRegistrations().then(function(regs) {
-              return Promise.all(regs.map(function(rg) { return rg.unregister(); }));
-            }));
-          }
-          Promise.all(tasks).catch(function() {}).then(function() {
-            setTimeout(function() {
-              if (st) st.textContent = "Шаг 4/4: Перезагрузка на новую версию...";
-              setTimeout(function() {
-                window.location.reload(true);
-              }, 600);
-            }, 700);
-          });
-        }, 700);
-      }, 700);
-    });
+  function renderBackupList() {
+    var list = document.getElementById("backupList");
+    if (!list) return;
+    list.innerHTML = "";
+    if (!state.backups.length) {
+      var empty = document.createElement("div");
+      empty.style.fontSize = "12px";
+      empty.style.color = "var(--text-sec)";
+      empty.style.textAlign = "center";
+      empty.style.padding = "12px";
+      empty.textContent = "Сохранённых копий пока нет";
+      list.appendChild(empty);
+      return;
+    }
+    for (var i = 0; i < state.backups.length; i++) {
+      (function (idx, b) {
+        var row = document.createElement("div");
+        row.className = "backup-item";
+        var d = new Date(b.createdAt);
+        var timeStr = pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+        var info = document.createElement("div");
+        info.className = "backup-info";
+        info.innerHTML = "<strong>" + b.label + " (" + timeStr + ")</strong><span>Записей: " + b.records.length + "</span>";
+
+        var actions = document.createElement("div");
+        actions.className = "backup-actions";
+
+        var btnRes = document.createElement("button");
+        btnRes.type = "button";
+        btnRes.className = "btn-b-restore";
+        btnRes.textContent = "Восст.";
+        btnRes.addEventListener("click", function () {
+          var norm = normalizeState(b);
+          state.records = norm.records;
+          if (norm.workerName) state.workerName = norm.workerName;
+          if (norm.defaultRate > 0) state.defaultRate = norm.defaultRate;
+          persistState(true);
+          refreshUI();
+          closeRestoreModal();
+          showToast("Восстановлено записей: " + state.records.length);
+        });
+
+        var btnDel = document.createElement("button");
+        btnDel.type = "button";
+        btnDel.className = "btn-b-del";
+        btnDel.textContent = "✕";
+        btnDel.addEventListener("click", function () {
+          pendingDeleteBackupIdx = idx;
+          var cm = document.getElementById("confirmModal");
+          if (cm) cm.classList.add("open");
+        });
+
+        actions.appendChild(btnRes);
+        actions.appendChild(btnDel);
+        row.appendChild(info);
+        row.appendChild(actions);
+        list.appendChild(row);
+      })(i, state.backups[i]);
+    }
   }
 
   function openRestoreModal() {
-    var list = document.getElementById("backupsList");
+    var transferBox = document.getElementById("transferBox");
+    if (transferBox) transferBox.classList.remove("open");
+    renderBackupList();
     var modal = document.getElementById("restoreModal");
-    if (!list || !modal) return;
-    if (state.backups.length === 0) {
-      list.innerHTML = '<div class="empty-bkp">Резервных копий пока нет</div>';
-    } else {
-      var html = "";
-      for (var i = 0; i < state.backups.length; i++) {
-        var b = state.backups[i];
-        var cnt = countRecords(b.data);
-        html += '<div class="bkp-item">' +
-          '<div class="bkp-info"><strong>' + b.label + '</strong><span>Записей: ' + cnt + "</span></div>" +
-          '<div class="bkp-actions">' +
-          '<button class="btn-bkp-load" data-idx="' + i + '">Восстановить</button>' +
-          '<button class="btn-bkp-del" data-idx="' + i + '">✕</button>' +
-          "</div></div>";
-      }
-      list.innerHTML = html;
+    if (modal) modal.classList.add("open");
+  }
+
+  function closeRestoreModal() {
+    var modal = document.getElementById("restoreModal");
+    if (modal) modal.classList.remove("open");
+  }
+
+  function encodeTransferCode() {
+    var payload = {
+      v: 1,
+      w: state.workerName,
+      r: state.defaultRate,
+      d: state.records
+    };
+    var json = JSON.stringify(payload);
+    return btoa(unescape(encodeURIComponent(json)));
+  }
+
+  function importTransferCode(codeStr) {
+    var clean = String(codeStr || "").trim();
+    if (!clean) {
+      showToast("Вставьте код переноса");
+      return;
     }
-    modal.classList.remove("hidden");
+    try {
+      var json = decodeURIComponent(escape(atob(clean)));
+      var obj = JSON.parse(json);
+      var rawRecs = Array.isArray(obj.d) ? obj.d : (Array.isArray(obj.records) ? obj.records : []);
+      var rate = parseNum(obj.r || obj.defaultRate) || state.defaultRate;
+      state.records = rawRecs.map(function (r) { return normalizeRecord(r, rate); }).filter(Boolean);
+      if (typeof obj.w === "string") state.workerName = obj.w;
+      state.defaultRate = rate;
+      persistState(true);
+      refreshUI();
+      closeRestoreModal();
+      showToast("База загружена: " + state.records.length + " зап.");
+    } catch (e) {
+      showToast("Неверный формат кода");
+    }
+  }
+
+  function sleep(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  function runSafeUpdate() {
+    if (window.location.protocol === "file:") {
+      showToast("Локальный файл: обновите через Ctrl+F5");
+      return;
+    }
+    var overlay = document.getElementById("updateOverlay");
+    var stepEl = document.getElementById("updateStepText");
+    if (overlay) overlay.classList.add("open");
+    if (stepEl) stepEl.textContent = "Шаг 1/3: Сохранение базы в память...";
+
+    createBackupSnapshot("Перед обн. " + APP_VERSION);
+    persistState(true)
+      .then(function () {
+        return sleep(650);
+      })
+      .then(function () {
+        if (stepEl) stepEl.textContent = "Шаг 2/3: Очистка старого кэша...";
+        var tasks = [];
+        if (window.caches && caches.keys) {
+          tasks.push(caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+          }));
+        }
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+          tasks.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all(regs.map(function (r) { return r.unregister(); }));
+          }));
+        }
+        return Promise.all(tasks);
+      })
+      .then(function () {
+        return sleep(650);
+      })
+      .then(function () {
+        if (stepEl) stepEl.textContent = "Шаг 3/3: Перезагрузка приложения...";
+        return sleep(450);
+      })
+      .then(function () {
+        var baseUrl = window.location.href.split("?")[0].split("#")[0];
+        window.location.replace(baseUrl + "?v=" + Date.now());
+      });
+  }
+
+  function handleCellSelectStart(ds) {
+    if (!ds) return;
+    if (state.mode !== "day") {
+      state.activeDate = ds;
+      setPeriodMode(state.mode, ds);
+      return;
+    }
+    isDragging = true;
+    dragStartDate = ds;
+    state.activeDate = ds;
+    state.rangeStart = ds;
+    state.rangeEnd = ds;
+    refreshUI();
+  }
+
+  function handleCellSelectMove(ds) {
+    if (!isDragging || !dragStartDate || !ds || state.mode !== "day") return;
+    if (state.rangeEnd === ds) return;
+    state.rangeStart = dragStartDate;
+    state.rangeEnd = ds;
+    state.activeDate = ds;
+    renderCalendar();
+    renderRecordsAndTotals();
+    updateShiftPreview();
+  }
+
+  function handleCellSelectEnd() {
+    isDragging = false;
+    dragStartDate = null;
   }
 
   function bindEvents() {
-    var prevBtn = document.getElementById("btnPrevMonth");
-    var nextBtn = document.getElementById("btnNextMonth");
-    if (prevBtn) prevBtn.addEventListener("click", function() {
-      state.viewMonth--;
-      if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
-      renderCalendar();
-    });
-    if (nextBtn) nextBtn.addEventListener("click", function() {
-      state.viewMonth++;
-      if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
-      renderCalendar();
-    });
+    var btnPrev = document.getElementById("btnPrevMonth");
+    var btnNext = document.getElementById("btnNextMonth");
+    if (btnPrev) {
+      btnPrev.addEventListener("click", function () {
+        state.viewMonth--;
+        if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
+        if (state.mode === "month" || state.mode === "year") {
+          var anchor = state.viewYear + "-" + pad2(state.viewMonth + 1) + "-01";
+          setPeriodMode(state.mode, anchor);
+        } else {
+          renderCalendar();
+        }
+      });
+    }
+    if (btnNext) {
+      btnNext.addEventListener("click", function () {
+        state.viewMonth++;
+        if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+        if (state.mode === "month" || state.mode === "year") {
+          var anchor = state.viewYear + "-" + pad2(state.viewMonth + 1) + "-01";
+          setPeriodMode(state.mode, anchor);
+        } else {
+          renderCalendar();
+        }
+      });
+    }
 
     var tabs = document.querySelectorAll(".period-tab");
     for (var i = 0; i < tabs.length; i++) {
-      tabs[i].addEventListener("click", function() {
-        setPeriodMode(this.getAttribute("data-mode"));
-      });
+      (function (tab) {
+        tab.addEventListener("click", function () {
+          var m = tab.getAttribute("data-mode");
+          setPeriodMode(m, state.activeDate);
+        });
+      })(tabs[i]);
     }
 
-    var grid = document.getElementById("calGrid");
-    if (grid) {
-      grid.addEventListener("pointerdown", function(e) {
+    var gridEl = document.getElementById("calGrid");
+    if (gridEl) {
+      gridEl.addEventListener("mousedown", function (e) {
         var cell = e.target.closest(".day-cell");
-        if (!cell) return;
-        var iso = cell.getAttribute("data-iso");
-        if (!iso) return;
-        isDragging = true;
-        dragAnchorDate = iso;
-        if (state.periodMode === "day") {
-          state.selectedStart = iso;
-          state.selectedEnd = iso;
-        } else {
-          var b = computePeriodBounds(state.periodMode, iso);
-          state.selectedStart = b.start;
-          state.selectedEnd = b.end;
-        }
-        refreshAll();
+        if (cell) handleCellSelectStart(cell.getAttribute("data-date"));
       });
-
-      grid.addEventListener("pointermove", function(e) {
-        if (!isDragging || !dragAnchorDate) return;
-        var el = document.elementFromPoint(e.clientX, e.clientY);
-        var cell = el ? el.closest(".day-cell") : null;
-        if (!cell) return;
-        var iso = cell.getAttribute("data-iso");
-        if (!iso || iso === state.selectedEnd) return;
-        state.periodMode = "day";
-        state.selectedStart = dragAnchorDate;
-        state.selectedEnd = iso;
-        refreshAll();
+      gridEl.addEventListener("mouseover", function (e) {
+        if (!isDragging) return;
+        var cell = e.target.closest(".day-cell");
+        if (cell) handleCellSelectMove(cell.getAttribute("data-date"));
       });
-
-      window.addEventListener("pointerup", function() {
-        isDragging = false;
-        dragAnchorDate = null;
-      });
+      gridEl.addEventListener("touchstart", function (e) {
+        var touch = e.touches[0];
+        if (!touch) return;
+        var target = document.elementFromPoint(touch.clientX, touch.clientY);
+        var cell = target ? target.closest(".day-cell") : null;
+        if (cell) handleCellSelectStart(cell.getAttribute("data-date"));
+      }, { passive: true });
+      gridEl.addEventListener("touchmove", function (e) {
+        if (!isDragging) return;
+        var touch = e.touches[0];
+        if (!touch) return;
+        var target = document.elementFromPoint(touch.clientX, touch.clientY);
+        var cell = target ? target.closest(".day-cell") : null;
+        if (cell) handleCellSelectMove(cell.getAttribute("data-date"));
+      }, { passive: true });
     }
+    window.addEventListener("mouseup", handleCellSelectEnd);
+    window.addEventListener("touchend", handleCellSelectEnd);
 
-    var btnOff = document.getElementById("btnDayOff");
-    if (btnOff) btnOff.addEventListener("click", function() {
-      var targetIso = getOrderedRange().start;
-      if (!state.records[targetIso]) state.records[targetIso] = [];
-      state.records[targetIso].push({ isOff: true, boxes: 0, boxWeight: 0, weight: 0, rate: 0, pay: 0 });
-      ensureDailyAutoBackup();
-      saveAllStorages(true);
-      refreshAll();
-      showToast("Выходной добавлен на " + formatShortDate(targetIso));
-    });
+    var btnOff = document.getElementById("btnOffDay");
+    if (btnOff) btnOff.addEventListener("click", addOffDay);
 
     var btnAdd = document.getElementById("btnAddRecord");
-    if (btnAdd) btnAdd.addEventListener("click", function() {
-      var boxes = parseNum(document.getElementById("inputBoxes").value);
-      var boxWeight = parseNum(document.getElementById("inputBoxWeight").value);
-      var rate = parseNum(document.getElementById("inputRate").value);
+    if (btnAdd) btnAdd.addEventListener("click", addShiftRecord);
 
-      var weight = 0;
-      if (boxes > 0 && boxWeight > 0) weight = round2(boxes * boxWeight);
-      else if (boxWeight > 0) weight = round2(boxWeight);
+    var inpBoxes = document.getElementById("inpBoxes");
+    var inpWeight = document.getElementById("inpWeight");
+    var inpRate = document.getElementById("inpRate");
+    var inpWorker = document.getElementById("inpWorker");
 
-      if (weight <= 0) {
-        showToast("Введите вес коробки или количество коробок");
-        return;
-      }
-      if (rate > 0) state.defaultRate = rate;
-      var pay = round2(weight * rate);
-      var targetIso = getOrderedRange().start;
-      if (!state.records[targetIso]) state.records[targetIso] = [];
-      state.records[targetIso].push({
-        isOff: false,
-        boxes: boxes,
-        boxWeight: boxWeight,
-        weight: weight,
-        rate: rate,
-        pay: pay
+    if (inpBoxes) inpBoxes.addEventListener("input", updateShiftPreview);
+    if (inpWeight) inpWeight.addEventListener("input", updateShiftPreview);
+    if (inpRate) {
+      inpRate.addEventListener("input", function () {
+        var r = parseNum(inpRate.value);
+        if (r > 0) {
+          state.defaultRate = r;
+          persistState(true);
+        }
+        updateShiftPreview();
       });
-
-      document.getElementById("inputBoxes").value = "";
-      document.getElementById("inputBoxWeight").value = "";
-      ensureDailyAutoBackup();
-      saveAllStorages(true);
-      refreshAll();
-      showToast("Запись добавлена: " + fmtWeight(weight) + " • " + fmtMoney(pay));
-    });
-
-    ["inputBoxes", "inputBoxWeight", "inputRate"].forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) el.addEventListener("input", function() {
-        if (id === "inputRate") el.dataset.edited = "1";
-        updateLiveCalc();
+    }
+    if (inpWorker) {
+      inpWorker.addEventListener("input", function () {
+        state.workerName = inpWorker.value.trim();
+        persistState(true);
       });
-    });
+    }
 
-    var nameEl = document.getElementById("inputWorkerName");
-    if (nameEl) nameEl.addEventListener("input", function() {
-      state.workerName = this.value;
-      saveAllStorages(true);
-    });
-
-    var recList = document.getElementById("recordsList");
-    if (recList) recList.addEventListener("click", function(e) {
-      var btn = e.target.closest(".del-rec-btn");
-      if (!btn) return;
-      var iso = btn.getAttribute("data-iso");
-      var idx = parseInt(btn.getAttribute("data-idx"), 10);
-      var arr = state.records[iso];
-      if (!arr || !arr[idx]) return;
-      var removed = arr.splice(idx, 1)[0];
-      if (arr.length === 0) delete state.records[iso];
-      saveAllStorages(true);
-      refreshAll();
-      triggerUndoBar(iso, idx, removed);
-    });
-
-    var undoBtn = document.getElementById("btnUndoDelete");
-    if (undoBtn) undoBtn.addEventListener("click", function() {
-      if (!undoBuffer) return;
-      clearInterval(undoTimer);
-      if (!state.records[undoBuffer.iso]) state.records[undoBuffer.iso] = [];
-      state.records[undoBuffer.iso].splice(undoBuffer.idx, 0, undoBuffer.rec);
-      undoBuffer = null;
-      document.getElementById("undoBar").classList.add("hidden");
-      saveAllStorages(true);
-      refreshAll();
-      showToast("Запись восстановлена");
-    });
-
-    var btnTheme = document.getElementById("btnTheme");
-    if (btnTheme) btnTheme.addEventListener("click", function() {
-      state.theme = state.theme === "dark" ? "light" : "dark";
-      saveAllStorages(true);
-      applyTheme();
-    });
-
-    var btnUpd = document.getElementById("btnUpdate");
-    if (btnUpd) btnUpd.addEventListener("click", runSafeUpdate);
-
-    var btnFull = document.getElementById("btnFullReport");
-    var btnShort = document.getElementById("btnShortReport");
-    if (btnFull) btnFull.addEventListener("click", function() { openReportPreview(false); });
-    if (btnShort) btnShort.addEventListener("click", function() { openReportPreview(true); });
+    var btnFullRep = document.getElementById("btnFullReport");
+    var btnShortRep = document.getElementById("btnShortReport");
+    if (btnFullRep) btnFullRep.addEventListener("click", function () { openReportPreview(true); });
+    if (btnShortRep) btnShortRep.addEventListener("click", function () { openReportPreview(false); });
 
     var btnCancelRep = document.getElementById("btnCancelReport");
     var btnSendRep = document.getElementById("btnSendReport");
-    if (btnCancelRep) btnCancelRep.addEventListener("click", function() {
-      document.getElementById("reportModal").classList.add("hidden");
-    });
-    if (btnSendRep) btnSendRep.addEventListener("click", function() {
-      document.getElementById("reportModal").classList.add("hidden");
-      shareReportText(currentReportText);
-    });
+    if (btnCancelRep) btnCancelRep.addEventListener("click", closeReportModal);
+    if (btnSendRep) btnSendRep.addEventListener("click", shareReportText);
 
-    var btnSaveDb = document.getElementById("btnSaveDb");
-    if (btnSaveDb) btnSaveDb.addEventListener("click", function() {
-      createBackupSnapshot("");
-      saveAllStorages(true);
-      showToast("Резервная копия сохранена");
-    });
+    var btnSave = document.getElementById("btnSaveBackup");
+    if (btnSave) {
+      btnSave.addEventListener("click", function () {
+        createBackupSnapshot("Ручная копия");
+        persistState(true);
+        showToast("База сохранена (" + state.records.length + " зап.)");
+      });
+    }
 
-    var btnOpenRes = document.getElementById("btnOpenRestore");
-    if (btnOpenRes) btnOpenRes.addEventListener("click", openRestoreModal);
-
+    var btnRestore = document.getElementById("btnOpenRestore");
     var btnCloseRes = document.getElementById("btnCloseRestore");
-    if (btnCloseRes) btnCloseRes.addEventListener("click", function() {
-      document.getElementById("restoreModal").classList.add("hidden");
-    });
+    if (btnRestore) btnRestore.addEventListener("click", openRestoreModal);
+    if (btnCloseRes) btnCloseRes.addEventListener("click", closeRestoreModal);
 
-    var bkpList = document.getElementById("backupsList");
-    if (bkpList) bkpList.addEventListener("click", function(e) {
-      var loadBtn = e.target.closest(".btn-bkp-load");
-      var delBtn = e.target.closest(".btn-bkp-del");
-      if (loadBtn) {
-        var idx = parseInt(loadBtn.getAttribute("data-idx"), 10);
-        var b = state.backups[idx];
-        if (!b || !b.data) return;
-        var norm = normalizeDb(b.data, state.defaultRate);
-        state.workerName = norm.workerName || state.workerName;
-        state.defaultRate = norm.defaultRate || state.defaultRate;
-        state.records = norm.records;
-        saveAllStorages(true);
-        document.getElementById("restoreModal").classList.add("hidden");
-        refreshAll();
-        showToast("База восстановлена (" + countRecords(state) + " зап.)");
-      } else if (delBtn) {
-        var dIdx = parseInt(delBtn.getAttribute("data-idx"), 10);
-        state.backups.splice(dIdx, 1);
-        saveAllStorages(true);
-        openRestoreModal();
-      }
-    });
-
-    var btnToggleCode = document.getElementById("btnToggleCode");
-    if (btnToggleCode) btnToggleCode.addEventListener("click", function() {
-      var box = document.getElementById("codeTransferBox");
-      var area = document.getElementById("transferCodeArea");
-      if (!box) return;
-      box.classList.toggle("hidden");
-      if (!box.classList.contains("hidden") && area) {
-        area.value = JSON.stringify(serializeState());
-      }
-    });
-
+    var btnToggleTransfer = document.getElementById("btnToggleTransfer");
     var btnCopyCode = document.getElementById("btnCopyCode");
-    if (btnCopyCode) btnCopyCode.addEventListener("click", function() {
-      var area = document.getElementById("transferCodeArea");
-      if (!area) return;
-      area.select();
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(area.value).catch(function() {});
-      }
-      showToast("Код базы скопирован");
-    });
-
     var btnImportCode = document.getElementById("btnImportCode");
-    if (btnImportCode) btnImportCode.addEventListener("click", function() {
-      var area = document.getElementById("transferCodeArea");
-      if (!area || !area.value.trim()) return;
-      try {
-        var parsed = JSON.parse(area.value.trim());
-        var norm = normalizeDb(parsed, state.defaultRate);
-        state.workerName = norm.workerName || state.workerName;
-        state.defaultRate = norm.defaultRate || state.defaultRate;
-        state.records = norm.records;
-        saveAllStorages(true);
-        document.getElementById("restoreModal").classList.add("hidden");
-        refreshAll();
-        showToast("База загружена из кода (" + countRecords(state) + " зап.)");
-      } catch (err) {
-        showToast("Ошибка формата кода базы");
-      }
-    });
+    if (btnToggleTransfer) {
+      btnToggleTransfer.addEventListener("click", function () {
+        var tb = document.getElementById("transferBox");
+        var ta = document.getElementById("transferTextarea");
+        if (!tb) return;
+        tb.classList.toggle("open");
+        if (tb.classList.contains("open") && ta) {
+          ta.value = encodeTransferCode();
+        }
+      });
+    }
+    if (btnCopyCode) {
+      btnCopyCode.addEventListener("click", function () {
+        var ta = document.getElementById("transferTextarea");
+        var code = encodeTransferCode();
+        if (ta) ta.value = code;
+        copyToClipboard(code);
+        showToast("Код базы скопирован");
+      });
+    }
+    if (btnImportCode) {
+      btnImportCode.addEventListener("click", function () {
+        var ta = document.getElementById("transferTextarea");
+        importTransferCode(ta ? ta.value : "");
+      });
+    }
+
+    var btnConfirmNo = document.getElementById("btnConfirmNo");
+    var btnConfirmYes = document.getElementById("btnConfirmYes");
+    if (btnConfirmNo) {
+      btnConfirmNo.addEventListener("click", function () {
+        pendingDeleteBackupIdx = -1;
+        var cm = document.getElementById("confirmModal");
+        if (cm) cm.classList.remove("open");
+      });
+    }
+    if (btnConfirmYes) {
+      btnConfirmYes.addEventListener("click", function () {
+        if (pendingDeleteBackupIdx >= 0 && pendingDeleteBackupIdx < state.backups.length) {
+          state.backups.splice(pendingDeleteBackupIdx, 1);
+          persistState(true);
+          renderBackupList();
+          showToast("Копия удалена");
+        }
+        pendingDeleteBackupIdx = -1;
+        var cm = document.getElementById("confirmModal");
+        if (cm) cm.classList.remove("open");
+      });
+    }
+
+    var btnUndo = document.getElementById("btnUndoDelete");
+    if (btnUndo) btnUndo.addEventListener("click", undoLastDelete);
+
+    var btnTheme = document.getElementById("btnTheme");
+    if (btnTheme) {
+      btnTheme.addEventListener("click", function () {
+        state.theme = state.theme === "light" ? "dark" : "light";
+        persistState(true);
+        applyTheme();
+      });
+    }
+
+    var btnUpdate = document.getElementById("btnUpdate");
+    if (btnUpdate) btnUpdate.addEventListener("click", runSafeUpdate);
   }
 
   function init() {
-    var now = new Date();
-    var todayIso = toIso(now.getFullYear(), now.getMonth(), now.getDate());
-    state.viewYear = now.getFullYear();
-    state.viewMonth = now.getMonth();
-    state.selectedStart = todayIso;
-    state.selectedEnd = todayIso;
-
     bindEvents();
-    refreshAll();
-
-    loadAllStorages().then(function() {
-      refreshAll();
+    refreshUI();
+    loadInitialState().then(function () {
+      refreshUI();
     });
   }
 
