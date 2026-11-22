@@ -1,7 +1,8 @@
-(function() {
-  var APP_VER = "7.5";
-  var LS_KEY = "obvalka_pro_db_v1";
-  var IDB_NAME = "ObvalkaProStorage";
+(function () {
+  var APP_VERSION = "7.6";
+  var STORAGE_KEY = "obvalka_pro_db_v1";
+  var BACKUPS_KEY = "obvalka_pro_backups_v1";
+  var IDB_NAME = "ObvalkaProDB";
   var IDB_STORE = "kv";
 
   var MONTHS_NOM = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
@@ -10,809 +11,872 @@
 
   var state = {
     records: {},
-    dayOffs: {},
     worker: "",
     rate: "",
     theme: "dark",
-    undoStack: [],
-    backups: []
+    lastAutoBackupDate: ""
   };
+  var backups = [];
+  var trash = [];
 
-  var now = new Date();
-  var viewYear = now.getFullYear();
-  var viewMonth = now.getMonth();
-  var selectedKey = fmtKey(now);
-  var rangeStart = selectedKey;
-  var rangeEnd = selectedKey;
-  var periodMode = "day";
+  var today = new Date();
+  var viewYear = today.getFullYear();
+  var viewMonth = today.getMonth();
+  var selectedKey = fmtKey(today);
+  var mode = "day";
+  var customRange = null;
   var isDragging = false;
-  var dragAnchor = null;
-  var confirmCallback = null;
-
-  function $(id) { return document.getElementById(id); }
-
-  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+  var dragStartKey = null;
 
   function fmtKey(d) {
-    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
   }
 
   function parseKey(k) {
     var p = k.split("-");
-    return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+    return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
   }
 
-  function fmtHumanDate(k) {
-    var d = parseKey(k);
-    return d.getDate() + " " + MONTHS_GEN[d.getMonth()];
-  }
-
-  function fmtShortDate(k) {
-    var d = parseKey(k);
-    return d.getDate() + " " + MONTHS_SHORT[d.getMonth()];
-  }
-
-  function parseNum(v) {
-    if (v === null || v === undefined) return 0;
-    var s = String(v).replace(",", ".").replace(/[^0-9.]/g, "");
+  function parseNum(val) {
+    if (val === null || val === undefined) return 0;
+    var s = String(val).replace(",", ".").replace(/[^0-9.]/g, "");
+    var parts = s.split(".");
+    if (parts.length > 2) s = parts[0] + "." + parts.slice(1).join("");
     var n = parseFloat(s);
     return isNaN(n) ? 0 : n;
   }
 
-  function round2(n) {
-    return Math.round((n + 1e-9) * 100) / 100;
-  }
-
   function fmtNum(n) {
-    return String(round2(n));
+    var r = Math.round(n * 100) / 100;
+    return Number.isInteger(r) ? String(r) : String(r);
   }
 
-  function showToast(msg) {
-    var t = $("toast");
-    if (!t) return;
-    t.textContent = msg;
-    t.style.display = "block";
-    clearTimeout(t._tm);
-    t._tm = setTimeout(function() { t.style.display = "none"; }, 2400);
+  function showToast(msg, ms) {
+    var el = document.getElementById("toastBox");
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = "block";
+    clearTimeout(el._t);
+    el._t = setTimeout(function () {
+      el.style.display = "none";
+    }, ms || 2400);
   }
 
-  function idbOpen(cb) {
-    try {
-      var req = indexedDB.open(IDB_NAME, 1);
-      req.onupgradeneeded = function(e) {
-        var db = e.target.result;
-        if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
-      };
-      req.onsuccess = function(e) { cb(null, e.target.result); };
-      req.onerror = function() { cb(new Error("idb")); };
-    } catch (e) { cb(e); }
-  }
-
-  function idbSet(key, val, done) {
-    idbOpen(function(err, db) {
-      if (err) { if (done) done(false); return; }
+  function openIDB() {
+    return new Promise(function (resolve) {
+      if (!window.indexedDB) { resolve(null); return; }
       try {
-        var tx = db.transaction(IDB_STORE, "readwrite");
-        tx.objectStore(IDB_STORE).put(val, key);
-        tx.oncomplete = function() { if (done) done(true); };
-        tx.onerror = function() { if (done) done(false); };
-      } catch (e) { if (done) done(false); }
+        var req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = function (e) {
+          var db = e.target.result;
+          if (!db.objectStoreNames.contains(IDB_STORE)) {
+            db.createObjectStore(IDB_STORE);
+          }
+        };
+        req.onsuccess = function (e) { resolve(e.target.result); };
+        req.onerror = function () { resolve(null); };
+      } catch (err) {
+        resolve(null);
+      }
     });
   }
 
-  function idbGet(key, done) {
-    idbOpen(function(err, db) {
-      if (err) { done(null); return; }
-      try {
-        var tx = db.transaction(IDB_STORE, "readonly");
-        var req = tx.objectStore(IDB_STORE).get(key);
-        req.onsuccess = function() { done(req.result || null); };
-        req.onerror = function() { done(null); };
-      } catch (e) { done(null); }
+  function idbGet(key) {
+    return openIDB().then(function (db) {
+      if (!db) return null;
+      return new Promise(function (resolve) {
+        try {
+          var tx = db.transaction(IDB_STORE, "readonly");
+          var st = tx.objectStore(IDB_STORE);
+          var rq = st.get(key);
+          rq.onsuccess = function () { resolve(rq.result || null); };
+          rq.onerror = function () { resolve(null); };
+        } catch (e) { resolve(null); }
+      });
     });
   }
 
-  function countRecords(obj) {
-    if (!obj || !obj.records) return 0;
-    var c = 0;
-    for (var k in obj.records) {
-      if (obj.records.hasOwnProperty(k) && Array.isArray(obj.records[k])) c += obj.records[k].length;
-    }
-    return c;
+  function idbSet(key, val) {
+    return openIDB().then(function (db) {
+      if (!db) return false;
+      return new Promise(function (resolve) {
+        try {
+          var tx = db.transaction(IDB_STORE, "readwrite");
+          var st = tx.objectStore(IDB_STORE);
+          st.put(val, key);
+          tx.oncomplete = function () { resolve(true); };
+          tx.onerror = function () { resolve(false); };
+        } catch (e) { resolve(false); }
+      });
+    });
   }
 
-  function saveAll(done) {
+  function countItems(recObj) {
+    if (!recObj) return 0;
+    var total = 0;
+    Object.keys(recObj).forEach(function (k) {
+      if (Array.isArray(recObj[k])) total += recObj[k].length;
+    });
+    return total;
+  }
+
+  function saveAll() {
     var payload = JSON.stringify(state);
-    try { localStorage.setItem(LS_KEY, payload); } catch (e) {}
-    try { window.name = "OBVALKA_DB:" + payload; } catch (e) {}
-    idbSet(LS_KEY, payload, function(ok) {
-      if (done) done(ok);
-    });
+    var bkPayload = JSON.stringify(backups);
+    try { localStorage.setItem(STORAGE_KEY, payload); } catch (e) {}
+    try { localStorage.setItem(BACKUPS_KEY, bkPayload); } catch (e) {}
+    try {
+      window.name = JSON.stringify({ st: state, bk: backups });
+    } catch (e) {}
+    return Promise.all([
+      idbSet(STORAGE_KEY, payload),
+      idbSet(BACKUPS_KEY, bkPayload)
+    ]);
   }
 
-  function applyLoadedData(raw) {
-    if (!raw) return false;
+  function loadAll() {
+    var lsState = null;
+    var lsBk = [];
     try {
-      var parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-      if (!parsed || typeof parsed !== "object") return false;
-      state.records = parsed.records || {};
-      state.dayOffs = parsed.dayOffs || {};
-      state.worker = parsed.worker || "";
-      state.rate = parsed.rate || "";
-      state.theme = parsed.theme || "dark";
-      state.undoStack = Array.isArray(parsed.undoStack) ? parsed.undoStack : [];
-      state.backups = Array.isArray(parsed.backups) ? parsed.backups : [];
-      return true;
-    } catch (e) { return false; }
-  }
-
-  function loadAll(cb) {
-    var candidates = [];
-    try {
-      var lsRaw = localStorage.getItem(LS_KEY);
-      if (lsRaw) candidates.push(JSON.parse(lsRaw));
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) lsState = JSON.parse(raw);
     } catch (e) {}
     try {
-      if (window.name && window.name.indexOf("OBVALKA_DB:") === 0) {
-        candidates.push(JSON.parse(window.name.slice(11)));
+      var rawB = localStorage.getItem(BACKUPS_KEY);
+      if (rawB) lsBk = JSON.parse(rawB);
+    } catch (e) {}
+
+    var wnState = null;
+    var wnBk = [];
+    try {
+      if (window.name && window.name.charAt(0) === "{") {
+        var parsedWn = JSON.parse(window.name);
+        if (parsedWn && parsedWn.st) wnState = parsedWn.st;
+        if (parsedWn && Array.isArray(parsedWn.bk)) wnBk = parsedWn.bk;
       }
     } catch (e) {}
 
-    idbGet(LS_KEY, function(idbRaw) {
-      if (idbRaw) {
-        try { candidates.push(typeof idbRaw === "string" ? JSON.parse(idbRaw) : idbRaw); } catch (e) {}
-      }
+    return Promise.all([idbGet(STORAGE_KEY), idbGet(BACKUPS_KEY)]).then(function (res) {
+      var idbState = null;
+      var idbBk = [];
+      try { if (res[0]) idbState = JSON.parse(res[0]); } catch (e) {}
+      try { if (res[1]) idbBk = JSON.parse(res[1]); } catch (e) {}
+
+      var candidates = [lsState, idbState, wnState].filter(Boolean);
       var best = null;
       var bestScore = -1;
-      for (var i = 0; i < candidates.length; i++) {
-        var c = candidates[i];
-        if (!c || typeof c !== "object") continue;
-        var score = countRecords(c) * 10 + (Array.isArray(c.backups) ? c.backups.length : 0);
-        if (score > bestScore) { bestScore = score; best = c; }
+      candidates.forEach(function (c) {
+        var sc = countItems(c.records) * 10 + (c.worker ? 1 : 0) + (c.rate ? 1 : 0);
+        if (sc > bestScore) {
+          bestScore = sc;
+          best = c;
+        }
+      });
+
+      if (best) {
+        state.records = best.records || {};
+        state.worker = best.worker || "";
+        state.rate = best.rate || "";
+        state.theme = best.theme || "dark";
+        state.lastAutoBackupDate = best.lastAutoBackupDate || "";
       }
-      if (best) applyLoadedData(best);
-      cb();
+
+      var allBk = [lsBk, idbBk, wnBk];
+      var longestBk = [];
+      allBk.forEach(function (arr) {
+        if (Array.isArray(arr) && arr.length > longestBk.length) longestBk = arr;
+      });
+      backups = longestBk;
+      saveAll();
     });
   }
 
-  function createBackup(tag, done) {
-    var d = new Date();
-    var stamp = pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + "." + d.getFullYear() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
-    var cnt = countRecords(state);
+  function createBackup(tag) {
+    var now = new Date();
+    var label = String(now.getDate()).padStart(2, "0") + "." +
+      String(now.getMonth() + 1).padStart(2, "0") + "." +
+      now.getFullYear() + " " +
+      String(now.getHours()).padStart(2, "0") + ":" +
+      String(now.getMinutes()).padStart(2, "0");
+    if (tag) label += " (" + tag + ")";
     var snap = {
-      id: Date.now() + "_" + Math.floor(Math.random() * 1000),
-      date: stamp + (tag ? " " + tag : ""),
-      count: cnt,
-      data: JSON.stringify({
-        records: state.records,
-        dayOffs: state.dayOffs,
-        worker: state.worker,
-        rate: state.rate
-      })
+      id: Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+      label: label,
+      count: countItems(state.records),
+      data: JSON.parse(JSON.stringify(state))
     };
-    state.backups.unshift(snap);
-    if (state.backups.length > 8) state.backups = state.backups.slice(0, 8);
-    saveAll(done);
+    backups.unshift(snap);
+    if (backups.length > 25) backups = backups.slice(0, 25);
+    return saveAll();
   }
 
-  function ensureDailyAutoBackup() {
-    var d = new Date();
-    var todayTag = pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + "." + d.getFullYear();
-    for (var i = 0; i < state.backups.length; i++) {
-      if (state.backups[i].date && state.backups[i].date.indexOf(todayTag) === 0 && state.backups[i].date.indexOf("(авто)") !== -1) {
-        return;
-      }
+  function calcShiftPreview() {
+    var boxes = parseInt(parseNum(document.getElementById("boxesInput").value), 10) || 0;
+    var boxWeight = parseNum(document.getElementById("weightInput").value);
+    var rate = parseNum(document.getElementById("rateInput").value);
+    var totalKg = boxes > 0 ? (boxes * boxWeight) : boxWeight;
+    totalKg = Math.round(totalKg * 100) / 100;
+    var rub = Math.round(totalKg * rate * 100) / 100;
+    document.getElementById("shiftKgLabel").textContent = fmtNum(totalKg) + " кг";
+    document.getElementById("shiftRubLabel").textContent = fmtNum(rub) + " ₽";
+    return { boxes: boxes, boxWeight: boxWeight, totalKg: totalKg, rate: rate, rub: rub };
+  }
+
+  function getActiveRange() {
+    if (customRange) return customRange;
+    var sel = parseKey(selectedKey);
+    if (mode === "day") {
+      return { start: sel, end: sel };
     }
-    createBackup("(авто)");
-  }
-
-  function updatePeriodRange() {
-    var d = parseKey(selectedKey);
-    if (periodMode === "day") {
-      rangeStart = selectedKey;
-      rangeEnd = selectedKey;
-    } else if (periodMode === "week") {
-      var day = d.getDay();
-      var diff = day === 0 ? -6 : 1 - day;
-      var mon = new Date(d.getFullYear(), d.getMonth(), d.getDate() + diff);
-      var sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
-      rangeStart = fmtKey(mon);
-      rangeEnd = fmtKey(sun);
-    } else if (periodMode === "2weeks") {
-      var y = d.getFullYear(), m = d.getMonth();
-      if (d.getDate() <= 15) {
-        rangeStart = fmtKey(new Date(y, m, 1));
-        rangeEnd = fmtKey(new Date(y, m, 15));
+    if (mode === "week") {
+      var dow = (sel.getDay() + 6) % 7;
+      var s = new Date(sel.getFullYear(), sel.getMonth(), sel.getDate() - dow);
+      var e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
+      return { start: s, end: e };
+    }
+    if (mode === "2weeks") {
+      var y = sel.getFullYear();
+      var m = sel.getMonth();
+      if (sel.getDate() <= 15) {
+        return { start: new Date(y, m, 1), end: new Date(y, m, 15) };
       } else {
-        var last = new Date(y, m + 1, 0).getDate();
-        rangeStart = fmtKey(new Date(y, m, 16));
-        rangeEnd = fmtKey(new Date(y, m, last));
+        var lastD = new Date(y, m + 1, 0).getDate();
+        return { start: new Date(y, m, 16), end: new Date(y, m, lastD) };
       }
-    } else if (periodMode === "month") {
-      var ym = d.getFullYear(), mm = d.getMonth();
-      rangeStart = fmtKey(new Date(ym, mm, 1));
-      rangeEnd = fmtKey(new Date(ym, mm + 1, 0));
-    } else if (periodMode === "year") {
-      var yy = d.getFullYear();
-      rangeStart = fmtKey(new Date(yy, 0, 1));
-      rangeEnd = fmtKey(new Date(yy, 11, 31));
     }
+    if (mode === "month") {
+      return {
+        start: new Date(viewYear, viewMonth, 1),
+        end: new Date(viewYear, viewMonth + 1, 0)
+      };
+    }
+    return {
+      start: new Date(viewYear, 0, 1),
+      end: new Date(viewYear, 11, 31)
+    };
   }
 
-  function getOrderedRange() {
-    return rangeStart <= rangeEnd ? [rangeStart, rangeEnd] : [rangeEnd, rangeStart];
+  function isKeyInRange(k, range) {
+    var d = parseKey(k).getTime();
+    var s = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()).getTime();
+    var e = new Date(range.end.getFullYear(), range.end.getMonth(), range.end.getDate()).getTime();
+    if (s > e) { var t = s; s = e; e = t; }
+    return d >= s && d <= e;
   }
 
   function renderCalendar() {
-    $("monthLabel").textContent = MONTHS_NOM[viewMonth] + " " + viewYear;
-    var grid = $("daysGrid");
+    document.getElementById("monthLabel").textContent = MONTHS_NOM[viewMonth] + " " + viewYear;
+    document.getElementById("verLabel").textContent = "v " + APP_VERSION;
+
+    var grid = document.getElementById("daysGrid");
     grid.innerHTML = "";
 
     var firstDay = new Date(viewYear, viewMonth, 1);
-    var startDow = firstDay.getDay();
-    var offset = startDow === 0 ? 6 : startDow - 1;
-    var startDate = new Date(viewYear, viewMonth, 1 - offset);
-    var todayKey = fmtKey(new Date());
-    var rng = getOrderedRange();
+    var startOffset = (firstDay.getDay() + 6) % 7;
+    var startDate = new Date(viewYear, viewMonth, 1 - startOffset);
+    var range = getActiveRange();
+    var todayKey = fmtKey(today);
 
     for (var i = 0; i < 42; i++) {
-      var cur = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
-      var k = fmtKey(cur);
+      var d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
+      var k = fmtKey(d);
       var cell = document.createElement("div");
       cell.className = "day-cell";
-      cell.setAttribute("data-key", k);
-      if (cur.getMonth() !== viewMonth) cell.className += " other";
-      if (k === todayKey) cell.className += " today";
-      if (k >= rng[0] && k <= rng[1]) cell.className += " in-range";
-      if (k === selectedKey && periodMode !== "custom") cell.className += " selected";
-      if (periodMode === "custom" && (k === rng[0] || k === rng[1])) cell.className += " selected";
+      cell.dataset.key = k;
+      if (d.getMonth() !== viewMonth) cell.classList.add("other-month");
+      if (k === todayKey) cell.classList.add("today");
+      if (isKeyInRange(k, range)) cell.classList.add("in-range");
+      if (k === selectedKey) cell.classList.add("selected");
 
-      var num = document.createElement("span");
-      num.textContent = cur.getDate();
-      cell.appendChild(num);
+      var numSpan = document.createElement("span");
+      numSpan.textContent = String(d.getDate());
+      cell.appendChild(numSpan);
 
-      if (state.dayOffs[k]) {
-        var off = document.createElement("span");
-        off.className = "day-off-mark";
-        off.innerHTML = "&#10005;";
-        cell.appendChild(off);
+      var dayRecs = state.records[k] || [];
+      var hasWork = dayRecs.some(function (r) { return !r.off; });
+      var hasOff = dayRecs.some(function (r) { return r.off; });
+
+      if (hasWork) {
+        var dot = document.createElement("div");
+        dot.className = "day-dot";
+        cell.appendChild(dot);
       }
-
-      if (state.records[k] && state.records[k].length > 0) {
-        var bar = document.createElement("span");
-        bar.className = "day-bar";
-        cell.appendChild(bar);
+      if (hasOff) {
+        var offM = document.createElement("div");
+        offM.className = "day-off-mark";
+        offM.textContent = "✕";
+        cell.appendChild(offM);
       }
 
       grid.appendChild(cell);
     }
+
+    var selD = parseKey(selectedKey);
+    document.getElementById("selectedDateLabel").textContent = selD.getDate() + " " + MONTHS_GEN[selD.getMonth()];
   }
 
-  function getKeysInRange() {
-    var rng = getOrderedRange();
-    var start = parseKey(rng[0]);
-    var end = parseKey(rng[1]);
-    var keys = [];
-    var cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
-    while (cur <= end) {
-      keys.push(fmtKey(cur));
-      cur.setDate(cur.getDate() + 1);
-    }
-    return keys;
-  }
+  function renderRecordsAndSummary() {
+    var range = getActiveRange();
+    var s = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate());
+    var e = new Date(range.end.getFullYear(), range.end.getMonth(), range.end.getDate());
+    if (s > e) { var tmp = s; s = e; e = tmp; }
 
-  function renderSummaryAndRecords() {
-    var rng = getOrderedRange();
-    var keys = getKeysInRange();
+    var listEl = document.getElementById("recordsList");
+    listEl.innerHTML = "";
+
     var totalBoxes = 0;
     var totalKg = 0;
     var totalRub = 0;
+    var items = [];
 
-    var list = $("recordsList");
-    list.innerHTML = "";
-
-    for (var i = 0; i < keys.length; i++) {
-      var k = keys[i];
+    var cur = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+    while (cur <= e) {
+      var k = fmtKey(cur);
       var arr = state.records[k] || [];
-      for (var j = 0; j < arr.length; j++) {
-        var r = arr[j];
-        var b = parseInt(r.boxes, 10) || 0;
-        var w = parseNum(r.weight);
-        var rub = round2(w * parseNum(r.rate));
-        totalBoxes += b;
-        totalKg = round2(totalKg + w);
-        totalRub = round2(totalRub + rub);
-
-        var row = document.createElement("div");
-        row.className = "rec-item";
-        var info = document.createElement("span");
-        info.textContent = fmtShortDate(k) + ": " + b + " кор. | " + fmtNum(w) + " кг | " + fmtNum(rub) + " ₽";
-        var del = document.createElement("button");
-        del.className = "rec-del";
-        del.textContent = "Удалить";
-        del.setAttribute("data-key", k);
-        del.setAttribute("data-idx", j);
-        row.appendChild(info);
-        row.appendChild(del);
-        list.appendChild(row);
-      }
+      arr.forEach(function (rec, idx) {
+        items.push({ key: k, idx: idx, date: new Date(cur), rec: rec });
+        if (!rec.off) {
+          totalBoxes += Number(rec.boxes) || 0;
+          totalKg += Number(rec.kg) || 0;
+          totalRub += Number(rec.rub) || 0;
+        }
+      });
+      cur.setDate(cur.getDate() + 1);
     }
 
-    var titleMap = {
+    totalKg = Math.round(totalKg * 100) / 100;
+    totalRub = Math.round(totalRub * 100) / 100;
+
+    var modeNames = {
       day: "ДЕНЬ",
-      week: "НЕДЕЛЯ",
+      week: "НЕДЕЛЮ",
       "2weeks": "2Х НЕДЕЛИ",
-      month: "МЕСЯЦ",
-      year: "ГОД",
-      custom: "ПЕРИОД"
+      month: "МЕСЯЦ (" + MONTHS_NOM[viewMonth].toUpperCase() + " " + viewYear + ")",
+      year: "ГОД (" + viewYear + ")"
     };
-    var pName = titleMap[periodMode] || "ДЕНЬ";
-    var rangeText = rng[0] === rng[1] ? fmtHumanDate(rng[0]) : (fmtHumanDate(rng[0]) + " – " + fmtHumanDate(rng[1]));
+    var periodLabel = customRange
+      ? (s.getDate() + " " + MONTHS_SHORT[s.getMonth()] + " – " + e.getDate() + " " + MONTHS_SHORT[e.getMonth()])
+      : modeNames[mode];
 
-    $("recordsHeader").textContent = "ЗАПИСИ (" + pName + (rng[0] !== rng[1] ? " (" + rangeText + ")" : "") + ")";
-    $("sumPeriodLabel").textContent = "ИТОГ ЗА " + pName + (rng[0] !== rng[1] ? " (" + rangeText.toUpperCase() + ")" : "");
-    $("sumBoxesKg").textContent = totalBoxes + " кор. | " + fmtNum(totalKg) + " кг";
-    $("sumMoney").textContent = fmtNum(totalRub) + " ₽";
-    $("selectedDateLabel").textContent = fmtHumanDate(selectedKey);
+    document.getElementById("recordsTitle").textContent = "ЗАПИСИ (" + periodLabel + ")";
+    document.getElementById("sumPeriodLabel").textContent = "ИТОГ ЗА " + periodLabel;
+    document.getElementById("sumSubLabel").textContent = totalBoxes + " кор. • " + fmtNum(totalKg) + " кг";
+    document.getElementById("sumMoneyLabel").textContent = fmtNum(totalRub) + " ₽";
 
-    if (state.undoStack.length > 0) {
-      $("undoRow").style.display = "flex";
-      $("undoBtn").textContent = "↩ Отменить удаление (" + state.undoStack.length + ")";
+    items.forEach(function (it) {
+      var row = document.createElement("div");
+      row.className = "rec-item";
+      var dStr = it.date.getDate() + " " + MONTHS_GEN[it.date.getMonth()];
+      var txt = document.createElement("span");
+      if (it.rec.off) {
+        txt.style.color = "var(--danger)";
+        txt.textContent = dStr + ": Выходной";
+      } else {
+        txt.textContent = dStr + ": " + it.rec.boxes + " кор. • " + fmtNum(it.rec.kg) + " кг • " + fmtNum(it.rec.rub) + " ₽";
+      }
+      var delBtn = document.createElement("button");
+      delBtn.className = "rec-del";
+      delBtn.textContent = "✕";
+      delBtn.onclick = function () {
+        trash.push({ key: it.key, rec: it.rec });
+        state.records[it.key].splice(it.idx, 1);
+        if (state.records[it.key].length === 0) delete state.records[it.key];
+        saveAll();
+        refreshUI();
+      };
+      row.appendChild(txt);
+      row.appendChild(delBtn);
+      listEl.appendChild(row);
+    });
+
+    var undoBar = document.getElementById("undoBar");
+    if (trash.length > 0) {
+      undoBar.style.display = "flex";
+      document.getElementById("undoBtn").textContent = "↩ Вернуть (" + trash.length + ")";
     } else {
-      $("undoRow").style.display = "none";
+      undoBar.style.display = "none";
     }
   }
 
-  function updateShiftPreview() {
-    var w = parseNum($("weightInput").value);
-    var r = parseNum($("rateInput").value);
-    var rub = round2(w * r);
-    $("shiftKg").textContent = fmtNum(w) + " кг";
-    $("shiftRub").textContent = fmtNum(rub) + " ₽";
-  }
-
-  function renderAll() {
-    document.documentElement.setAttribute("data-theme", state.theme);
-    $("themeBtn").innerHTML = state.theme === "dark" ? "&#9728;" : "&#9790;";
-    $("verTag").textContent = "v " + APP_VER;
+  function refreshUI() {
     renderCalendar();
-    renderSummaryAndRecords();
-    updateShiftPreview();
+    renderRecordsAndSummary();
+    calcShiftPreview();
   }
 
-  function buildFullReport() {
-    var rng = getOrderedRange();
-    var keys = getKeysInRange();
-    var lines = [];
-    if (state.worker && state.worker.trim()) lines.push(state.worker.trim());
+  function buildReport(isFull) {
+    var range = getActiveRange();
+    var s = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate());
+    var e = new Date(range.end.getFullYear(), range.end.getMonth(), range.end.getDate());
+    if (s > e) { var t = s; s = e; e = t; }
 
-    if (rng[0] === rng[1] && periodMode === "day") {
-      var arrDay = state.records[rng[0]] || [];
-      var bDay = 0, wDay = 0;
-      for (var d = 0; d < arrDay.length; d++) {
-        bDay += parseInt(arrDay[d].boxes, 10) || 0;
-        wDay = round2(wDay + parseNum(arrDay[d].weight));
+    var workerName = (state.worker || "").trim();
+    var lines = [];
+    if (workerName) lines.push(workerName);
+
+    var isSingleDay = (s.getTime() === e.getTime());
+    var isManualMulti = (customRange !== null && !isSingleDay);
+
+    var totalBoxes = 0;
+    var totalKg = 0;
+    var totalRub = 0;
+    var dayRows = [];
+
+    var cur = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+    while (cur <= e) {
+      var k = fmtKey(cur);
+      var arr = state.records[k] || [];
+      var dBoxes = 0;
+      var dKg = 0;
+      var dRub = 0;
+      var hasWork = false;
+      arr.forEach(function (r) {
+        if (!r.off) {
+          hasWork = true;
+          dBoxes += Number(r.boxes) || 0;
+          dKg += Number(r.kg) || 0;
+          dRub += Number(r.rub) || 0;
+        }
+      });
+      if (hasWork) {
+        dKg = Math.round(dKg * 100) / 100;
+        dRub = Math.round(dRub * 100) / 100;
+        totalBoxes += dBoxes;
+        totalKg += dKg;
+        totalRub += dRub;
+        var dShort = cur.getDate() + " " + MONTHS_SHORT[cur.getMonth()];
+        dayRows.push(dShort + " | " + dBoxes + "кор | " + fmtNum(dKg) + "кг | " + fmtNum(dRub) + "₽");
       }
-      lines.push("Вес: " + fmtNum(wDay) + " кг " + bDay + " кор.");
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    totalKg = Math.round(totalKg * 100) / 100;
+    totalRub = Math.round(totalRub * 100) / 100;
+
+    if (!isFull) {
+      if (isManualMulti) {
+        lines.push(s.getDate() + " " + MONTHS_SHORT[s.getMonth()] + " – " + e.getDate() + " " + MONTHS_SHORT[e.getMonth()]);
+      }
+      lines.push("Вес: " + fmtNum(totalKg) + " кг " + totalBoxes + " кор.");
       return lines.join("\n");
     }
 
-    lines.push(fmtShortDate(rng[0]) + " – " + fmtShortDate(rng[1]));
-    var tBoxes = 0, tKg = 0, tRub = 0;
-    for (var i = 0; i < keys.length; i++) {
-      var k = keys[i];
-      var arr = state.records[k] || [];
-      if (arr.length === 0) continue;
-      var db = 0, dw = 0, dr = 0;
-      for (var j = 0; j < arr.length; j++) {
-        db += parseInt(arr[j].boxes, 10) || 0;
-        var w = parseNum(arr[j].weight);
-        dw = round2(dw + w);
-        dr = round2(dr + w * parseNum(arr[j].rate));
-      }
-      tBoxes += db;
-      tKg = round2(tKg + dw);
-      tRub = round2(tRub + dr);
-      lines.push(fmtShortDate(k) + " | " + db + "кор | " + fmtNum(dw) + "кг | " + fmtNum(dr) + "₽");
+    if (isSingleDay) {
+      lines.push(s.getDate() + " " + MONTHS_SHORT[s.getMonth()]);
+    } else {
+      lines.push(s.getDate() + " " + MONTHS_SHORT[s.getMonth()] + " – " + e.getDate() + " " + MONTHS_SHORT[e.getMonth()]);
     }
-    lines.push("ИТОГ: " + tBoxes + "кор | " + fmtNum(tKg) + "кг | " + fmtNum(tRub) + "₽");
+    dayRows.forEach(function (r) { lines.push(r); });
+    lines.push("ИТОГ: " + totalBoxes + "кор | " + fmtNum(totalKg) + "кг | " + fmtNum(totalRub) + "₽");
     return lines.join("\n");
   }
 
-  function buildShortReport() {
-    var rng = getOrderedRange();
-    var keys = getKeysInRange();
-    var lines = [];
-    if (state.worker && state.worker.trim()) lines.push(state.worker.trim());
-    if (periodMode === "custom" && rng[0] !== rng[1]) {
-      lines.push(fmtShortDate(rng[0]) + " – " + fmtShortDate(rng[1]));
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () {});
     }
-    var tBoxes = 0, tKg = 0;
-    for (var i = 0; i < keys.length; i++) {
-      var arr = state.records[keys[i]] || [];
-      for (var j = 0; j < arr.length; j++) {
-        tBoxes += parseInt(arr[j].boxes, 10) || 0;
-        tKg = round2(tKg + parseNum(arr[j].weight));
-      }
-    }
-    lines.push("Вес: " + fmtNum(tKg) + " кг " + tBoxes + " кор.");
-    return lines.join("\n");
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
   }
 
-  function openConfirm(title, msg, cb) {
-    $("confirmTitle").textContent = title;
-    $("confirmMsg").textContent = msg;
-    confirmCallback = cb;
-    $("confirmModal").style.display = "flex";
-  }
-
-  function renderBackupsModal() {
-    var box = $("backupList");
-    box.innerHTML = "";
-    if (!state.backups || state.backups.length === 0) {
-      box.innerHTML = "<div style='font-size:12px; color:var(--muted);'>Сохранённых копий пока нет</div>";
+  function triggerSystemShare(text) {
+    copyToClipboard(text);
+    if (navigator.share) {
+      navigator.share({ text: text }).catch(function () {});
       return;
     }
-    for (var i = 0; i < state.backups.length; i++) {
-      (function(idx) {
-        var b = state.backups[idx];
-        var item = document.createElement("div");
-        item.className = "backup-item";
-        var left = document.createElement("div");
-        var cnt = typeof b.count === "number" ? b.count : 0;
-        left.innerHTML = "<b>" + (b.date || "Копия") + "</b><br><span style='color:var(--muted)'>Записей: " + cnt + "</span>";
-        var right = document.createElement("div");
-        right.style.display = "flex";
-        right.style.gap = "5px";
-        var restBtn = document.createElement("button");
-        restBtn.className = "m-btn green";
-        restBtn.textContent = "Восстановить";
-        restBtn.onclick = function() {
-          try {
-            var d = JSON.parse(b.data);
-            state.records = d.records || {};
-            state.dayOffs = d.dayOffs || {};
-            if (d.worker) { state.worker = d.worker; $("workerInput").value = state.worker; }
-            if (d.rate) { state.rate = d.rate; $("rateInput").value = state.rate; }
-            saveAll();
-            renderAll();
-            $("restoreModal").style.display = "none";
-            showToast("База восстановлена");
-          } catch (e) { showToast("Ошибка чтения копии"); }
-        };
-        var delBtn = document.createElement("button");
-        delBtn.className = "m-btn red";
-        delBtn.innerHTML = "&#10005;";
-        delBtn.onclick = function() {
-          openConfirm("Удаление копии", "Удалить эту сохранённую базу? Вы уверены?", function() {
-            state.backups.splice(idx, 1);
-            saveAll();
-            renderBackupsModal();
-            showToast("Копия удалена");
-          });
-        };
-        right.appendChild(restBtn);
-        right.appendChild(delBtn);
-        item.appendChild(left);
-        item.appendChild(right);
-        box.appendChild(item);
-      })(i);
+    var encoded = encodeURIComponent(text);
+    var isAndroid = /Android/i.test(navigator.userAgent || "");
+    if (isAndroid) {
+      try {
+        window.location.href = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encoded + ";end";
+        return;
+      } catch (e) {}
     }
+    showToast("Текст скопирован — вставьте в любой мессенджер");
+  }
+
+  function askConfirm(text, onYes) {
+    var modal = document.getElementById("confirmModal");
+    document.getElementById("confirmText").textContent = text;
+    modal.style.display = "flex";
+    var yesBtn = document.getElementById("confirmYesBtn");
+    var noBtn = document.getElementById("confirmNoBtn");
+    yesBtn.onclick = function () {
+      modal.style.display = "none";
+      onYes();
+    };
+    noBtn.onclick = function () {
+      modal.style.display = "none";
+    };
+  }
+
+  function renderBackupsList() {
+    var box = document.getElementById("backupList");
+    box.innerHTML = "";
+    if (backups.length === 0) {
+      box.innerHTML = "<div style='color:var(--text-muted);font-size:13px;text-align:center;padding:12px;'>Сохранённых копий пока нет</div>";
+      return;
+    }
+    backups.forEach(function (bk, idx) {
+      var row = document.createElement("div");
+      row.className = "bk-item";
+      var info = document.createElement("span");
+      var cnt = (typeof bk.count === "number") ? bk.count : countItems(bk.data && bk.data.records);
+      info.textContent = (bk.label || "Копия") + " • " + cnt + " зап.";
+      var btns = document.createElement("div");
+      btns.style.display = "flex";
+      btns.style.gap = "5px";
+
+      var restBtn = document.createElement("button");
+      restBtn.className = "m-btn green";
+      restBtn.style.padding = "5px 8px";
+      restBtn.style.fontSize = "11px";
+      restBtn.textContent = "Восстановить";
+      restBtn.onclick = function () {
+        if (bk.data) {
+          state.records = bk.data.records || {};
+          state.worker = bk.data.worker || "";
+          state.rate = bk.data.rate || "";
+          document.getElementById("workerInput").value = state.worker;
+          document.getElementById("rateInput").value = state.rate;
+          saveAll();
+          refreshUI();
+          document.getElementById("restoreModal").style.display = "none";
+          showToast("База восстановлена");
+        }
+      };
+
+      var delBtn = document.createElement("button");
+      delBtn.className = "m-btn red";
+      delBtn.style.padding = "5px 8px";
+      delBtn.style.fontSize = "11px";
+      delBtn.textContent = "✕";
+      delBtn.onclick = function () {
+        askConfirm("Удалить эту сохранённую базу? Вы уверены?", function () {
+          backups.splice(idx, 1);
+          saveAll();
+          renderBackupsList();
+          showToast("Копия удалена");
+        });
+      };
+
+      btns.appendChild(restBtn);
+      btns.appendChild(delBtn);
+      row.appendChild(info);
+      row.appendChild(btns);
+      box.appendChild(row);
+    });
   }
 
   function runStepByStepUpdate() {
     if (window.location.protocol === "file:") {
-      showToast("Локальный файл: обновите через GitHub");
+      showToast("Локальный файл: загрузите на GitHub для проверки обновлений");
       return;
     }
-    showToast("Шаг 1/4: Сохранение базы...");
-    createBackup("(перед обн.)", function() {
-      setTimeout(function() {
-        showToast("Шаг 2/4: Проверка целостности...");
-        saveAll(function() {
-          setTimeout(function() {
-            showToast("Шаг 3/4: Очистка старого кэша...");
-            var cleanCaches = Promise.resolve();
-            if ("caches" in window) {
-              cleanCaches = caches.keys().then(function(names) {
-                return Promise.all(names.map(function(n) { return caches.delete(n); }));
-              });
-            }
-            cleanCaches.then(function() {
-              if ("serviceWorker" in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(regs) {
-                  for (var i = 0; i < regs.length; i++) regs[i].unregister();
-                });
-              }
-              setTimeout(function() {
-                showToast("Шаг 4/4: Загрузка новой версии...");
-                var baseUrl = window.location.href.split("?")[0];
-                window.location.replace(baseUrl + "?v=" + Date.now());
-              }, 800);
-            });
-          }, 800);
-        });
-      }, 800);
-    });
-  }
-
-  function selectDayCell(key, isStart) {
-    if (!key) return;
-    if (isStart) {
-      isDragging = true;
-      dragAnchor = key;
-      selectedKey = key;
-      if (periodMode === "custom") {
-        periodMode = "day";
-        var tabs = document.querySelectorAll(".tab");
-        for (var i = 0; i < tabs.length; i++) {
-          tabs[i].classList.toggle("active", tabs[i].getAttribute("data-mode") === "day");
-        }
+    showToast("Шаг 1/4: Сохранение базы в память...", 2000);
+    createBackup("перед обн.").then(function () {
+      return new Promise(function (r) { setTimeout(r, 800); });
+    }).then(function () {
+      showToast("Шаг 2/4: Проверка целостности данных...", 2000);
+      return saveAll();
+    }).then(function () {
+      return new Promise(function (r) { setTimeout(r, 800); });
+    }).then(function () {
+      showToast("Шаг 3/4: Очистка старого кэша...", 2000);
+      var tasks = [];
+      if ("caches" in window) {
+        tasks.push(caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        }));
       }
-      updatePeriodRange();
-      renderAll();
-    } else if (isDragging && dragAnchor && key !== dragAnchor) {
-      periodMode = "custom";
-      rangeStart = dragAnchor;
-      rangeEnd = key;
-      selectedKey = key;
-      var tabs2 = document.querySelectorAll(".tab");
-      for (var j = 0; j < tabs2.length; j++) tabs2[j].classList.remove("active");
-      renderAll();
-    }
+      if ("serviceWorker" in navigator) {
+        tasks.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all(regs.map(function (reg) { return reg.unregister(); }));
+        }));
+      }
+      return Promise.all(tasks);
+    }).then(function () {
+      return new Promise(function (r) { setTimeout(r, 800); });
+    }).then(function () {
+      return fetch("app.js?nocache=" + Date.now(), { cache: "no-store" })
+        .then(function (resp) { return resp.text(); })
+        .then(function (txt) {
+          var m = txt.match(/APP_VERSION\s*=\s*"([^"]+)"/);
+          var remoteVer = m ? m[1] : APP_VERSION;
+          if (remoteVer === APP_VERSION) {
+            showToast("У вас актуальная версия v " + APP_VERSION, 2600);
+          } else {
+            showToast("Шаг 4/4: Загрузка v " + remoteVer + "...", 2000);
+            setTimeout(function () {
+              var cleanUrl = window.location.origin + window.location.pathname + "?v=" + Date.now();
+              window.location.replace(cleanUrl);
+            }, 800);
+          }
+        })
+        .catch(function () {
+          showToast("Нет интернета для проверки обновлений", 2500);
+        });
+    });
   }
 
   function bindEvents() {
-    var grid = $("daysGrid");
-    grid.addEventListener("pointerdown", function(e) {
-      var cell = e.target.closest(".day-cell");
-      if (!cell) return;
-      selectDayCell(cell.getAttribute("data-key"), true);
-    });
-    grid.addEventListener("pointermove", function(e) {
-      if (!isDragging) return;
-      var el = document.elementFromPoint(e.clientX, e.clientY);
-      var cell = el ? el.closest(".day-cell") : null;
-      if (cell) selectDayCell(cell.getAttribute("data-key"), false);
-    });
-    window.addEventListener("pointerup", function() {
-      isDragging = false;
-      dragAnchor = null;
-    });
-
-    $("prevMonthBtn").onclick = function() {
+    document.getElementById("prevMonthBtn").onclick = function () {
+      customRange = null;
       viewMonth--;
       if (viewMonth < 0) { viewMonth = 11; viewYear--; }
-      if (periodMode === "month" || periodMode === "year") {
+      if (mode === "month" || mode === "year") {
         selectedKey = fmtKey(new Date(viewYear, viewMonth, 1));
-        updatePeriodRange();
       }
-      renderAll();
+      refreshUI();
     };
 
-    $("nextMonthBtn").onclick = function() {
+    document.getElementById("nextMonthBtn").onclick = function () {
+      customRange = null;
       viewMonth++;
       if (viewMonth > 11) { viewMonth = 0; viewYear++; }
-      if (periodMode === "month" || periodMode === "year") {
+      if (mode === "month" || mode === "year") {
         selectedKey = fmtKey(new Date(viewYear, viewMonth, 1));
-        updatePeriodRange();
       }
-      renderAll();
+      refreshUI();
     };
 
-    var tabs = document.querySelectorAll(".tab");
-    for (var i = 0; i < tabs.length; i++) {
-      tabs[i].onclick = function() {
-        for (var j = 0; j < tabs.length; j++) tabs[j].classList.remove("active");
-        this.classList.add("active");
-        periodMode = this.getAttribute("data-mode");
-        updatePeriodRange();
-        renderAll();
+    document.getElementById("themeBtn").onclick = function () {
+      state.theme = (state.theme === "dark") ? "light" : "dark";
+      document.body.classList.toggle("light", state.theme === "light");
+      document.getElementById("themeBtn").textContent = (state.theme === "light") ? "🌙" : "☀️";
+      saveAll();
+    };
+
+    document.getElementById("updBtn").onclick = runStepByStepUpdate;
+
+    document.querySelectorAll(".tab-btn").forEach(function (btn) {
+      btn.onclick = function () {
+        document.querySelectorAll(".tab-btn").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        mode = btn.dataset.mode;
+        customRange = null;
+        refreshUI();
       };
-    }
+    });
 
-    $("themeBtn").onclick = function() {
-      state.theme = state.theme === "dark" ? "light" : "dark";
-      saveAll();
-      renderAll();
-    };
+    var grid = document.getElementById("daysGrid");
+    grid.addEventListener("pointerdown", function (e) {
+      var cell = e.target.closest(".day-cell");
+      if (!cell) return;
+      isDragging = true;
+      dragStartKey = cell.dataset.key;
+      selectedKey = dragStartKey;
+      customRange = null;
+      var d = parseKey(selectedKey);
+      viewYear = d.getFullYear();
+      viewMonth = d.getMonth();
+      refreshUI();
+    });
 
-    $("updBtn").onclick = runStepByStepUpdate;
-
-    $("dayOffBtn").onclick = function() {
-      if (state.dayOffs[selectedKey]) {
-        delete state.dayOffs[selectedKey];
-        showToast("Выходной снят");
-      } else {
-        state.dayOffs[selectedKey] = true;
-        showToast("Отмечен выходной");
+    grid.addEventListener("pointermove", function (e) {
+      if (!isDragging) return;
+      var el = document.elementFromPoint(e.clientX, e.clientY);
+      var cell = el && el.closest(".day-cell");
+      if (!cell) return;
+      var k = cell.dataset.key;
+      if (k && k !== dragStartKey) {
+        customRange = { start: parseKey(dragStartKey), end: parseKey(k) };
+        selectedKey = k;
+        refreshUI();
       }
-      ensureDailyAutoBackup();
+    });
+
+    window.addEventListener("pointerup", function () {
+      isDragging = false;
+    });
+
+    document.getElementById("dayOffBtn").onclick = function () {
+      if (!state.records[selectedKey]) state.records[selectedKey] = [];
+      var alreadyOff = state.records[selectedKey].some(function (r) { return r.off; });
+      if (alreadyOff) {
+        showToast("Этот день уже отмечен как выходной");
+        return;
+      }
+      state.records[selectedKey].push({ off: true });
+      var todayStr = fmtKey(new Date());
+      if (state.lastAutoBackupDate !== todayStr) {
+        state.lastAutoBackupDate = todayStr;
+        createBackup("авто");
+      } else {
+        saveAll();
+      }
+      refreshUI();
+      showToast("Выходной добавлен");
+    };
+
+    document.getElementById("workerInput").addEventListener("input", function (e) {
+      state.worker = e.target.value;
       saveAll();
-      renderAll();
-    };
+    });
 
-    $("workerInput").oninput = function() {
-      state.worker = this.value;
+    document.getElementById("boxesInput").addEventListener("input", function (e) {
+      e.target.value = e.target.value.replace(/[^0-9]/g, "");
+      calcShiftPreview();
+    });
+
+    document.getElementById("weightInput").addEventListener("input", function (e) {
+      e.target.value = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
+      calcShiftPreview();
+    });
+
+    document.getElementById("rateInput").addEventListener("input", function (e) {
+      e.target.value = e.target.value.replace(",", ".").replace(/[^0-9.]/g, "");
+      state.rate = e.target.value;
       saveAll();
-    };
+      calcShiftPreview();
+    });
 
-    $("boxesInput").oninput = function() {
-      this.value = this.value.replace(/[^0-9]/g, "");
-    };
-
-    $("weightInput").oninput = function() {
-      this.value = this.value.replace(",", ".").replace(/[^0-9.]/g, "");
-      updateShiftPreview();
-    };
-
-    $("rateInput").oninput = function() {
-      this.value = this.value.replace(",", ".").replace(/[^0-9.]/g, "");
-      state.rate = this.value;
-      saveAll();
-      updateShiftPreview();
-    };
-
-    $("addRecordBtn").onclick = function() {
-      var boxes = parseInt($("boxesInput").value, 10) || 0;
-      var weight = parseNum($("weightInput").value);
-      var rate = parseNum($("rateInput").value);
-      if (weight <= 0 && boxes <= 0) {
-        showToast("Введите коробки или вес");
+    document.getElementById("addRecordBtn").onclick = function () {
+      var calc = calcShiftPreview();
+      if (calc.totalKg <= 0) {
+        showToast("Введите вес коробки или количество коробок");
         return;
       }
       if (!state.records[selectedKey]) state.records[selectedKey] = [];
       state.records[selectedKey].push({
-        boxes: boxes,
-        weight: weight,
-        rate: rate
+        off: false,
+        boxes: calc.boxes,
+        boxWeight: calc.boxWeight,
+        kg: calc.totalKg,
+        rate: calc.rate,
+        rub: calc.rub
       });
-      delete state.dayOffs[selectedKey];
-      $("boxesInput").value = "";
-      $("weightInput").value = "";
-      ensureDailyAutoBackup();
-      saveAll();
-      renderAll();
-      showToast("Запись добавлена");
-    };
+      document.getElementById("boxesInput").value = "";
+      document.getElementById("weightInput").value = "";
 
-    $("recordsList").onclick = function(e) {
-      var btn = e.target.closest(".rec-del");
-      if (!btn) return;
-      var k = btn.getAttribute("data-key");
-      var idx = parseInt(btn.getAttribute("data-idx"), 10);
-      if (state.records[k] && state.records[k][idx]) {
-        var removed = state.records[k].splice(idx, 1)[0];
-        if (state.records[k].length === 0) delete state.records[k];
-        state.undoStack.push({ key: k, item: removed });
+      var todayStr = fmtKey(new Date());
+      if (state.lastAutoBackupDate !== todayStr) {
+        state.lastAutoBackupDate = todayStr;
+        createBackup("авто");
+      } else {
         saveAll();
-        renderAll();
       }
+      refreshUI();
+      showToast("Смена добавлена: " + fmtNum(calc.totalKg) + " кг");
     };
 
-    $("undoBtn").onclick = function() {
-      if (state.undoStack.length === 0) return;
-      var last = state.undoStack.pop();
+    document.getElementById("undoBtn").onclick = function () {
+      if (trash.length === 0) return;
+      var last = trash.pop();
       if (!state.records[last.key]) state.records[last.key] = [];
-      state.records[last.key].push(last.item);
+      state.records[last.key].push(last.rec);
       saveAll();
-      renderAll();
+      refreshUI();
     };
 
-    $("clearUndoBtn").onclick = function() {
-      openConfirm("Очистка истории", "Очистить все отменённые записи? Вы уверены?", function() {
-        state.undoStack = [];
-        saveAll();
-        renderAll();
+    document.getElementById("clearTrashBtn").onclick = function () {
+      askConfirm("Очистить все удалённые записи безвозвратно?", function () {
+        trash = [];
+        refreshUI();
       });
     };
 
-    $("fullRepBtn").onclick = function() {
-      $("reportModalTitle").textContent = "Полный отчёт";
-      $("reportPreviewText").value = buildFullReport();
-      $("reportModal").style.display = "flex";
+    document.getElementById("fullReportBtn").onclick = function () {
+      document.getElementById("reportModalTitle").textContent = "Полный отчёт";
+      document.getElementById("reportTextArea").value = buildReport(true);
+      document.getElementById("reportModal").style.display = "flex";
     };
 
-    $("shortRepBtn").onclick = function() {
-      $("reportModalTitle").textContent = "Краткий отчёт";
-      $("reportPreviewText").value = buildShortReport();
-      $("reportModal").style.display = "flex";
+    document.getElementById("shortReportBtn").onclick = function () {
+      document.getElementById("reportModalTitle").textContent = "Краткий отчёт";
+      document.getElementById("reportTextArea").value = buildReport(false);
+      document.getElementById("reportModal").style.display = "flex";
     };
 
-    $("closeReportBtn").onclick = function() {
-      $("reportModal").style.display = "none";
+    document.getElementById("closeReportBtn").onclick = function () {
+      document.getElementById("reportModal").style.display = "none";
     };
 
-    $("sendReportBtn").onclick = function() {
-      var txt = $("reportPreviewText").value;
-      $("reportModal").style.display = "none";
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).catch(function() {});
-      }
-      if (navigator.share) {
-        navigator.share({ text: txt }).catch(function() {});
-      } else {
-        showToast("Отчёт скопирован в буфер");
-      }
+    document.getElementById("copyReportBtn").onclick = function () {
+      var txt = document.getElementById("reportTextArea").value;
+      copyToClipboard(txt);
+      showToast("Отчёт скопирован");
     };
 
-    $("saveDbBtn").onclick = function() {
-      createBackup("(вручную)", function() {
-        showToast("База сохранена (" + countRecords(state) + " зап.)");
+    document.getElementById("sendReportBtn").onclick = function () {
+      var txt = document.getElementById("reportTextArea").value;
+      document.getElementById("reportModal").style.display = "none";
+      triggerSystemShare(txt);
+    };
+
+    document.getElementById("saveDbBtn").onclick = function () {
+      createBackup("вручную").then(function () {
+        showToast("Копия базы сохранена в телефон");
       });
     };
 
-    $("restoreDbBtn").onclick = function() {
-      $("codeTransferBox").style.display = "none";
-      renderBackupsModal();
-      $("restoreModal").style.display = "flex";
+    document.getElementById("openRestoreBtn").onclick = function () {
+      renderBackupsList();
+      document.getElementById("restoreModal").style.display = "flex";
     };
 
-    $("closeRestoreBtn").onclick = function() {
-      $("restoreModal").style.display = "none";
+    document.getElementById("closeRestoreBtn").onclick = function () {
+      document.getElementById("restoreModal").style.display = "none";
     };
 
-    $("toggleCodeBtn").onclick = function() {
-      var box = $("codeTransferBox");
-      if (box.style.display === "none") {
-        box.style.display = "flex";
-        $("transferCodeArea").value = JSON.stringify({
-          records: state.records,
-          dayOffs: state.dayOffs,
-          worker: state.worker,
-          rate: state.rate
-        });
-      } else {
-        box.style.display = "none";
-      }
+    document.getElementById("transferCodeBtn").onclick = function () {
+      document.getElementById("transferArea").value = JSON.stringify(state);
+      document.getElementById("transferModal").style.display = "flex";
     };
 
-    $("copyCodeBtn").onclick = function() {
-      var area = $("transferCodeArea");
-      area.select();
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(area.value);
-      } else {
-        document.execCommand("copy");
-      }
+    document.getElementById("closeTransferBtn").onclick = function () {
+      document.getElementById("transferModal").style.display = "none";
+    };
+
+    document.getElementById("copyCodeBtn").onclick = function () {
+      copyToClipboard(document.getElementById("transferArea").value);
       showToast("Код базы скопирован");
     };
 
-    $("importCodeBtn").onclick = function() {
+    document.getElementById("importCodeBtn").onclick = function () {
       try {
-        var d = JSON.parse($("transferCodeArea").value.trim());
-        if (!d || typeof d !== "object" || !d.records) throw new Error("bad");
-        state.records = d.records || {};
-        state.dayOffs = d.dayOffs || {};
-        if (d.worker) { state.worker = d.worker; $("workerInput").value = state.worker; }
-        if (d.rate) { state.rate = d.rate; $("rateInput").value = state.rate; }
+        var obj = JSON.parse(document.getElementById("transferArea").value.trim());
+        if (!obj || typeof obj.records !== "object") throw new Error("bad");
+        state.records = obj.records || {};
+        state.worker = obj.worker || "";
+        state.rate = obj.rate || "";
+        document.getElementById("workerInput").value = state.worker;
+        document.getElementById("rateInput").value = state.rate;
         saveAll();
-        renderAll();
-        $("restoreModal").style.display = "none";
-        showToast("Данные загружены из кода");
-      } catch (e) { showToast("Неверный формат кода"); }
-    };
-
-    $("confirmNoBtn").onclick = function() {
-      $("confirmModal").style.display = "none";
-      confirmCallback = null;
-    };
-
-    $("confirmYesBtn").onclick = function() {
-      $("confirmModal").style.display = "none";
-      if (confirmCallback) {
-        var fn = confirmCallback;
-        confirmCallback = null;
-        fn();
+        refreshUI();
+        document.getElementById("transferModal").style.display = "none";
+        document.getElementById("restoreModal").style.display = "none";
+        showToast("База успешно загружена по коду");
+      } catch (e) {
+        showToast("Неверный формат кода базы");
       }
     };
   }
 
-  loadAll(function() {
-    $("workerInput").value = state.worker || "";
-    $("rateInput").value = state.rate || "";
-    updatePeriodRange();
+  function init() {
     bindEvents();
-    renderAll();
-  });
+    loadAll().then(function () {
+      document.body.classList.toggle("light", state.theme === "light");
+      document.getElementById("themeBtn").textContent = (state.theme === "light") ? "🌙" : "☀️";
+      document.getElementById("workerInput").value = state.worker;
+      document.getElementById("rateInput").value = state.rate;
+      refreshUI();
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
 })();
