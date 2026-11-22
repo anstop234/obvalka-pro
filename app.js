@@ -1,876 +1,1083 @@
-(function () {
-  var APP_VERSION = "7.7";
-  var STORAGE_KEY = "obvalka_pro_v1";
-  var BACKUPS_KEY = "obvalka_pro_backups_v1";
-  var MONTHS_NOM = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-  var MONTHS_GEN = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
-  var MONTHS_SHORT = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+(function() {
+  const APP_VERSION = 'v 7.8';
+  const STORAGE_KEY = 'obvalka_pro_data_v1';
+  const BACKUPS_KEY = 'obvalka_pro_backups_v1';
+  const AUTO_BACKUP_DATE_KEY = 'obvalka_pro_last_auto_backup';
+  const DB_NAME = 'ObvalkaProDB';
+  const DB_STORE = 'kv';
+  const REPO_RAW_BASE = 'https://raw.githubusercontent.com/anstop234/obvalka-pro/main/';
 
-  var today = new Date();
-  var viewYear = today.getFullYear();
-  var viewMonth = today.getMonth();
-  var selectedDate = formatDateKey(today);
-  var rangeStart = selectedDate;
-  var rangeEnd = selectedDate;
-  var periodMode = "day";
-  var isManualRange = false;
-  var isDragging = false;
-  var dragAnchor = null;
+  const MONTHS_NOM = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+  ];
+  const MONTHS_GEN = [
+    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+  ];
+  const MONTHS_SHORT = [
+    'янв', 'фев', 'мар', 'апр', 'май', 'июн',
+    'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'
+  ];
 
-  var state = {
+  let state = {
+    viewYear: 2026,
+    viewMonth: 10,
+    periodMode: 'day',
+    selectedDates: ['2026-11-21'],
+    anchorDate: '2026-11-21',
+    isCustomRange: false,
+    workerName: '',
+    defaultRate: 9.5,
     records: {},
-    worker: "",
-    rate: "",
-    theme: "dark"
+    theme: 'dark'
   };
 
-  var undoStack = [];
-  var confirmCallback = null;
+  let undoStack = [];
+  let pendingConfirmAction = null;
+  let currentReportText = '';
+  let isDragging = false;
+  let dragStartDate = null;
 
   function pad2(n) {
-    return n < 10 ? "0" + n : "" + n;
+    return n < 10 ? '0' + n : '' + n;
   }
 
-  function formatDateKey(d) {
-    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  function toKey(y, m, d) {
+    return y + '-' + pad2(m + 1) + '-' + pad2(d);
   }
 
-  function parseDateKey(key) {
-    var p = key.split("-");
-    return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+  function parseKey(key) {
+    const p = key.split('-').map(Number);
+    return { y: p[0], m: p[1] - 1, d: p[2] };
   }
 
-  function numVal(v) {
-    if (v === null || v === undefined || v === "") return 0;
-    var n = parseFloat(String(v).replace(",", ".").replace(/[^\d.-]/g, ""));
-    return isNaN(n) ? 0 : n;
+  function formatDateGen(key) {
+    const p = parseKey(key);
+    return p.d + ' ' + MONTHS_GEN[p.m];
+  }
+
+  function formatDateShort(key) {
+    const p = parseKey(key);
+    return p.d + ' ' + MONTHS_SHORT[p.m];
+  }
+
+  function parseNum(val) {
+    if (typeof val === 'number') return isFinite(val) ? val : 0;
+    if (!val) return 0;
+    const cleaned = String(val).replace(',', '.').replace(/[^0-9.-]/g, '');
+    const n = parseFloat(cleaned);
+    return isFinite(n) ? n : 0;
   }
 
   function round2(n) {
-    return Math.round((n + 0.0000001) * 100) / 100;
+    return Math.round((n + Number.EPSILON) * 100) / 100;
   }
 
-  function showToast(msg) {
-    var el = document.getElementById("toast");
-    if (!el) return;
-    el.textContent = msg;
-    el.style.display = "block";
-    clearTimeout(el._t);
-    el._t = setTimeout(function () {
-      el.style.display = "none";
-    }, 2400);
+  function round1(n) {
+    return Math.round((n + Number.EPSILON) * 10) / 10;
   }
 
-  function normalizeRecord(rec, fallbackRate) {
-    if (!rec || typeof rec !== "object") return null;
-    var isOff = Boolean(rec.isOff || rec.off || rec.dayOff);
-    var boxes = Math.round(numVal(rec.boxes !== undefined ? rec.boxes : (rec.b !== undefined ? rec.b : rec.count)));
-    var boxWeight = numVal(rec.boxWeight !== undefined ? rec.boxWeight : (rec.bw !== undefined ? rec.bw : 0));
-    var weight = numVal(rec.weight !== undefined ? rec.weight : (rec.totalWeight !== undefined ? rec.totalWeight : rec.w));
+  function normalizeRecord(raw, fallbackRate) {
+    if (!raw || typeof raw !== 'object') return null;
+    const isOff = Boolean(raw.isOff || raw.off || raw.dayOff);
+    if (isOff) {
+      return { isOff: true, boxes: 0, boxWeight: 0, weight: 0, rate: 0, pay: 0 };
+    }
+    const boxes = Math.round(parseNum(raw.boxes !== undefined ? raw.boxes : raw.b));
+    const boxWeight = parseNum(raw.boxWeight !== undefined ? raw.boxWeight : raw.bw);
+    let weight = parseNum(
+      raw.weight !== undefined ? raw.weight :
+      (raw.totalWeight !== undefined ? raw.totalWeight : raw.w)
+    );
     if (weight <= 0 && boxes > 0 && boxWeight > 0) {
-      weight = round2(boxes * boxWeight);
+      weight = round1(boxes * boxWeight);
     }
-    var rate = numVal(rec.rate !== undefined ? rec.rate : rec.r);
-    if (rate <= 0 && fallbackRate > 0) {
-      rate = fallbackRate;
+    let rate = parseNum(raw.rate !== undefined ? raw.rate : raw.r);
+    if (rate <= 0 && weight > 0) {
+      rate = fallbackRate > 0 ? fallbackRate : 9.5;
     }
-    var pay = numVal(rec.pay !== undefined ? rec.pay : (rec.totalPay !== undefined ? rec.totalPay : rec.sum));
-    if (pay <= 0 && weight > 0 && rate > 0) {
+    let pay = parseNum(
+      raw.pay !== undefined ? raw.pay :
+      (raw.totalPay !== undefined ? raw.totalPay : raw.sum)
+    );
+    if (weight > 0 && rate > 0) {
       pay = round2(weight * rate);
-    } else if (weight > 0 && rate > 0 && Math.abs(pay - round2(weight * rate)) > 0.05) {
-      pay = round2(weight * rate);
     }
-    if (!isOff && boxes === 0 && weight === 0 && pay === 0) {
-      isOff = true;
+    if (boxes === 0 && weight === 0 && pay === 0) {
+      return { isOff: true, boxes: 0, boxWeight: 0, weight: 0, rate: 0, pay: 0 };
     }
     return {
-      id: rec.id || (Date.now() + Math.random()),
+      isOff: false,
       boxes: boxes,
-      boxWeight: round2(boxWeight),
-      weight: round2(weight),
+      boxWeight: boxWeight,
+      weight: round1(weight),
       rate: round2(rate),
-      pay: round2(pay),
-      isOff: isOff
+      pay: round2(pay)
     };
   }
 
-  function normalizeState(raw) {
-    var out = {
-      records: {},
-      worker: (raw && raw.worker) ? String(raw.worker) : "",
-      rate: (raw && raw.rate !== undefined && raw.rate !== null) ? String(raw.rate) : "",
-      theme: (raw && raw.theme === "light") ? "light" : "dark"
+  function normalizeDataset(rawObj) {
+    if (!rawObj || typeof rawObj !== 'object') return null;
+    const fallbackRate = parseNum(rawObj.defaultRate) || 9.5;
+    const out = {
+      workerName: typeof rawObj.workerName === 'string' ? rawObj.workerName : '',
+      defaultRate: fallbackRate,
+      theme: rawObj.theme === 'light' ? 'light' : 'dark',
+      records: {}
     };
-    var fbRate = numVal(out.rate);
-    if (raw && raw.records && typeof raw.records === "object") {
-      Object.keys(raw.records).forEach(function (dk) {
-        var arr = raw.records[dk];
-        if (Array.isArray(arr)) {
-          var cleanArr = [];
-          arr.forEach(function (item) {
-            var nr = normalizeRecord(item, fbRate);
-            if (nr) cleanArr.push(nr);
-          });
-          if (cleanArr.length > 0) out.records[dk] = cleanArr;
-        }
+    const srcRecs = rawObj.records && typeof rawObj.records === 'object' ? rawObj.records : {};
+    Object.keys(srcRecs).forEach(function(dateKey) {
+      const list = Array.isArray(srcRecs[dateKey]) ? srcRecs[dateKey] : [srcRecs[dateKey]];
+      const normList = [];
+      list.forEach(function(item) {
+        const nr = normalizeRecord(item, fallbackRate);
+        if (nr) normList.push(nr);
       });
-    }
+      if (normList.length > 0) {
+        out.records[dateKey] = normList;
+      }
+    });
     return out;
   }
 
-  function countTotalRecords(st) {
-    if (!st || !st.records) return 0;
-    var c = 0;
-    Object.keys(st.records).forEach(function (k) {
-      if (Array.isArray(st.records[k])) c += st.records[k].length;
+  function countRecords(recordsMap) {
+    if (!recordsMap || typeof recordsMap !== 'object') return 0;
+    let total = 0;
+    Object.keys(recordsMap).forEach(function(k) {
+      if (Array.isArray(recordsMap[k])) total += recordsMap[k].length;
     });
-    return c;
+    return total;
   }
 
-  function idbOpen(cb) {
-    if (!window.indexedDB) { cb(null); return; }
-    var req = indexedDB.open("ObvalkaProDB", 1);
-    req.onupgradeneeded = function (e) {
-      var db = e.target.result;
-      if (!db.objectStoreNames.contains("kv")) db.createObjectStore("kv");
-    };
-    req.onsuccess = function (e) { cb(e.target.result); };
-    req.onerror = function () { cb(null); };
-  }
-
-  function idbSet(key, val, done) {
-    idbOpen(function (db) {
-      if (!db) { if (done) done(); return; }
+  function openIDB() {
+    return new Promise(function(resolve) {
+      if (!window.indexedDB) return resolve(null);
       try {
-        var tx = db.transaction("kv", "readwrite");
-        tx.objectStore("kv").put(val, key);
-        tx.oncomplete = function () { if (done) done(); };
-        tx.onerror = function () { if (done) done(); };
-      } catch (e) {
-        if (done) done();
-      }
-    });
-  }
-
-  function idbGet(key, cb) {
-    idbOpen(function (db) {
-      if (!db) { cb(null); return; }
-      try {
-        var tx = db.transaction("kv", "readonly");
-        var req = tx.objectStore("kv").get(key);
-        req.onsuccess = function () { cb(req.result || null); };
-        req.onerror = function () { cb(null); };
-      } catch (e) {
-        cb(null);
-      }
-    });
-  }
-
-  function saveState(done) {
-    var json = JSON.stringify(state);
-    try { localStorage.setItem(STORAGE_KEY, json); } catch (e) {}
-    try { window.name = "OBV_STATE:" + json; } catch (e) {}
-    idbSet(STORAGE_KEY, json, done);
-  }
-
-  function getBackupsList() {
-    try {
-      var raw = localStorage.getItem(BACKUPS_KEY);
-      var arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveBackupsList(arr, done) {
-    var json = JSON.stringify(arr);
-    try { localStorage.setItem(BACKUPS_KEY, json); } catch (e) {}
-    idbSet(BACKUPS_KEY, json, done);
-  }
-
-  function createBackup(tag, done) {
-    var list = getBackupsList();
-    var d = new Date();
-    var title = pad2(d.getDate()) + "." + pad2(d.getMonth() + 1) + "." + d.getFullYear() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + (tag ? " " + tag : "");
-    var item = {
-      id: Date.now() + "_" + Math.floor(Math.random() * 1000),
-      title: title,
-      count: countTotalRecords(state),
-      data: JSON.parse(JSON.stringify(state))
-    };
-    list.unshift(item);
-    if (list.length > 25) list = list.slice(0, 25);
-    saveBackupsList(list, done);
-  }
-
-  function autoDailyBackup() {
-    var d = new Date();
-    var dayMark = formatDateKey(d);
-    var lastAuto = "";
-    try { lastAuto = localStorage.getItem("obvalka_last_auto") || ""; } catch (e) {}
-    if (lastAuto !== dayMark && countTotalRecords(state) > 0) {
-      try { localStorage.setItem("obvalka_last_auto", dayMark); } catch (e) {}
-      createBackup("(авто)");
-    }
-  }
-
-  function loadInitialState(cb) {
-    var candidates = [];
-    try {
-      var ls = localStorage.getItem(STORAGE_KEY);
-      if (ls) candidates.push(normalizeState(JSON.parse(ls)));
-    } catch (e) {}
-    try {
-      if (window.name && window.name.indexOf("OBV_STATE:") === 0) {
-        candidates.push(normalizeState(JSON.parse(window.name.slice(10))));
-      }
-    } catch (e) {}
-
-    idbGet(STORAGE_KEY, function (idbRaw) {
-      if (idbRaw) {
-        try {
-          var parsed = typeof idbRaw === "string" ? JSON.parse(idbRaw) : idbRaw;
-          candidates.push(normalizeState(parsed));
-        } catch (e) {}
-      }
-      idbGet(BACKUPS_KEY, function (idbBackups) {
-        if (idbBackups) {
-          try {
-            var localB = getBackupsList();
-            var remoteB = typeof idbBackups === "string" ? JSON.parse(idbBackups) : idbBackups;
-            if (Array.isArray(remoteB) && remoteB.length > localB.length) {
-              saveBackupsList(remoteB);
-            }
-          } catch (e) {}
-        }
-        var best = null;
-        candidates.forEach(function (c) {
-          if (!best || countTotalRecords(c) > countTotalRecords(best)) {
-            best = c;
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = function(e) {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(DB_STORE)) {
+            db.createObjectStore(DB_STORE);
           }
-        });
-        if (best) {
-          state = best;
+        };
+        req.onsuccess = function(e) { resolve(e.target.result); };
+        req.onerror = function() { resolve(null); };
+      } catch (err) {
+        resolve(null);
+      }
+    });
+  }
+
+  function idbSet(key, val) {
+    return openIDB().then(function(db) {
+      if (!db) return false;
+      return new Promise(function(resolve) {
+        try {
+          const tx = db.transaction(DB_STORE, 'readwrite');
+          tx.objectStore(DB_STORE).put(val, key);
+          tx.oncomplete = function() { resolve(true); };
+          tx.onerror = function() { resolve(false); };
+        } catch (e) {
+          resolve(false);
         }
-        cb();
       });
     });
   }
 
-  function applyTheme() {
-    if (state.theme === "light") {
-      document.body.classList.add("light");
-      document.getElementById("themeBtn").textContent = "🌙";
-    } else {
-      document.body.classList.remove("light");
-      document.getElementById("themeBtn").textContent = "☀️";
+  function idbGet(key) {
+    return openIDB().then(function(db) {
+      if (!db) return null;
+      return new Promise(function(resolve) {
+        try {
+          const tx = db.transaction(DB_STORE, 'readonly');
+          const req = tx.objectStore(DB_STORE).get(key);
+          req.onsuccess = function() { resolve(req.result || null); };
+          req.onerror = function() { resolve(null); };
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    });
+  }
+
+  function serializeState() {
+    return {
+      workerName: state.workerName,
+      defaultRate: state.defaultRate,
+      theme: state.theme,
+      records: state.records,
+      savedAt: Date.now()
+    };
+  }
+
+  function saveAllStorages() {
+    const payload = serializeState();
+    const jsonStr = JSON.stringify(payload);
+    try { localStorage.setItem(STORAGE_KEY, jsonStr); } catch (e) {}
+    try { window.name = 'OBVALKA_STATE:' + jsonStr; } catch (e) {}
+    return idbSet(STORAGE_KEY, payload);
+  }
+
+  function getBackupsList() {
+    let list = [];
+    try {
+      const raw = localStorage.getItem(BACKUPS_KEY);
+      if (raw) list = JSON.parse(raw);
+    } catch (e) {}
+    return Array.isArray(list) ? list : [];
+  }
+
+  function saveBackupsList(list) {
+    const trimmed = list.slice(0, 25);
+    try { localStorage.setItem(BACKUPS_KEY, JSON.stringify(trimmed)); } catch (e) {}
+    return idbSet(BACKUPS_KEY, trimmed);
+  }
+
+  function createBackup(tag) {
+    const now = new Date();
+    const label = pad2(now.getDate()) + '.' + pad2(now.getMonth() + 1) + '.' + now.getFullYear() +
+      ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + (tag ? ' ' + tag : '');
+    const snap = serializeState();
+    const recCount = countRecords(snap.records);
+    const list = getBackupsList();
+    list.unshift({
+      id: 'bk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      label: label,
+      count: recCount,
+      data: snap
+    });
+    return saveBackupsList(list);
+  }
+
+  function maybeAutoDailyBackup() {
+    const today = new Date();
+    const todayKey = toKey(today.getFullYear(), today.getMonth(), today.getDate());
+    let last = '';
+    try { last = localStorage.getItem(AUTO_BACKUP_DATE_KEY) || ''; } catch (e) {}
+    if (last !== todayKey) {
+      try { localStorage.setItem(AUTO_BACKUP_DATE_KEY, todayKey); } catch (e) {}
+      createBackup('(авто)');
     }
   }
 
-  function computePeriodBounds() {
-    var base = parseDateKey(selectedDate);
-    if (isManualRange) {
-      return rangeStart <= rangeEnd ? [rangeStart, rangeEnd] : [rangeEnd, rangeStart];
-    }
-    if (periodMode === "day") {
-      return [selectedDate, selectedDate];
-    }
-    if (periodMode === "week") {
-      var dow = (base.getDay() + 6) % 7;
-      var s = new Date(base.getFullYear(), base.getMonth(), base.getDate() - dow);
-      var e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
-      return [formatDateKey(s), formatDateKey(e)];
-    }
-    if (periodMode === "2week") {
-      var dayNum = base.getDate();
-      var lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
-      if (dayNum <= 15) {
-        return [formatDateKey(new Date(base.getFullYear(), base.getMonth(), 1)), formatDateKey(new Date(base.getFullYear(), base.getMonth(), 15))];
-      } else {
-        return [formatDateKey(new Date(base.getFullYear(), base.getMonth(), 16)), formatDateKey(new Date(base.getFullYear(), base.getMonth(), lastDay))];
+  function loadInitialData() {
+    let lsData = null;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) lsData = normalizeDataset(JSON.parse(raw));
+    } catch (e) {}
+
+    let wnData = null;
+    try {
+      if (window.name && window.name.indexOf('OBVALKA_STATE:') === 0) {
+        wnData = normalizeDataset(JSON.parse(window.name.slice('OBVALKA_STATE:'.length)));
       }
-    }
-    if (periodMode === "month") {
-      var mLast = new Date(viewYear, viewMonth + 1, 0).getDate();
-      return [formatDateKey(new Date(viewYear, viewMonth, 1)), formatDateKey(new Date(viewYear, viewMonth, mLast))];
-    }
-    if (periodMode === "year") {
-      return [viewYear + "-01-01", viewYear + "-12-31"];
-    }
-    return [selectedDate, selectedDate];
-  }
+    } catch (e) {}
 
-  function formatHumanRange(sKey, eKey) {
-    var sd = parseDateKey(sKey);
-    var ed = parseDateKey(eKey);
-    if (sKey === eKey) {
-      return sd.getDate() + " " + MONTHS_GEN[sd.getMonth()];
-    }
-    return sd.getDate() + " " + MONTHS_SHORT[sd.getMonth()] + " – " + ed.getDate() + " " + MONTHS_SHORT[ed.getMonth()];
-  }
+    return Promise.all([idbGet(STORAGE_KEY), idbGet(BACKUPS_KEY)]).then(function(res) {
+      const idbData = res[0] ? normalizeDataset(res[0]) : null;
+      const idbBackups = Array.isArray(res[1]) ? res[1] : [];
+      const lsBackups = getBackupsList();
 
-  function getRecordsInBounds(sKey, eKey) {
-    var items = [];
-    var keys = Object.keys(state.records).sort();
-    keys.forEach(function (dk) {
-      if (dk >= sKey && dk <= eKey) {
-        var arr = state.records[dk] || [];
-        arr.forEach(function (r) {
-          items.push({ date: dk, rec: r });
+      if (idbBackups.length > lsBackups.length) {
+        try { localStorage.setItem(BACKUPS_KEY, JSON.stringify(idbBackups)); } catch (e) {}
+      } else if (lsBackups.length > idbBackups.length) {
+        idbSet(BACKUPS_KEY, lsBackups);
+      }
+
+      const candidates = [lsData, idbData, wnData].filter(Boolean);
+      if (candidates.length > 0) {
+        candidates.sort(function(a, b) {
+          return countRecords(b.records) - countRecords(a.records);
         });
+        const best = candidates[0];
+        state.workerName = best.workerName || '';
+        state.defaultRate = best.defaultRate || 9.5;
+        state.theme = best.theme || 'dark';
+        state.records = best.records || {};
+        saveAllStorages();
       }
     });
-    return items;
+  }
+
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(el._timer);
+    el._timer = setTimeout(function() {
+      el.classList.remove('show');
+    }, 2400);
+  }
+
+  function applyTheme() {
+    document.body.setAttribute('data-theme', state.theme);
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
+  }
+
+  function getPeriodDates() {
+    const y = state.viewYear;
+    const m = state.viewMonth;
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+
+    if (state.isCustomRange && state.selectedDates.length > 0) {
+      return state.selectedDates.slice().sort();
+    }
+
+    if (state.periodMode === 'day') {
+      return state.selectedDates.length ? [state.selectedDates[0]] : [toKey(y, m, 1)];
+    }
+
+    if (state.periodMode === 'week') {
+      const anchor = parseKey(state.anchorDate || toKey(y, m, 1));
+      const dt = new Date(anchor.y, anchor.m, anchor.d);
+      const dow = (dt.getDay() + 6) % 7;
+      const start = new Date(dt);
+      start.setDate(dt.getDate() - dow);
+      const arr = [];
+      for (let i = 0; i < 7; i++) {
+        const cur = new Date(start);
+        cur.setDate(start.getDate() + i);
+        arr.push(toKey(cur.getFullYear(), cur.getMonth(), cur.getDate()));
+      }
+      return arr;
+    }
+
+    if (state.periodMode === 'biweek') {
+      const anchor = parseKey(state.anchorDate || toKey(y, m, 1));
+      const startDay = anchor.d <= 15 ? 1 : 16;
+      const endDay = anchor.d <= 15 ? 15 : daysInMonth;
+      const arr = [];
+      for (let d = startDay; d <= endDay; d++) {
+        arr.push(toKey(y, m, d));
+      }
+      return arr;
+    }
+
+    if (state.periodMode === 'month') {
+      const arr = [];
+      for (let d = 1; d <= daysInMonth; d++) {
+        arr.push(toKey(y, m, d));
+      }
+      return arr;
+    }
+
+    if (state.periodMode === 'year') {
+      const arr = [];
+      for (let mo = 0; mo < 12; mo++) {
+        const dim = new Date(y, mo + 1, 0).getDate();
+        for (let d = 1; d <= dim; d++) {
+          arr.push(toKey(y, mo, d));
+        }
+      }
+      return arr;
+    }
+
+    return state.selectedDates.slice();
+  }
+
+  function getPeriodLabel(dates) {
+    if (!dates || dates.length === 0) return '';
+    if (state.periodMode === 'year' && !state.isCustomRange) {
+      return state.viewYear + ' год';
+    }
+    if (state.periodMode === 'month' && !state.isCustomRange) {
+      return MONTHS_NOM[state.viewMonth] + ' ' + state.viewYear;
+    }
+    if (dates.length === 1) {
+      return formatDateGen(dates[0]);
+    }
+    const first = dates[0];
+    const last = dates[dates.length - 1];
+    return formatDateShort(first) + ' – ' + formatDateShort(last);
   }
 
   function renderCalendar() {
-    document.getElementById("monthLabel").textContent = MONTHS_NOM[viewMonth] + " " + viewYear;
-    var grid = document.getElementById("daysGrid");
-    grid.innerHTML = "";
+    const titleEl = document.getElementById('monthTitle');
+    const verEl = document.getElementById('verBadge');
+    if (titleEl) titleEl.textContent = MONTHS_NOM[state.viewMonth] + ' ' + state.viewYear;
+    if (verEl) verEl.textContent = APP_VERSION;
 
-    var bounds = computePeriodBounds();
-    var bStart = bounds[0];
-    var bEnd = bounds[1];
+    const grid = document.getElementById('daysGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
 
-    var firstDay = new Date(viewYear, viewMonth, 1);
-    var startOffset = (firstDay.getDay() + 6) % 7;
-    var gridStart = new Date(viewYear, viewMonth, 1 - startOffset);
+    const y = state.viewYear;
+    const m = state.viewMonth;
+    const firstDow = (new Date(y, m, 1).getDay() + 6) % 7;
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const prevDays = new Date(y, m, 0).getDate();
 
-    for (var i = 0; i < 42; i++) {
-      var d = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + i);
-      var dk = formatDateKey(d);
-      var cell = document.createElement("div");
-      cell.className = "day-cell";
-      cell.setAttribute("data-date", dk);
-      cell.textContent = d.getDate();
+    const activeDates = getPeriodDates();
+    const activeSet = new Set(activeDates);
+    const primaryDate = state.anchorDate || (state.selectedDates[0] || toKey(y, m, 1));
 
-      if (d.getMonth() !== viewMonth) cell.classList.add("other-month");
-      if (dk >= bStart && dk <= bEnd) cell.classList.add("in-range");
-      if (dk === selectedDate) cell.classList.add("selected");
+    for (let i = firstDow - 1; i >= 0; i--) {
+      const d = prevDays - i;
+      const cell = document.createElement('div');
+      cell.className = 'day-cell other-month';
+      cell.textContent = d;
+      grid.appendChild(cell);
+    }
 
-      var dayRecs = state.records[dk] || [];
-      if (dayRecs.length > 0) {
-        var hasOff = dayRecs.some(function (r) { return r.isOff; });
-        var hasWork = dayRecs.some(function (r) { return !r.isOff; });
-        if (hasOff && !hasWork) cell.classList.add("is-off");
-        if (hasWork) {
-          var dot = document.createElement("span");
-          dot.className = "day-dot";
-          cell.appendChild(dot);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = toKey(y, m, d);
+      const cell = document.createElement('div');
+      cell.className = 'day-cell';
+      cell.dataset.date = key;
+      cell.textContent = d;
+
+      const dayRecs = state.records[key] || [];
+      const hasWork = dayRecs.some(function(r) { return !r.isOff && r.weight > 0; });
+      const hasOff = dayRecs.some(function(r) { return r.isOff; });
+
+      if (hasWork) cell.classList.add('has-data');
+      if (hasOff && !hasWork) cell.classList.add('is-off');
+
+      if (key === primaryDate && (state.periodMode === 'day' || state.isCustomRange)) {
+        cell.classList.add('selected');
+      } else if (activeSet.has(key)) {
+        if (state.periodMode === 'day' && !state.isCustomRange) {
+          cell.classList.add('selected');
+        } else {
+          cell.classList.add('in-range');
+          if (key === primaryDate) cell.classList.add('selected');
         }
       }
+
+      grid.appendChild(cell);
+    }
+
+    const totalCells = firstDow + daysInMonth;
+    const rem = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+    for (let d = 1; d <= rem; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'day-cell other-month';
+      cell.textContent = d;
       grid.appendChild(cell);
     }
   }
 
-  function renderRecordsAndSummary() {
-    var bounds = computePeriodBounds();
-    var bStart = bounds[0];
-    var bEnd = bounds[1];
-    var items = getRecordsInBounds(bStart, bEnd);
+  function renderRecordsAndTotals() {
+    const dates = getPeriodDates();
+    const label = getPeriodLabel(dates);
+    const modeNames = {
+      day: 'ДЕНЬ',
+      week: 'НЕДЕЛЯ',
+      biweek: '2Х НЕДЕЛИ',
+      month: 'МЕСЯЦ',
+      year: 'ГОД'
+    };
+    const headTitle = state.isCustomRange
+      ? 'ЗАПИСИ (' + label.toUpperCase() + ')'
+      : 'ЗАПИСИ (' + (modeNames[state.periodMode] || 'ДЕНЬ') + (dates.length === 1 ? ' (' + label.toUpperCase() + ')' : '') + ')';
 
-    var modeTitles = { day: "ДЕНЬ", week: "НЕДЕЛЯ", "2week": "2Х НЕДЕЛИ", month: "МЕСЯЦ", year: "ГОД" };
-    var rangeLabel = formatHumanRange(bStart, bEnd);
-    document.getElementById("recordsHeader").textContent = "ЗАПИСИ (" + (isManualRange ? rangeLabel : modeTitles[periodMode] + " (" + rangeLabel + ")") + ")";
-    document.getElementById("recordsCount").textContent = items.length + " ШТ.";
-    document.getElementById("sumTitle").textContent = "ИТОГ ЗА " + (isManualRange ? "ПЕРИОД" : modeTitles[periodMode]) + " (" + rangeLabel + ")";
+    const recHeaderEl = document.getElementById('recordsHeader');
+    if (recHeaderEl) recHeaderEl.textContent = headTitle;
 
-    var sd = parseDateKey(selectedDate);
-    document.getElementById("selectedDateLabel").textContent = sd.getDate() + " " + MONTHS_GEN[sd.getMonth()];
+    const totalTitleEl = document.getElementById('totalPeriodTitle');
+    if (totalTitleEl) {
+      totalTitleEl.textContent = 'ИТОГ ЗА ' + (state.isCustomRange ? label.toUpperCase() : (modeNames[state.periodMode] || 'ДЕНЬ')) +
+        (dates.length === 1 ? ' (' + label.toUpperCase() + ')' : '');
+    }
 
-    var listEl = document.getElementById("recordsList");
-    listEl.innerHTML = "";
+    let totalBoxes = 0;
+    let totalWeight = 0;
+    let totalPay = 0;
+    let totalCount = 0;
 
-    var totalBoxes = 0;
-    var totalWeight = 0;
-    var totalPay = 0;
+    const listEl = document.getElementById('recordsList');
+    if (listEl) listEl.innerHTML = '';
 
-    items.forEach(function (entry) {
-      var dk = entry.date;
-      var r = entry.rec;
-      var dObj = parseDateKey(dk);
-      var dStr = dObj.getDate() + " " + MONTHS_SHORT[dObj.getMonth()];
+    dates.forEach(function(dateKey) {
+      const list = state.records[dateKey];
+      if (!Array.isArray(list) || list.length === 0) return;
 
-      var row = document.createElement("div");
-      row.className = "rec-item" + (r.isOff ? " off-rec" : "");
+      list.forEach(function(rec, idx) {
+        totalCount++;
+        if (!rec.isOff) {
+          totalBoxes += rec.boxes || 0;
+          totalWeight = round1(totalWeight + (rec.weight || 0));
+          totalPay = round2(totalPay + (rec.pay || 0));
+        }
 
-      var txt = document.createElement("span");
-      if (r.isOff) {
-        txt.textContent = dStr + ": Выходной";
-      } else {
-        totalBoxes += r.boxes;
-        totalWeight = round2(totalWeight + r.weight);
-        totalPay = round2(totalPay + r.pay);
-        var parts = [];
-        if (r.boxes > 0) parts.push(r.boxes + " кор.");
-        parts.push(r.weight + " кг × " + r.rate + " ₽ = " + r.pay + " ₽");
-        txt.textContent = dStr + ": " + parts.join(" • ");
-      }
+        if (listEl) {
+          const row = document.createElement('div');
+          row.className = 'rec-item' + (rec.isOff ? ' off-row' : '');
 
-      var delBtn = document.createElement("button");
-      delBtn.className = "del-rec-btn";
-      delBtn.textContent = "✕";
-      delBtn.onclick = function () {
-        deleteSingleRecord(dk, r.id);
-      };
+          const info = document.createElement('div');
+          info.className = 'rec-text';
+          if (rec.isOff) {
+            info.textContent = formatDateShort(dateKey) + ': Выходной';
+          } else {
+            const boxPart = rec.boxes > 0 ? rec.boxes + ' кор. • ' : '';
+            info.textContent = formatDateShort(dateKey) + ': ' + boxPart + rec.weight + ' кг × ' + rec.rate + ' ₽ = ' + rec.pay + ' ₽';
+          }
 
-      row.appendChild(txt);
-      row.appendChild(delBtn);
-      listEl.appendChild(row);
+          const delBtn = document.createElement('button');
+          delBtn.className = 'rec-del-btn';
+          delBtn.textContent = '✕';
+          delBtn.title = 'Удалить запись';
+          delBtn.onclick = function() {
+            undoStack.push(JSON.stringify(state.records));
+            state.records[dateKey].splice(idx, 1);
+            if (state.records[dateKey].length === 0) delete state.records[dateKey];
+            saveAllStorages();
+            refreshUI();
+          };
+
+          row.appendChild(info);
+          row.appendChild(delBtn);
+          listEl.appendChild(row);
+        }
+      });
     });
 
-    document.getElementById("sumSub").textContent = totalBoxes + " кор. • " + totalWeight + " кг";
-    document.getElementById("sumMoney").textContent = totalPay + " ₽";
+    const countEl = document.getElementById('recordsCountBadge');
+    if (countEl) countEl.textContent = totalCount + ' ШТ.';
 
-    var undoBar = document.getElementById("undoBar");
-    if (undoStack.length > 0 || items.length > 0) {
-      undoBar.style.display = "flex";
-      document.getElementById("undoBtn").textContent = "↩ Отменить (" + undoStack.length + ")";
-      document.getElementById("undoBtn").style.opacity = undoStack.length > 0 ? "1" : "0.5";
-    } else {
-      undoBar.style.display = "none";
+    const totStatsEl = document.getElementById('totalStatsLine');
+    if (totStatsEl) totStatsEl.textContent = totalBoxes + ' кор. • ' + totalWeight + ' кг';
+
+    const totPayEl = document.getElementById('totalPayLine');
+    if (totPayEl) totPayEl.textContent = totalPay + ' ₽';
+
+    const undoBtn = document.getElementById('undoBtn');
+    if (undoBtn) {
+      if (undoStack.length > 0) {
+        undoBtn.style.display = 'inline-flex';
+        undoBtn.textContent = '↩ Отмена (' + undoStack.length + ')';
+      } else {
+        undoBtn.style.display = 'none';
+      }
+    }
+
+    const selLabel = document.getElementById('selectedDateLabel');
+    if (selLabel) {
+      const target = state.anchorDate || (dates[0] || toKey(state.viewYear, state.viewMonth, 1));
+      selLabel.textContent = formatDateGen(target);
     }
   }
 
-  function updateShiftPreview() {
-    var boxes = Math.round(numVal(document.getElementById("boxesInput").value));
-    var bw = numVal(document.getElementById("boxWeightInput").value);
-    var rate = numVal(document.getElementById("rateInput").value);
-    var weight = (boxes > 0 && bw > 0) ? round2(boxes * bw) : round2(bw);
-    var pay = round2(weight * rate);
-    document.getElementById("previewWeight").textContent = weight + " кг";
-    document.getElementById("previewPay").textContent = pay + " ₽";
+  function updateLiveShiftPreview() {
+    const boxes = Math.round(parseNum(document.getElementById('boxesInput').value));
+    const boxWeight = parseNum(document.getElementById('weightInput').value);
+    const rate = parseNum(document.getElementById('rateInput').value);
+
+    const totalW = boxes > 0 ? round1(boxes * boxWeight) : round1(boxWeight);
+    const totalP = round2(totalW * rate);
+
+    const wEl = document.getElementById('shiftWeightPreview');
+    const pEl = document.getElementById('shiftPayPreview');
+    if (wEl) wEl.textContent = totalW + ' кг';
+    if (pEl) pEl.textContent = totalP + ' ₽';
   }
 
-  function renderAll() {
+  function refreshUI() {
+    document.querySelectorAll('.period-btn').forEach(function(btn) {
+      btn.classList.toggle('active', !state.isCustomRange && btn.dataset.mode === state.periodMode);
+    });
     renderCalendar();
-    renderRecordsAndSummary();
-    updateShiftPreview();
-  }
-
-  function deleteSingleRecord(dk, id) {
-    var arr = state.records[dk] || [];
-    var idx = arr.findIndex(function (x) { return x.id === id; });
-    if (idx === -1) return;
-    var removed = arr.splice(idx, 1)[0];
-    if (arr.length === 0) delete state.records[dk];
-    undoStack.push({ date: dk, rec: removed });
-    saveState();
-    renderAll();
+    renderRecordsAndTotals();
+    updateLiveShiftPreview();
   }
 
   function buildReport(isFull) {
-    var bounds = computePeriodBounds();
-    var bStart = bounds[0];
-    var bEnd = bounds[1];
-    var items = getRecordsInBounds(bStart, bEnd).filter(function (x) { return !x.rec.isOff; });
+    const dates = getPeriodDates();
+    const label = getPeriodLabel(dates);
+    const name = (state.workerName || '').trim();
+    const lines = [];
 
-    var worker = (state.worker || "").trim();
-    var totalBoxes = 0;
-    var totalWeight = 0;
-    var totalPay = 0;
+    if (name) lines.push(name);
 
-    items.forEach(function (it) {
-      totalBoxes += it.rec.boxes;
-      totalWeight = round2(totalWeight + it.rec.weight);
-      totalPay = round2(totalPay + it.rec.pay);
+    let sumBoxes = 0;
+    let sumWeight = 0;
+    let sumPay = 0;
+    const dayRows = [];
+
+    dates.forEach(function(dateKey) {
+      const list = state.records[dateKey];
+      if (!Array.isArray(list) || list.length === 0) return;
+
+      let dBoxes = 0;
+      let dWeight = 0;
+      let dPay = 0;
+      let hasWork = false;
+      let hasOff = false;
+
+      list.forEach(function(r) {
+        if (r.isOff) {
+          hasOff = true;
+        } else {
+          hasWork = true;
+          dBoxes += r.boxes || 0;
+          dWeight = round1(dWeight + (r.weight || 0));
+          dPay = round2(dPay + (r.pay || 0));
+        }
+      });
+
+      if (hasWork) {
+        sumBoxes += dBoxes;
+        sumWeight = round1(sumWeight + dWeight);
+        sumPay = round2(sumPay + dPay);
+        dayRows.push(formatDateShort(dateKey) + ' | ' + dBoxes + 'кор | ' + dWeight + 'кг | ' + dPay + '₽');
+      } else if (hasOff) {
+        dayRows.push(formatDateShort(dateKey) + ' | Выходной');
+      }
     });
-
-    var lines = [];
-    if (worker) lines.push(worker);
 
     if (!isFull) {
-      if (isManualRange && bStart !== bEnd) {
-        lines.push(formatHumanRange(bStart, bEnd));
+      if (state.isCustomRange && dates.length > 1) {
+        lines.push(label);
       }
-      lines.push("Вес: " + totalWeight + " кг " + totalBoxes + " кор.");
-      return lines.join("\\n");
+      lines.push('Вес: ' + sumWeight + ' кг ' + sumBoxes + ' кор.');
+      return lines.join('\n');
     }
 
-    lines.push("Период: " + formatHumanRange(bStart, bEnd));
-    items.forEach(function (it) {
-      var dObj = parseDateKey(it.date);
-      var dStr = pad2(dObj.getDate()) + " " + MONTHS_SHORT[dObj.getMonth()];
-      lines.push(dStr + " | " + it.rec.boxes + "кор | " + it.rec.weight + "кг | " + it.rec.pay + "₽");
-    });
-    lines.push("ИТОГ: " + totalBoxes + "кор | " + totalWeight + "кг | " + totalPay + "₽");
-    return lines.join("\\n");
+    lines.push('Период: ' + label);
+    dayRows.forEach(function(r) { lines.push(r); });
+    lines.push('ИТОГ: ' + sumBoxes + 'кор | ' + sumWeight + 'кг | ' + sumPay + '₽');
+    return lines.join('\n');
+  }
+
+  function copyTextSilently(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function() {});
+    }
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (e) {}
   }
 
   function openReportPreview(isFull) {
-    var text = buildReport(isFull);
-    document.getElementById("reportText").value = text;
-    document.getElementById("reportModal").style.display = "flex";
+    currentReportText = buildReport(isFull);
+    const box = document.getElementById('reportPreviewText');
+    if (box) box.textContent = currentReportText;
+    const modal = document.getElementById('reportModal');
+    if (modal) modal.classList.add('open');
   }
 
-  function copyToClipboardSilent(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(function () {});
-    }
-    var ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand("copy"); } catch (e) {}
-    document.body.removeChild(ta);
-  }
+  function shareReportSystem() {
+    const text = currentReportText;
+    copyTextSilently(text);
+    const modal = document.getElementById('reportModal');
+    if (modal) modal.classList.remove('open');
 
-  function shareReportText(text) {
-    copyToClipboardSilent(text);
     if (navigator.share) {
-      navigator.share({ text: text }).catch(function () {
-        try {
-          window.location.href = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encodeURIComponent(text) + ";end";
-        } catch (e) {}
-      });
-    } else {
-      try {
-        window.location.href = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encodeURIComponent(text) + ";end";
-      } catch (e) {
-        showToast("Текст скопирован в буфер");
-      }
+      navigator.share({ text: text }).catch(function() {});
+      return;
+    }
+
+    try {
+      const intentUrl = 'intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=' +
+        encodeURIComponent(text) + ';end';
+      window.location.href = intentUrl;
+    } catch (e) {
+      showToast('Отчёт скопирован в буфер');
     }
   }
 
-  function openConfirm(title, msg, onYes) {
-    document.getElementById("confirmTitle").textContent = title;
-    document.getElementById("confirmMsg").textContent = msg;
-    confirmCallback = onYes;
-    document.getElementById("confirmModal").style.display = "flex";
+  function openConfirm(msg, onYes) {
+    const textEl = document.getElementById('confirmText');
+    if (textEl) textEl.textContent = msg;
+    pendingConfirmAction = onYes;
+    const modal = document.getElementById('confirmModal');
+    if (modal) modal.classList.add('open');
   }
 
   function renderBackupsModal() {
-    var list = getBackupsList();
-    var box = document.getElementById("backupList");
-    box.innerHTML = "";
+    const list = getBackupsList();
+    const container = document.getElementById('backupsList');
+    if (!container) return;
+    container.innerHTML = '';
+
     if (list.length === 0) {
-      box.innerHTML = "<div style='color:var(--muted);font-size:12px;text-align:center;padding:16px;'>Нет сохранённых копий</div>";
+      container.innerHTML = '<div class="empty-msg">Сохранённых копий пока нет</div>';
       return;
     }
-    list.forEach(function (b) {
-      var row = document.createElement("div");
-      row.className = "backup-item";
 
-      var info = document.createElement("div");
-      var cnt = (b.count !== undefined && b.count !== null) ? b.count : countTotalRecords(b.data);
-      info.innerHTML = "<strong>" + (b.title || "Резервная копия") + "</strong><br><span style='color:var(--muted)'>Записей: " + cnt + "</span>";
+    list.forEach(function(bk, idx) {
+      const item = document.createElement('div');
+      item.className = 'backup-item';
 
-      var acts = document.createElement("div");
-      acts.className = "b-actions";
+      const meta = document.createElement('div');
+      meta.className = 'backup-meta';
+      const cnt = typeof bk.count === 'number' ? bk.count : countRecords(bk.data && bk.data.records);
+      meta.innerHTML = '<strong>' + (bk.label || 'Копия') + '</strong><span>Записей: ' + cnt + '</span>';
 
-      var rBtn = document.createElement("button");
-      rBtn.className = "b-rest";
-      rBtn.textContent = "Восстановить";
-      rBtn.onclick = function () {
-        openConfirm("Восстановление базы", "Заменить текущие данные этой копией?", function () {
-          state = normalizeState(b.data);
-          saveState(function () {
-            document.getElementById("workerInput").value = state.worker;
-            document.getElementById("rateInput").value = state.rate;
-            applyTheme();
-            renderAll();
-            document.getElementById("restoreModal").style.display = "none";
-            showToast("База восстановлена (" + countTotalRecords(state) + " зап.)");
-          });
-        });
+      const actions = document.createElement('div');
+      actions.className = 'backup-actions';
+
+      const restBtn = document.createElement('button');
+      restBtn.className = 'btn-restore-item';
+      restBtn.textContent = 'Восстановить';
+      restBtn.onclick = function() {
+        const norm = normalizeDataset(bk.data);
+        if (norm) {
+          state.workerName = norm.workerName || state.workerName;
+          state.defaultRate = norm.defaultRate || state.defaultRate;
+          state.records = norm.records || {};
+          const nameInp = document.getElementById('workerNameInput');
+          const rateInp = document.getElementById('rateInput');
+          if (nameInp) nameInp.value = state.workerName;
+          if (rateInp) rateInp.value = state.defaultRate;
+          saveAllStorages();
+          refreshUI();
+          document.getElementById('backupsModal').classList.remove('open');
+          showToast('База восстановлена');
+        }
       };
 
-      var dBtn = document.createElement("button");
-      dBtn.className = "b-del";
-      dBtn.textContent = "✕";
-      dBtn.onclick = function () {
-        openConfirm("Удаление копии", "Удалить эту сохранённую базу? Вы уверены?", function () {
-          var nextList = getBackupsList().filter(function (x) { return x.id !== b.id; });
-          saveBackupsList(nextList, function () {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-del-backup';
+      delBtn.textContent = '✕';
+      delBtn.onclick = function() {
+        openConfirm('Удалить эту сохранённую базу? Вы уверены?', function() {
+          const cur = getBackupsList();
+          cur.splice(idx, 1);
+          saveBackupsList(cur).then(function() {
             renderBackupsModal();
-            showToast("Копия удалена");
+            showToast('Копия удалена');
           });
         });
       };
 
-      acts.appendChild(rBtn);
-      acts.appendChild(dBtn);
-      row.appendChild(info);
-      row.appendChild(acts);
-      box.appendChild(row);
+      actions.appendChild(restBtn);
+      actions.appendChild(delBtn);
+      item.appendChild(meta);
+      item.appendChild(actions);
+      container.appendChild(item);
     });
   }
 
-  function runStepByStepUpdate() {
-    if (window.location.protocol === "file:") {
-      showToast("Локальный файл: автообновление работает через GitHub");
+  function delay(ms) {
+    return new Promise(function(resolve) { setTimeout(resolve, ms); });
+  }
+
+  function runUpdateFlow() {
+    if (window.location.protocol === 'file:') {
+      showToast('Обновление работает только при запуске с сайта/APK');
       return;
     }
-    showToast("Шаг 1/4: Сохранение базы...");
-    createBackup("(перед обн.)", function () {
-      saveState(function () {
-        setTimeout(function () {
-          showToast("Шаг 2/4: Проверка целостности...");
-          setTimeout(function () {
-            showToast("Шаг 3/4: Очистка кэша...");
-            var clearTasks = [];
-            if (window.caches && caches.keys) {
-              clearTasks.push(caches.keys().then(function (keys) {
-                return Promise.all(keys.map(function (k) { return caches.delete(k); }));
-              }));
-            }
-            if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-              clearTasks.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
-                return Promise.all(regs.map(function (r) { return r.unregister(); }));
-              }));
-            }
-            Promise.all(clearTasks).finally(function () {
-              setTimeout(function () {
-                showToast("Шаг 4/4: Перезагрузка...");
-                setTimeout(function () {
-                  window.location.reload(true);
-                }, 600);
-              }, 700);
-            });
-          }, 700);
-        }, 700);
+
+    const overlay = document.getElementById('updateOverlay');
+    const stepText = document.getElementById('updateStepText');
+    if (overlay) overlay.classList.add('open');
+
+    function setStep(t) {
+      if (stepText) stepText.textContent = t;
+    }
+
+    setStep('Шаг 1/4: Сохранение базы в память...');
+    createBackup('(перед обн.)')
+      .then(function() { return saveAllStorages(); })
+      .then(function() { return delay(800); })
+      .then(function() {
+        setStep('Шаг 2/4: Проверка целостности данных...');
+        return delay(800);
+      })
+      .then(function() {
+        setStep('Шаг 3/4: Очистка старого кэша...');
+        const tasks = [];
+        if ('caches' in window) {
+          tasks.push(
+            caches.keys().then(function(keys) {
+              return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+            })
+          );
+        }
+        if ('serviceWorker' in navigator) {
+          tasks.push(
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              return Promise.all(regs.map(function(r) { return r.unregister(); }));
+            })
+          );
+        }
+        return Promise.all(tasks).then(function() { return delay(800); });
+      })
+      .then(function() {
+        setStep('Шаг 4/4: Проверка новой версии на GitHub...');
+        return fetch(REPO_RAW_BASE + 'app.js?t=' + Date.now(), { cache: 'no-store' })
+          .then(function(r) { return r.ok ? r.text() : ''; })
+          .catch(function() { return ''; });
+      })
+      .then(function(remoteCode) {
+        const match = remoteCode.match(/APP_VERSION\s*=\s*'([^']+)'/);
+        const remoteVer = match ? match[1] : '';
+        if (remoteVer && remoteVer === APP_VERSION) {
+          if (overlay) overlay.classList.remove('open');
+          showToast('У вас актуальная версия ' + APP_VERSION);
+        } else {
+          setStep('Загрузка обновления...');
+          setTimeout(function() {
+            window.location.reload(true);
+          }, 600);
+        }
       });
-    });
   }
 
   function bindEvents() {
-    document.getElementById("prevMonthBtn").onclick = function () {
-      viewMonth--;
-      if (viewMonth < 0) { viewMonth = 11; viewYear--; }
-      renderAll();
+    document.getElementById('prevMonthBtn').onclick = function() {
+      state.viewMonth--;
+      if (state.viewMonth < 0) {
+        state.viewMonth = 11;
+        state.viewYear--;
+      }
+      state.isCustomRange = false;
+      refreshUI();
     };
-    document.getElementById("nextMonthBtn").onclick = function () {
-      viewMonth++;
-      if (viewMonth > 11) { viewMonth = 0; viewYear++; }
-      renderAll();
+
+    document.getElementById('nextMonthBtn').onclick = function() {
+      state.viewMonth++;
+      if (state.viewMonth > 11) {
+        state.viewMonth = 0;
+        state.viewYear++;
+      }
+      state.isCustomRange = false;
+      refreshUI();
     };
-    document.getElementById("themeBtn").onclick = function () {
-      state.theme = state.theme === "dark" ? "light" : "dark";
+
+    document.getElementById('themeBtn').onclick = function() {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
       applyTheme();
-      saveState();
-    };
-    document.getElementById("updateBtn").onclick = runStepByStepUpdate;
-
-    document.getElementById("periodTabs").onclick = function (e) {
-      var btn = e.target.closest(".tab");
-      if (!btn) return;
-      document.querySelectorAll(".tab").forEach(function (t) { t.classList.remove("active"); });
-      btn.classList.add("active");
-      periodMode = btn.getAttribute("data-mode");
-      isManualRange = false;
-      renderAll();
+      saveAllStorages();
     };
 
-    var grid = document.getElementById("daysGrid");
-    grid.addEventListener("pointerdown", function (e) {
-      var cell = e.target.closest(".day-cell");
-      if (!cell) return;
-      var dk = cell.getAttribute("data-date");
-      isDragging = true;
-      dragAnchor = dk;
-      selectedDate = dk;
-      rangeStart = dk;
-      rangeEnd = dk;
-      isManualRange = false;
-      renderAll();
+    document.getElementById('updateBtn').onclick = runUpdateFlow;
+
+    document.querySelectorAll('.period-btn').forEach(function(btn) {
+      btn.onclick = function() {
+        state.periodMode = btn.dataset.mode;
+        state.isCustomRange = false;
+        refreshUI();
+      };
     });
 
-    grid.addEventListener("pointermove", function (e) {
-      if (!isDragging || !dragAnchor) return;
-      var el = document.elementFromPoint(e.clientX, e.clientY);
-      var cell = el ? el.closest(".day-cell") : null;
-      if (!cell) return;
-      var dk = cell.getAttribute("data-date");
-      if (dk && dk !== rangeEnd) {
-        rangeStart = dragAnchor;
-        rangeEnd = dk;
-        isManualRange = (rangeStart !== rangeEnd);
-        renderAll();
+    const grid = document.getElementById('daysGrid');
+    function getCellDateFromEvent(e) {
+      const touch = e.touches && e.touches[0] ? e.touches[0] : e;
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (el && el.classList.contains('day-cell') && el.dataset.date) {
+        return el.dataset.date;
       }
-    });
+      return null;
+    }
 
-    window.addEventListener("pointerup", function () {
-      isDragging = false;
-    });
-
-    document.getElementById("toggleOffBtn").onclick = function () {
-      var arr = state.records[selectedDate] || [];
-      var offIdx = arr.findIndex(function (x) { return x.isOff; });
-      if (offIdx !== -1) {
-        var rem = arr.splice(offIdx, 1)[0];
-        if (arr.length === 0) delete state.records[selectedDate];
-        undoStack.push({ date: selectedDate, rec: rem });
-      } else {
-        if (!state.records[selectedDate]) state.records[selectedDate] = [];
-        state.records[selectedDate].push({
-          id: Date.now() + Math.random(),
-          boxes: 0,
-          boxWeight: 0,
-          weight: 0,
-          rate: numVal(state.rate),
-          pay: 0,
-          isOff: true
-        });
-        autoDailyBackup();
-      }
-      saveState();
-      renderAll();
-    };
-
-    document.getElementById("workerInput").addEventListener("input", function (e) {
-      state.worker = e.target.value;
-      saveState();
-    });
-
-    ["boxesInput", "boxWeightInput", "rateInput"].forEach(function (id) {
-      document.getElementById(id).addEventListener("input", function (e) {
-        if (id === "rateInput") {
-          state.rate = e.target.value;
-          saveState();
-        }
-        updateShiftPreview();
-      });
-    });
-
-    document.getElementById("addRecordBtn").onclick = function () {
-      var boxes = Math.round(numVal(document.getElementById("boxesInput").value));
-      var bw = numVal(document.getElementById("boxWeightInput").value);
-      var rate = numVal(document.getElementById("rateInput").value);
-      var weight = (boxes > 0 && bw > 0) ? round2(boxes * bw) : round2(bw);
-      if (weight <= 0 && boxes <= 0) {
-        showToast("Введите коробки или вес");
+    function selectRangeBetween(d1, d2) {
+      if (d1 === d2) {
+        state.isCustomRange = false;
+        state.periodMode = 'day';
+        state.anchorDate = d1;
+        state.selectedDates = [d1];
         return;
       }
-      var pay = round2(weight * rate);
-      if (!state.records[selectedDate]) state.records[selectedDate] = [];
-      state.records[selectedDate].push({
-        id: Date.now() + Math.random(),
+      const start = d1 < d2 ? d1 : d2;
+      const end = d1 < d2 ? d2 : d1;
+      const p1 = parseKey(start);
+      const p2 = parseKey(end);
+      const cur = new Date(p1.y, p1.m, p1.d);
+      const stop = new Date(p2.y, p2.m, p2.d);
+      const arr = [];
+      while (cur <= stop) {
+        arr.push(toKey(cur.getFullYear(), cur.getMonth(), cur.getDate()));
+        cur.setDate(cur.getDate() + 1);
+      }
+      state.isCustomRange = true;
+      state.anchorDate = d2;
+      state.selectedDates = arr;
+    }
+
+    grid.addEventListener('pointerdown', function(e) {
+      const d = e.target && e.target.dataset ? e.target.dataset.date : null;
+      if (!d) return;
+      isDragging = true;
+      dragStartDate = d;
+      selectRangeBetween(d, d);
+      refreshUI();
+    });
+
+    window.addEventListener('pointermove', function(e) {
+      if (!isDragging || !dragStartDate) return;
+      const d = getCellDateFromEvent(e);
+      if (d && d !== state.anchorDate) {
+        selectRangeBetween(dragStartDate, d);
+        refreshUI();
+      }
+    });
+
+    window.addEventListener('pointerup', function() {
+      isDragging = false;
+      dragStartDate = null;
+    });
+
+    document.getElementById('dayOffBtn').onclick = function() {
+      const target = state.anchorDate || state.selectedDates[0];
+      if (!target) return;
+      undoStack.push(JSON.stringify(state.records));
+      if (!state.records[target]) state.records[target] = [];
+      state.records[target].push({ isOff: true, boxes: 0, boxWeight: 0, weight: 0, rate: 0, pay: 0 });
+      maybeAutoDailyBackup();
+      saveAllStorages();
+      refreshUI();
+      showToast('Выходной отмечен');
+    };
+
+    document.getElementById('addRecordBtn').onclick = function() {
+      const target = state.anchorDate || state.selectedDates[0];
+      if (!target) return;
+      const boxes = Math.round(parseNum(document.getElementById('boxesInput').value));
+      const boxWeight = parseNum(document.getElementById('weightInput').value);
+      const rate = parseNum(document.getElementById('rateInput').value) || state.defaultRate;
+
+      const totalW = boxes > 0 ? round1(boxes * boxWeight) : round1(boxWeight);
+      if (totalW <= 0) {
+        showToast('Введите вес или коробки');
+        return;
+      }
+      const totalP = round2(totalW * rate);
+
+      undoStack.push(JSON.stringify(state.records));
+      if (!state.records[target]) state.records[target] = [];
+      state.records[target].push({
+        isOff: false,
         boxes: boxes,
-        boxWeight: round2(bw),
-        weight: weight,
-        rate: round2(rate),
-        pay: pay,
-        isOff: false
+        boxWeight: boxWeight,
+        weight: totalW,
+        rate: rate,
+        pay: totalP
       });
-      document.getElementById("boxesInput").value = "";
-      document.getElementById("boxWeightInput").value = "";
-      autoDailyBackup();
-      saveState();
-      renderAll();
-      showToast("Запись добавлена");
+
+      document.getElementById('boxesInput').value = '';
+      document.getElementById('weightInput').value = '';
+      maybeAutoDailyBackup();
+      saveAllStorages();
+      refreshUI();
+      showToast('Запись добавлена');
     };
 
-    document.getElementById("undoBtn").onclick = function () {
+    document.getElementById('undoBtn').onclick = function() {
       if (undoStack.length === 0) return;
-      var last = undoStack.pop();
-      if (!state.records[last.date]) state.records[last.date] = [];
-      state.records[last.date].push(last.rec);
-      saveState();
-      renderAll();
-    };
-
-    document.getElementById("clearPeriodBtn").onclick = function () {
-      var bounds = computePeriodBounds();
-      var items = getRecordsInBounds(bounds[0], bounds[1]);
-      if (items.length === 0) return;
-      openConfirm("Очистка записей", "Удалить все записи (" + items.length + " шт.) за выбранный период?", function () {
-        items.forEach(function (it) {
-          undoStack.push({ date: it.date, rec: it.rec });
-        });
-        Object.keys(state.records).forEach(function (dk) {
-          if (dk >= bounds[0] && dk <= bounds[1]) delete state.records[dk];
-        });
-        saveState();
-        renderAll();
-        showToast("Записи очищены");
-      });
-    };
-
-    document.getElementById("fullReportBtn").onclick = function () { openReportPreview(true); };
-    document.getElementById("shortReportBtn").onclick = function () { openReportPreview(false); };
-    document.getElementById("closeReportBtn").onclick = function () {
-      document.getElementById("reportModal").style.display = "none";
-    };
-    document.getElementById("sendReportBtn").onclick = function () {
-      var txt = document.getElementById("reportText").value;
-      document.getElementById("reportModal").style.display = "none";
-      shareReportText(txt);
-    };
-
-    document.getElementById("saveDbBtn").onclick = function () {
-      createBackup("", function () {
-        saveState(function () {
-          showToast("Резервная копия сохранена");
-        });
-      });
-    };
-
-    document.getElementById("openRestoreBtn").onclick = function () {
-      renderBackupsModal();
-      document.getElementById("restoreModal").style.display = "flex";
-    };
-    document.getElementById("closeRestoreBtn").onclick = function () {
-      document.getElementById("restoreModal").style.display = "none";
-    };
-
-    document.getElementById("transferCodeBtn").onclick = function () {
-      document.getElementById("transferCodeArea").value = JSON.stringify(state);
-      document.getElementById("codeModal").style.display = "flex";
-    };
-    document.getElementById("closeCodeBtn").onclick = function () {
-      document.getElementById("codeModal").style.display = "none";
-    };
-    document.getElementById("copyCodeBtn").onclick = function () {
-      var val = document.getElementById("transferCodeArea").value;
-      copyToClipboardSilent(val);
-      showToast("Код базы скопирован");
-    };
-    document.getElementById("importCodeBtn").onclick = function () {
-      var raw = document.getElementById("transferCodeArea").value.trim();
-      if (!raw) return;
+      const prev = undoStack.pop();
       try {
-        var parsed = JSON.parse(raw);
-        state = normalizeState(parsed);
-        saveState(function () {
-          document.getElementById("workerInput").value = state.worker;
-          document.getElementById("rateInput").value = state.rate;
-          applyTheme();
-          renderAll();
-          document.getElementById("codeModal").style.display = "none";
-          document.getElementById("restoreModal").style.display = "none";
-          showToast("База успешно загружена");
-        });
-      } catch (e) {
-        showToast("Неверный формат кода");
+        state.records = JSON.parse(prev);
+        saveAllStorages();
+        refreshUI();
+        showToast('Действие отменено');
+      } catch (e) {}
+    };
+
+    document.getElementById('workerNameInput').addEventListener('input', function(e) {
+      state.workerName = e.target.value;
+      saveAllStorages();
+    });
+
+    document.getElementById('rateInput').addEventListener('input', function(e) {
+      const r = parseNum(e.target.value);
+      if (r > 0) state.defaultRate = r;
+      saveAllStorages();
+      updateLiveShiftPreview();
+    });
+
+    document.getElementById('boxesInput').addEventListener('input', updateLiveShiftPreview);
+    document.getElementById('weightInput').addEventListener('input', updateLiveShiftPreview);
+
+    document.getElementById('fullReportBtn').onclick = function() { openReportPreview(true); };
+    document.getElementById('shortReportBtn').onclick = function() { openReportPreview(false); };
+
+    document.getElementById('cancelReportBtn').onclick = function() {
+      document.getElementById('reportModal').classList.remove('open');
+    };
+    document.getElementById('sendReportBtn').onclick = shareReportSystem;
+
+    document.getElementById('saveBackupBtn').onclick = function() {
+      createBackup('').then(function() {
+        saveAllStorages();
+        showToast('База сохранена');
+      });
+    };
+
+    document.getElementById('openBackupsBtn').onclick = function() {
+      renderBackupsModal();
+      document.getElementById('backupsModal').classList.add('open');
+    };
+
+    document.getElementById('closeBackupsBtn').onclick = function() {
+      document.getElementById('backupsModal').classList.remove('open');
+    };
+
+    document.getElementById('confirmYesBtn').onclick = function() {
+      document.getElementById('confirmModal').classList.remove('open');
+      if (typeof pendingConfirmAction === 'function') {
+        const fn = pendingConfirmAction;
+        pendingConfirmAction = null;
+        fn();
       }
     };
 
-    document.getElementById("confirmNoBtn").onclick = function () {
-      document.getElementById("confirmModal").style.display = "none";
-      confirmCallback = null;
+    document.getElementById('confirmNoBtn').onclick = function() {
+      pendingConfirmAction = null;
+      document.getElementById('confirmModal').classList.remove('open');
     };
-    document.getElementById("confirmYesBtn").onclick = function () {
-      document.getElementById("confirmModal").style.display = "none";
-      if (confirmCallback) confirmCallback();
-      confirmCallback = null;
+
+    document.getElementById('exportCodeBtn').onclick = function() {
+      const payload = JSON.stringify(serializeState());
+      const encoded = btoa(unescape(encodeURIComponent(payload)));
+      const area = document.getElementById('transferCodeArea');
+      if (area) area.value = encoded;
+      copyTextSilently(encoded);
+      showToast('Код базы скопирован');
+    };
+
+    document.getElementById('importCodeBtn').onclick = function() {
+      const area = document.getElementById('transferCodeArea');
+      const code = area ? area.value.trim() : '';
+      if (!code) {
+        showToast('Вставьте код базы в поле');
+        return;
+      }
+      try {
+        const decoded = decodeURIComponent(escape(atob(code)));
+        const parsed = normalizeDataset(JSON.parse(decoded));
+        if (!parsed) throw new Error('bad');
+        state.workerName = parsed.workerName || state.workerName;
+        state.defaultRate = parsed.defaultRate || state.defaultRate;
+        state.records = parsed.records || {};
+        document.getElementById('workerNameInput').value = state.workerName;
+        document.getElementById('rateInput').value = state.defaultRate;
+        saveAllStorages();
+        refreshUI();
+        document.getElementById('backupsModal').classList.remove('open');
+        showToast('База успешно загружена по коду');
+      } catch (e) {
+        showToast('Ошибка: неверный код базы');
+      }
     };
   }
 
   function init() {
-    loadInitialState(function () {
-      document.getElementById("workerInput").value = state.worker || "";
-      document.getElementById("rateInput").value = state.rate || "";
+    loadInitialData().then(function() {
       applyTheme();
+      const nameInp = document.getElementById('workerNameInput');
+      const rateInp = document.getElementById('rateInput');
+      if (nameInp) nameInp.value = state.workerName;
+      if (rateInp) rateInp.value = state.defaultRate;
       bindEvents();
-      renderAll();
+      refreshUI();
     });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
   }
