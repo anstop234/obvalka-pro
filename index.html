@@ -3,235 +3,174 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Обвалка PRO v 6.1</title>
+<title>Обвалка PRO v 6.3</title>
 <style>
   :root {
     --bg: #121212;
     --card: #1e1e1e;
-    --text: #f0f0f0;
-    --text-dim: #9e9e9e;
-    --border: #555555;
-    --green: #00c853;
-    --green-dark: #009624;
-    --green-bg: rgba(0, 200, 83, 0.14);
+    --text: #ffffff;
+    --subtext: #aaaaaa;
+    --accent: #00c853;
     --yellow: #ffab00;
-    --yellow-bg: rgba(255, 171, 0, 0.18);
     --red: #ff5252;
-    --red-bg: rgba(255, 82, 82, 0.14);
-    --input-bg: #262626;
-    --cal-num: #ffffff;
-    --cal-dim: #666666;
+    --border: #555555;
+    --btn-bg: #2a2a2a;
+    --range-bg: rgba(255, 171, 0, 0.22);
+    --theme-btn-bg: #f0f0f0;
+    --theme-btn-color: #121212;
   }
-  body.light {
-    --bg: #f2f2f2;
+  body.light-theme {
+    --bg: #f4f5f7;
     --card: #ffffff;
-    --text: #111111;
-    --text-dim: #555555;
-    --border: #888888;
-    --green: #00a844;
-    --green-dark: #007e33;
-    --green-bg: rgba(0, 168, 68, 0.12);
+    --text: #000000;
+    --subtext: #555555;
+    --accent: #00c853;
     --yellow: #ffab00;
-    --yellow-bg: rgba(255, 171, 0, 0.25);
-    --red: #d32f2f;
-    --red-bg: rgba(211, 47, 47, 0.1);
-    --input-bg: #f9f9f9;
-    --cal-num: #000000;
-    --cal-dim: #000000;
+    --red: #e53935;
+    --border: #888888;
+    --btn-bg: #e9ecef;
+    --range-bg: rgba(255, 171, 0, 0.30);
+    --theme-btn-bg: #252525;
+    --theme-btn-color: #ffffff;
   }
-  * {
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body {
-    margin: 0;
-    padding: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg);
     color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 13px;
-  }
-  .container {
+    padding: 6px;
     max-width: 480px;
     margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+    user-select: none;
   }
   .card {
     background: var(--card);
     border-radius: 10px;
     padding: 6px 8px;
-    border: 1px solid rgba(128,128,128,0.18);
+    margin-bottom: 6px;
+    border: 1px solid rgba(128,128,128,0.2);
   }
-  .cal-header {
+  .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
   }
   .nav-btn {
-    background: var(--input-bg);
+    background: var(--btn-bg);
     color: var(--text);
     border: 1px solid var(--border);
     border-radius: 6px;
-    width: 28px;
-    height: 24px;
-    font-size: 12px;
+    width: 30px;
+    height: 26px;
+    font-size: 13px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
   .month-title-wrap {
     display: flex;
     align-items: baseline;
-    gap: 6px;
-  }
-  .month-title {
-    font-size: 16px;
-    font-weight: 700;
-  }
-  .version-tag {
-    font-size: 10px;
-    font-weight: 500;
-    color: #e0e0e0;
-    opacity: 0.85;
-  }
-  body.light .version-tag {
-    color: #333333;
-  }
-  .header-actions {
-    display: flex;
-    align-items: center;
     gap: 5px;
   }
+  .month-title { font-size: 15px; font-weight: 700; }
+  .version-tag {
+    font-size: 10px;
+    color: var(--text);
+    opacity: 0.75;
+    font-weight: 500;
+  }
+  .header-actions { display: flex; gap: 5px; align-items: center; }
   .icon-btn {
-    border: 1px solid var(--border);
-    border-radius: 6px;
     width: 26px;
-    height: 24px;
-    font-size: 13px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
     cursor: pointer;
+    font-size: 13px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
   }
-  .theme-btn {
-    background: #f0f0f0;
-    color: #111;
-  }
-  body.light .theme-btn {
-    background: #252525;
-    color: #fff;
-  }
-  .upd-btn {
-    background: var(--input-bg);
-    color: var(--text);
-  }
+  .refresh-btn { background: #1976d2; color: #fff; border-color: #1976d2; }
+  .theme-btn { background: var(--theme-btn-bg); color: var(--theme-btn-color); }
+
   .tabs {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 4px;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
   }
-  .tab-btn {
-    background: var(--input-bg);
-    color: var(--text-dim);
+  .tab {
+    background: var(--btn-bg);
+    color: var(--text);
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 3px 0;
+    padding: 4px 2px;
     font-size: 11px;
     font-weight: 600;
+    text-align: center;
     cursor: pointer;
   }
-  .tab-btn.active {
-    background: var(--green);
-    color: #000;
-    border-color: var(--green);
-  }
+  .tab.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
   .weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     text-align: center;
     font-size: 11px;
-    color: var(--text-dim);
+    color: var(--subtext);
     font-weight: 600;
     margin-bottom: 2px;
   }
-  .cal-grid {
+  .days-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 1px;
+    gap: 2px 3px;
+    touch-action: none;
   }
   .day-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 3px 0;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--cal-num);
-    cursor: pointer;
     position: relative;
+    text-align: center;
+    padding: 3px 0;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 5px;
+    cursor: pointer;
     line-height: 1.15;
-    border: 1px solid transparent;
+    color: var(--text);
   }
-  .day-cell.other-month {
-    color: var(--cal-dim);
-    opacity: 0.45;
-  }
-  body.light .day-cell.other-month {
-    color: #000000;
-    opacity: 0.4;
-  }
-  .day-cell.in-range {
-    background: var(--yellow-bg);
-  }
-  .day-cell.selected {
-    background: var(--yellow) !important;
-    color: #000000 !important;
-    font-weight: 800;
-  }
-  .day-cell.day-off {
-    border-color: var(--red);
-  }
-  .off-mark {
+  .day-cell.empty { cursor: default; }
+  .day-cell.in-range { background: var(--range-bg); color: var(--text); }
+  .day-cell.selected { background: var(--yellow) !important; color: #000000 !important; font-weight: 800; }
+  .day-cell.dayoff { border: 1px solid var(--red); }
+  .day-cell .off-x {
     position: absolute;
     top: 0px;
     right: 2px;
     font-size: 8px;
     color: var(--red);
-    font-weight: 900;
-    line-height: 1;
+    font-weight: 800;
   }
-  .data-bar {
+  .day-cell .rec-bar {
     width: 14px;
     height: 2px;
-    background: var(--green);
+    background: var(--accent);
+    margin: 1px auto 0;
     border-radius: 1px;
-    margin-top: 2px;
   }
-  .day-cell.selected .data-bar {
-    background: #000000;
-  }
-  .cal-hint {
+  .day-cell.selected .rec-bar { background: #000; }
+
+  .hint {
     text-align: center;
     font-size: 10px;
-    color: var(--text-dim);
+    color: var(--subtext);
     margin-top: 3px;
   }
-  .dayoff-block {
-    padding: 4px 8px;
-  }
-  .btn-dayoff-long {
+
+  .dayoff-bar-wrap { margin-top: 5px; }
+  .btn-dayoff-wide {
     width: 100%;
     height: 24px;
-    background: var(--red-bg);
+    background: transparent;
     color: var(--red);
     border: 1px solid var(--red);
     border-radius: 6px;
@@ -241,27 +180,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    letter-spacing: 0.3px;
+    gap: 4px;
   }
+
   .records-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
     margin-bottom: 3px;
     min-height: 20px;
   }
-  .records-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-dim);
-    text-transform: uppercase;
-  }
-  .undo-wrap {
-    display: none;
-    align-items: center;
-    gap: 4px;
-  }
+  .records-title { font-size: 11px; font-weight: 700; color: var(--subtext); text-transform: uppercase; }
+  .undo-group { display: flex; gap: 4px; align-items: center; }
   .btn-undo {
     background: var(--yellow);
     color: #000;
@@ -279,215 +209,159 @@
     border-radius: 5px;
     padding: 2px 6px;
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 800;
     cursor: pointer;
   }
-  .records-list {
+  .record-item {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
-    max-height: 110px;
-    overflow-y: auto;
-  }
-  .rec-item {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    background: var(--input-bg);
-    padding: 2px 6px;
-    border-radius: 5px;
+    align-items: center;
+    padding: 2px 0;
     font-size: 12px;
     line-height: 1.15;
-    border: 1px solid rgba(128,128,128,0.15);
+    border-bottom: 1px solid rgba(128,128,128,0.12);
   }
-  .rec-del {
+  .record-item:last-child { border-bottom: none; }
+  .record-item.off-row { color: var(--red); }
+  .del-rec-btn {
+    background: transparent;
     color: var(--red);
-    font-weight: 700;
-    cursor: pointer;
-    padding: 0 4px;
-    font-size: 13px;
-  }
-  .summary-card {
-    background: var(--green-bg);
-    border: 1px solid rgba(0, 200, 83, 0.35);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .summary-info {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  .summary-label {
+    border: 1px solid var(--red);
+    border-radius: 4px;
+    width: 20px;
+    height: 18px;
     font-size: 10px;
-    font-weight: 700;
-    color: var(--green);
-    text-transform: uppercase;
+    cursor: pointer;
+    line-height: 1;
   }
-  .summary-vals {
-    font-size: 12px;
-    font-weight: 700;
-  }
-  .summary-money {
-    font-size: 18px;
-    font-weight: 800;
-    color: var(--yellow);
-    line-height: 1.1;
-  }
-  .report-btns {
+
+  .summary-card {
+    background: rgba(0, 200, 83, 0.12);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex-shrink: 0;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
   }
-  .btn-rep {
+  .summary-left { flex: 1; }
+  .summary-label { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+  .summary-stats { font-size: 13px; font-weight: 700; margin: 2px 0; }
+  .summary-pay { font-size: 18px; font-weight: 800; color: var(--yellow); }
+  .summary-btns { display: flex; flex-direction: column; gap: 4px; }
+  .report-btn {
     border: none;
     border-radius: 6px;
-    padding: 5px 10px;
+    padding: 5px 8px;
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
     text-align: center;
   }
-  .btn-rep-full {
-    background: var(--green);
-    color: #000;
-  }
-  .btn-rep-short {
-    background: var(--input-bg);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-  .input-header {
+  .btn-full-rep { background: var(--accent); color: #000; }
+  .btn-short-rep { background: var(--btn-bg); color: var(--text); border: 1px solid var(--border); }
+
+  .input-top {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
     font-size: 12px;
+    margin-bottom: 4px;
+    color: var(--subtext);
   }
-  .selected-date-label {
-    font-weight: 700;
-    color: var(--text);
-  }
-  .form-rows {
+  .input-top strong { color: var(--text); }
+  .input-row {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .form-row {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    align-items: center;
+    margin-bottom: 4px;
   }
-  .form-row label {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .form-row input {
-    width: 145px;
+  .input-row label { font-size: 14px; font-weight: 600; }
+  .input-row input {
+    width: 135px;
     height: 30px;
-    background: var(--input-bg);
+    background: var(--btn-bg);
     color: var(--text);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 0 8px;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     text-align: right;
-    outline: none;
     -webkit-appearance: none;
     appearance: none;
   }
-  .form-row input:focus {
-    border-color: var(--green);
-  }
   .shift-preview {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    background: var(--input-bg);
+    align-items: center;
+    background: var(--btn-bg);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 4px 8px;
-    margin-top: 5px;
-    font-size: 12px;
-    font-weight: 700;
+    margin: 5px 0;
   }
-  .shift-money {
-    color: var(--yellow);
-    font-size: 15px;
-    font-weight: 800;
-  }
-  .btn-add-full {
+  .shift-preview span:first-child { font-size: 11px; font-weight: 700; color: var(--subtext); }
+  .shift-preview-vals { display: flex; align-items: baseline; gap: 8px; }
+  .shift-w { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .shift-p { font-size: 16px; font-weight: 800; color: var(--yellow); }
+
+  .btn-add-wide {
     width: 100%;
     height: 34px;
-    margin-top: 5px;
-    background: var(--green);
+    background: var(--accent);
     color: #000;
     border: none;
     border-radius: 7px;
     font-size: 13px;
     font-weight: 800;
     cursor: pointer;
-    letter-spacing: 0.3px;
   }
+
   .backup-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 6px;
   }
-  .btn-backup {
+  .backup-btn {
     background: var(--card);
     color: var(--text);
     border: 1px solid var(--border);
     border-radius: 8px;
-    height: 32px;
+    padding: 7px 4px;
     font-size: 11px;
     font-weight: 700;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
+    text-align: center;
   }
-  .modal-backdrop {
+
+  .modal-overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.72);
+    background: rgba(0,0,0,0.75);
     z-index: 1000;
     align-items: center;
     justify-content: center;
     padding: 12px;
   }
-  .modal-backdrop.top-modal {
-    z-index: 2000;
-  }
+  .modal-overlay.top-modal { z-index: 2000; }
   .modal-box {
     background: var(--card);
     color: var(--text);
     border: 1px solid var(--border);
     border-radius: 12px;
+    padding: 12px;
     width: 100%;
     max-width: 400px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
   }
-  .modal-title {
-    font-size: 15px;
-    font-weight: 700;
-  }
+  .modal-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
   .modal-textarea {
     width: 100%;
     height: 150px;
-    background: var(--input-bg);
+    background: var(--btn-bg);
     color: var(--text);
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -495,78 +369,44 @@
     font-family: monospace;
     font-size: 12px;
     resize: none;
-    outline: none;
+    margin-bottom: 8px;
   }
   .modal-actions {
     display: flex;
-    justify-content: flex-end;
     gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
-  .btn-modal {
-    padding: 7px 14px;
+  .m-btn {
+    border: none;
     border-radius: 7px;
-    font-size: 13px;
+    padding: 7px 12px;
+    font-size: 12px;
     font-weight: 700;
     cursor: pointer;
-    border: 1px solid var(--border);
-    background: var(--input-bg);
-    color: var(--text);
   }
-  .btn-modal-primary {
-    background: var(--green);
-    color: #000;
-    border-color: var(--green);
-  }
-  .btn-modal-danger {
-    background: var(--red);
-    color: #fff;
-    border-color: var(--red);
-  }
-  .backup-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    max-height: 220px;
-    overflow-y: auto;
-  }
+  .m-btn-cancel { background: var(--btn-bg); color: var(--text); border: 1px solid var(--border); }
+  .m-btn-ok { background: var(--accent); color: #000; }
+  .m-btn-danger { background: var(--red); color: #fff; }
+  .m-btn-warn { background: var(--yellow); color: #000; }
+
   .backup-item {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    padding: 6px 8px;
-    font-size: 12px;
-  }
-  .backup-item-btns {
-    display: flex;
     align-items: center;
-    gap: 6px;
+    background: var(--btn-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
   }
-  .btn-restore-sm {
-    background: var(--green);
-    color: #000;
-    border: none;
-    border-radius: 5px;
-    padding: 4px 8px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .btn-del-backup {
-    background: var(--red-bg);
-    color: var(--red);
-    border: 1px solid var(--red);
-    border-radius: 5px;
-    padding: 3px 7px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-  }
+  .backup-info { font-size: 12px; }
+  .backup-info small { color: var(--subtext); display: block; font-size: 10px; }
+  .backup-item-btns { display: flex; gap: 5px; }
+
   .toast {
     position: fixed;
-    bottom: 16px;
+    bottom: 18px;
     left: 50%;
     transform: translateX(-50%);
     background: #222;
@@ -577,130 +417,151 @@
     font-weight: 600;
     z-index: 3000;
     display: none;
-    border: 1px solid var(--border);
+    border: 1px solid #555;
+    text-align: center;
+    max-width: 90%;
   }
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="card">
-    <div class="cal-header">
-      <button class="nav-btn" id="prevMonth">◀</button>
-      <div class="month-title-wrap">
-        <span class="month-title" id="monthTitle">Ноябрь 2026</span>
-        <span class="version-tag" id="verTag">v 6.1</span>
-      </div>
-      <div class="header-actions">
-        <button class="icon-btn upd-btn" id="btnCheckUpd" title="Проверить обновление">🔄</button>
-        <button class="icon-btn theme-btn" id="btnTheme" title="Сменить тему">☀️</button>
-        <button class="nav-btn" id="nextMonth">▶</button>
-      </div>
-    </div>
-    <div class="tabs">
-      <button class="tab-btn active" data-mode="day">День</button>
-      <button class="tab-btn" data-mode="week">Неделя</button>
-      <button class="tab-btn" data-mode="biweek">2х недели</button>
-      <button class="tab-btn" data-mode="month">Месяц</button>
-      <button class="tab-btn" data-mode="year">Год</button>
-    </div>
-    <div class="weekdays">
-      <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
-    </div>
-    <div class="cal-grid" id="calGrid"></div>
-    <div class="cal-hint">Нажмите на день или протяните пальцем для выбора периода</div>
-  </div>
 
-  <div class="card dayoff-block">
-    <button class="btn-dayoff-long" id="btnDayOff">✕ ВЫХОДНОЙ</button>
-  </div>
-
-  <div class="card">
-    <div class="records-header">
-      <div class="records-title" id="recordsTitle">ЗАПИСИ (ДЕНЬ)</div>
-      <div class="undo-wrap" id="undoWrap">
-        <button class="btn-undo" id="btnUndo">↩ Отменить удаление (0)</button>
-        <button class="btn-clear-undo" id="btnClearUndo">✕</button>
-      </div>
+<div class="card">
+  <div class="header">
+    <button class="nav-btn" id="prevMonthBtn">&#9664;</button>
+    <div class="month-title-wrap">
+      <span class="month-title" id="monthTitle">Ноябрь 2026</span>
+      <span class="version-tag">v 6.3</span>
     </div>
-    <div class="records-list" id="recordsList"></div>
-  </div>
-
-  <div class="card summary-card">
-    <div class="summary-info">
-      <div class="summary-label" id="summaryLabel">ИТОГ ЗА ДЕНЬ</div>
-      <div class="summary-vals" id="summaryVals">0 кор. • 0 кг</div>
-      <div class="summary-money" id="summaryMoney">0 ₽</div>
-    </div>
-    <div class="report-btns">
-      <button class="btn-rep btn-rep-full" id="btnFullRep">📤 Полный отчёт</button>
-      <button class="btn-rep btn-rep-short" id="btnShortRep">📋 Краткий отчёт</button>
+    <div class="header-actions">
+      <button class="icon-btn refresh-btn" id="checkUpdateBtn" title="Проверить обновление">&#128260;</button>
+      <button class="icon-btn theme-btn" id="themeBtn" title="Сменить тему">&#9728;&#65039;</button>
+      <button class="nav-btn" id="nextMonthBtn">&#9654;</button>
     </div>
   </div>
 
-  <div class="card">
-    <div class="input-header">
-      <span style="color:var(--text-dim)">Выбрана дата:</span>
-      <span class="selected-date-label" id="selectedDateLabel">22 ноября</span>
-    </div>
-    <div class="form-rows">
-      <div class="form-row">
-        <label for="inpWorker">Обвальщик:</label>
-        <input type="text" id="inpWorker" placeholder="Имя" autocomplete="off">
-      </div>
-      <div class="form-row">
-        <label for="inpBoxes">Коробки (шт):</label>
-        <input type="text" inputmode="numeric" id="inpBoxes" placeholder="0" autocomplete="off">
-      </div>
-      <div class="form-row">
-        <label for="inpWeight">Вес коробки (кг):</label>
-        <input type="text" inputmode="decimal" id="inpWeight" placeholder="00.0" autocomplete="off">
-      </div>
-      <div class="form-row">
-        <label for="inpRate">Ставка за 1 кг (₽):</label>
-        <input type="text" inputmode="decimal" id="inpRate" placeholder="0.0" autocomplete="off">
-      </div>
-    </div>
-    <div class="shift-preview">
-      <span>ИТОГО ЗА СМЕНУ:</span>
-      <span id="shiftWeight">0 кг</span>
-      <span class="shift-money" id="shiftMoney">0 ₽</span>
-    </div>
-    <button class="btn-add-full" id="btnAdd">+ ДОБАВИТЬ ЗАПИСЬ</button>
+  <div class="tabs" id="modeTabs">
+    <div class="tab active" data-mode="day">День</div>
+    <div class="tab" data-mode="week">Неделя</div>
+    <div class="tab" data-mode="2weeks">2х недели</div>
+    <div class="tab" data-mode="month">Месяц</div>
+    <div class="tab" data-mode="year">Год</div>
   </div>
 
-  <div class="backup-row">
-    <button class="btn-backup" id="btnSaveBackup">💾 СОХРАНИТЬ БАЗУ</button>
-    <button class="btn-backup" id="btnOpenRestore">📂 ВОССТАНОВИТЬ</button>
+  <div class="weekdays">
+    <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+  </div>
+  <div class="days-grid" id="daysGrid"></div>
+  <div class="hint">Нажмите на день или протяните пальцем для выбора периода</div>
+
+  <div class="dayoff-bar-wrap">
+    <button class="btn-dayoff-wide" id="dayOffBtn">&#10005; ВЫХОДНОЙ</button>
   </div>
 </div>
 
-<div class="modal-backdrop" id="reportModal">
+<div class="card">
+  <div class="records-header">
+    <span class="records-title" id="recordsTitle">ЗАПИСИ (ДЕНЬ)</span>
+    <div class="undo-group" id="undoGroup" style="display:none;">
+      <button class="btn-undo" id="undoBtn">&#8617; Отменить удаление (0)</button>
+      <button class="btn-clear-undo" id="clearUndoBtn">&#10005;</button>
+    </div>
+  </div>
+  <div id="recordsList"></div>
+</div>
+
+<div class="summary-card">
+  <div class="summary-left">
+    <div class="summary-label" id="summaryLabel">ИТОГ ЗА ДЕНЬ</div>
+    <div class="summary-stats" id="summaryStats">0 кор. | 0 кг</div>
+    <div class="summary-pay" id="summaryPay">0 &#8381;</div>
+  </div>
+  <div class="summary-btns">
+    <button class="report-btn btn-full-rep" id="fullReportBtn">&#128228; Полный отчёт</button>
+    <button class="report-btn btn-short-rep" id="shortReportBtn">&#128203; Краткий отчёт</button>
+  </div>
+</div>
+
+<div class="card">
+  <div class="input-top">
+    <span>Выбрано:</span>
+    <strong id="selectedDateLabel">22 ноября</strong>
+  </div>
+  <div class="input-row">
+    <label for="workerNameInput">Обвальщик:</label>
+    <input type="text" id="workerNameInput" placeholder="Имя">
+  </div>
+  <div class="input-row">
+    <label for="boxesInput">Коробки (шт):</label>
+    <input type="text" inputmode="numeric" id="boxesInput" placeholder="0">
+  </div>
+  <div class="input-row">
+    <label for="weightInput">Вес коробки (кг):</label>
+    <input type="text" inputmode="decimal" id="weightInput" placeholder="00.0">
+  </div>
+  <div class="input-row">
+    <label for="rateInput">Ставка за 1 кг (&#8381;):</label>
+    <input type="text" inputmode="decimal" id="rateInput" placeholder="0.0">
+  </div>
+
+  <div class="shift-preview">
+    <span>ИТОГО ЗА СМЕНУ:</span>
+    <div class="shift-preview-vals">
+      <span class="shift-w" id="previewWeight">0 кг</span>
+      <span class="shift-p" id="previewPay">0 &#8381;</span>
+    </div>
+  </div>
+
+  <button class="btn-add-wide" id="addRecordBtn">+ ДОБАВИТЬ ЗАПИСЬ</button>
+</div>
+
+<div class="backup-row">
+  <button class="backup-btn" id="saveBackupBtn">&#128190; СОХРАНИТЬ БАЗУ</button>
+  <button class="backup-btn" id="restoreBackupBtn">&#128194; ВОССТАНОВИТЬ</button>
+</div>
+
+<div class="modal-overlay" id="reportModal">
   <div class="modal-box">
-    <div class="modal-title" id="reportModalTitle">Отчёт</div>
-    <textarea class="modal-textarea" id="reportTextarea" readonly></textarea>
+    <div class="modal-title" id="reportModalTitle">Предпросмотр отчёта</div>
+    <textarea class="modal-textarea" id="reportPreviewText" readonly></textarea>
     <div class="modal-actions">
-      <button class="btn-modal" id="btnReportCancel">Отмена</button>
-      <button class="btn-modal btn-modal-primary" id="btnReportSend">Отправить</button>
+      <button class="m-btn m-btn-cancel" id="closeReportModalBtn">Отмена</button>
+      <button class="m-btn m-btn-ok" id="confirmSendReportBtn">Отправить</button>
     </div>
   </div>
 </div>
 
-<div class="modal-backdrop" id="restoreModal">
+<div class="modal-overlay" id="backupsModal">
   <div class="modal-box">
     <div class="modal-title">Сохранённые копии в телефоне</div>
-    <div class="backup-list" id="backupList"></div>
-    <div class="modal-actions">
-      <button class="btn-modal" id="btnCloseRestore">Закрыть</button>
+    <div id="backupsListContainer" style="max-height:220px;overflow-y:auto;margin-bottom:8px;"></div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="m-btn m-btn-warn" id="openTransferBtn">&#128273; Перенос / Код</button>
+      <button class="m-btn m-btn-cancel" id="closeBackupsModalBtn">Закрыть</button>
     </div>
   </div>
 </div>
 
-<div class="modal-backdrop top-modal" id="confirmModal">
+<div class="modal-overlay top-modal" id="transferModal">
   <div class="modal-box">
-    <div class="modal-title" id="confirmText">Вы уверены?</div>
+    <div class="modal-title">Перенос базы на другой телефон</div>
+    <div style="font-size:11px;color:var(--subtext);margin-bottom:6px;">
+      Скопируйте код ниже, чтобы сохранить или перенести на новое устройство, либо вставьте код сюда для восстановления:
+    </div>
+    <textarea class="modal-textarea" id="transferCodeArea" style="height:120px;"></textarea>
     <div class="modal-actions">
-      <button class="btn-modal" id="btnConfirmNo">Нет</button>
-      <button class="btn-modal btn-modal-danger" id="btnConfirmYes">Да</button>
+      <button class="m-btn m-btn-cancel" id="closeTransferModalBtn">Закрыть</button>
+      <button class="m-btn m-btn-warn" id="copyTransferCodeBtn">Копировать</button>
+      <button class="m-btn m-btn-ok" id="importTransferCodeBtn">Загрузить код</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay top-modal" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-title" id="confirmModalText">Вы уверены?</div>
+    <div class="modal-actions">
+      <button class="m-btn m-btn-cancel" id="confirmNoBtn">Нет</button>
+      <button class="m-btn m-btn-danger" id="confirmYesBtn">Да</button>
     </div>
   </div>
 </div>
@@ -709,726 +570,826 @@
 
 <script>
 (function() {
-  var APP_VERSION = "6.1";
+  var APP_VERSION = "6.3";
   var STORAGE_KEY = "obvalka_pro_data_v1";
   var BACKUPS_KEY = "obvalka_pro_backups_v1";
-  var WORKER_KEY = "obvalka_pro_worker_v1";
-  var RATE_KEY = "obvalka_pro_rate_v1";
-  var THEME_KEY = "obvalka_pro_theme_v1";
+  var DB_NAME = "ObvalkaProDB";
+  var STORE_NAME = "kv";
 
   var MONTHS_NOM = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
   var MONTHS_GEN = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
   var MONTHS_SHORT = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
 
-  function safeGet(k, def) {
-    try {
-      var v = localStorage.getItem(k);
-      return v !== null ? v : def;
-    } catch (e) {
-      return def;
-    }
-  }
-  function safeSet(k, v) {
-    try {
-      localStorage.setItem(k, v);
-    } catch (e) {}
-  }
-
   var state = {
-    viewYear: 2026,
-    viewMonth: 10,
-    selectedDate: "2026-11-22",
-    rangeStart: null,
-    rangeEnd: null,
-    isCustomRange: false,
-    mode: "day",
     records: {},
     dayOffs: {},
-    undoStack: [],
-    isDragging: false,
-    dragAnchor: null
+    rate: "9.5",
+    workerName: "",
+    theme: "dark",
+    lastAutoBackupDate: ""
   };
 
-  var confirmCallback = null;
+  var undoStack = [];
+  var viewYear = 2026;
+  var viewMonth = 10;
+  var selectedDate = new Date(2026, 10, 22);
+  var mode = "day";
+  var customRange = null;
+  var isDragging = false;
+  var dragStartStr = null;
+  var pendingConfirmAction = null;
+
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+  function toDateStr(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parseDateStr(s) {
+    var p = s.split("-");
+    return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+  }
+  function formatDayGen(d) { return d.getDate() + " " + MONTHS_GEN[d.getMonth()]; }
+  function formatDayShort(d) { return d.getDate() + " " + MONTHS_SHORT[d.getMonth()]; }
 
   function showToast(msg) {
     var t = document.getElementById("toast");
     t.textContent = msg;
     t.style.display = "block";
     clearTimeout(t._timer);
-    t._timer = setTimeout(function() { t.style.display = "none"; }, 2200);
+    t._timer = setTimeout(function() { t.style.display = "none"; }, 2600);
   }
 
-  function openConfirm(text, onYes) {
-    document.getElementById("confirmText").textContent = text;
-    confirmCallback = onYes;
-    document.getElementById("confirmModal").style.display = "flex";
+  function openIDB(cb) {
+    if (!window.indexedDB) { cb(null); return; }
+    try {
+      var req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+      };
+      req.onsuccess = function(e) { cb(e.target.result); };
+      req.onerror = function() { cb(null); };
+    } catch (err) { cb(null); }
   }
 
-  document.getElementById("btnConfirmNo").onclick = function() {
-    document.getElementById("confirmModal").style.display = "none";
-    confirmCallback = null;
-  };
-  document.getElementById("btnConfirmYes").onclick = function() {
-    document.getElementById("confirmModal").style.display = "none";
-    if (confirmCallback) confirmCallback();
-    confirmCallback = null;
-  };
-
-  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
-  function toKey(y, m, d) { return y + "-" + pad2(m + 1) + "-" + pad2(d); }
-  function parseKey(k) {
-    var p = k.split("-");
-    return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-  }
-  function dateToKey(dt) {
-    return toKey(dt.getFullYear(), dt.getMonth(), dt.getDate());
-  }
-  function formatHumanDate(k) {
-    var p = k.split("-");
-    var d = parseInt(p[2], 10);
-    var m = parseInt(p[1], 10) - 1;
-    return d + " " + MONTHS_GEN[m];
-  }
-  function formatShortDate(k) {
-    var p = k.split("-");
-    var d = parseInt(p[2], 10);
-    var m = parseInt(p[1], 10) - 1;
-    return d + " " + MONTHS_SHORT[m];
-  }
-  function cleanNum(val) {
-    var n = parseFloat(String(val).replace(",", "."));
-    return isFinite(n) && n >= 0 ? n : 0;
-  }
-  function fmtWeight(w) {
-    return (Math.round(w * 10) / 10).toFixed(1).replace(/\.0$/, "");
-  }
-  function fmtMoney(m) {
-    return (Math.round(m * 100) / 100).toFixed(2).replace(/\.00$/, "");
-  }
-
-  function loadData() {
-    var raw = safeGet(STORAGE_KEY, "");
-    if (raw) {
+  function idbSet(key, val) {
+    openIDB(function(db) {
+      if (!db) return;
       try {
-        var parsed = JSON.parse(raw);
-        state.records = parsed.records || {};
-        state.dayOffs = parsed.dayOffs || {};
-        Object.keys(state.records).forEach(function(dk) {
-          state.records[dk] = (state.records[dk] || []).map(function(r) {
-            var b = cleanNum(r.boxes);
-            var w = cleanNum(r.weight);
-            var rt = cleanNum(r.rate);
-            return { boxes: b, weight: w, rate: rt, sum: b * w * rt };
-          });
-        });
+        var tx = db.transaction(STORE_NAME, "readwrite");
+        tx.objectStore(STORE_NAME).put(val, key);
       } catch (e) {}
+    });
+  }
+
+  function idbGet(key, cb) {
+    openIDB(function(db) {
+      if (!db) { cb(null); return; }
+      try {
+        var tx = db.transaction(STORE_NAME, "readonly");
+        var req = tx.objectStore(STORE_NAME).get(key);
+        req.onsuccess = function() { cb(req.result || null); };
+        req.onerror = function() { cb(null); };
+      } catch (e) { cb(null); }
+    });
+  }
+
+  function sanitizeState(raw) {
+    if (!raw || typeof raw !== "object") return;
+    if (raw.records && typeof raw.records === "object") {
+      var cleanRecs = {};
+      Object.keys(raw.records).forEach(function(k) {
+        var arr = raw.records[k];
+        if (Array.isArray(arr) && arr.length > 0) {
+          cleanRecs[k] = arr.map(function(item) {
+            var b = parseFloat(item.boxes) || 0;
+            var w = parseFloat(item.weight) || 0;
+            var r = parseFloat(item.rate) || 0;
+            var tw = Math.round(b * w * 1000) / 1000;
+            var tp = Math.round(tw * r * 100) / 100;
+            return { boxes: b, weight: w, rate: r, totalWeight: tw, totalPay: tp };
+          });
+        }
+      });
+      state.records = cleanRecs;
     }
-    var savedWorker = safeGet(WORKER_KEY, "");
-    if (savedWorker) document.getElementById("inpWorker").value = savedWorker;
-    var savedRate = safeGet(RATE_KEY, "");
-    if (savedRate) document.getElementById("inpRate").value = savedRate;
-    var savedTheme = safeGet(THEME_KEY, "dark");
-    if (savedTheme === "light") {
-      document.body.classList.add("light");
-      document.getElementById("btnTheme").textContent = "🌙";
+    if (raw.dayOffs && typeof raw.dayOffs === "object") state.dayOffs = raw.dayOffs;
+    if (raw.rate !== undefined && !isNaN(parseFloat(raw.rate))) state.rate = String(raw.rate);
+    if (typeof raw.workerName === "string") state.workerName = raw.workerName;
+    if (raw.theme === "light" || raw.theme === "dark") state.theme = raw.theme;
+    if (typeof raw.lastAutoBackupDate === "string") state.lastAutoBackupDate = raw.lastAutoBackupDate;
+  }
+
+  function saveState() {
+    var serialized = JSON.stringify(state);
+    try { localStorage.setItem(STORAGE_KEY, serialized); } catch (e) {}
+    idbSet(STORAGE_KEY, serialized);
+  }
+
+  function loadBackups(cb) {
+    var lsList = [];
+    try {
+      var raw = localStorage.getItem(BACKUPS_KEY);
+      if (raw) lsList = JSON.parse(raw);
+    } catch (e) {}
+    idbGet(BACKUPS_KEY, function(idbRaw) {
+      var idbList = [];
+      if (idbRaw) {
+        try { idbList = JSON.parse(idbRaw); } catch (e) {}
+      }
+      var finalList = (idbList && idbList.length >= lsList.length) ? idbList : lsList;
+      if (!Array.isArray(finalList)) finalList = [];
+      cb(finalList);
+    });
+  }
+
+  function saveBackups(list) {
+    var serialized = JSON.stringify(list);
+    try { localStorage.setItem(BACKUPS_KEY, serialized); } catch (e) {}
+    idbSet(BACKUPS_KEY, serialized);
+  }
+
+  function createBackupSnapshot(isAuto, silent) {
+    loadBackups(function(list) {
+      var recCount = 0;
+      Object.keys(state.records).forEach(function(k) { recCount += state.records[k].length; });
+      var offCount = Object.keys(state.dayOffs).filter(function(k) { return state.dayOffs[k]; }).length;
+      var now = new Date();
+      var stamp = pad(now.getDate()) + "." + pad(now.getMonth() + 1) + "." + now.getFullYear() + " " + pad(now.getHours()) + ":" + pad(now.getMinutes());
+      list.unshift({
+        id: Date.now(),
+        date: stamp,
+        auto: !!isAuto,
+        recCount: recCount,
+        offCount: offCount,
+        payload: JSON.stringify(state)
+      });
+      if (list.length > 7) list = list.slice(0, 7);
+      saveBackups(list);
+      if (!silent) showToast("База сохранена (записей: " + recCount + ", вых: " + offCount + ")");
+    });
+  }
+
+  function triggerDailyAutoBackup() {
+    var todayStr = toDateStr(new Date());
+    if (state.lastAutoBackupDate !== todayStr) {
+      state.lastAutoBackupDate = todayStr;
+      saveState();
+      createBackupSnapshot(true, true);
     }
   }
 
-  function saveData() {
-    safeSet(STORAGE_KEY, JSON.stringify({
-      records: state.records,
-      dayOffs: state.dayOffs
-    }));
+  function applyTheme() {
+    var btn = document.getElementById("themeBtn");
+    if (state.theme === "light") {
+      document.body.classList.add("light-theme");
+      btn.innerHTML = "&#127769;";
+    } else {
+      document.body.classList.remove("light-theme");
+      btn.innerHTML = "&#9728;&#65039;";
+    }
   }
 
   function getActiveRange() {
-    if (state.isCustomRange && state.rangeStart && state.rangeEnd) {
-      return state.rangeStart <= state.rangeEnd
-        ? { start: state.rangeStart, end: state.rangeEnd }
-        : { start: state.rangeEnd, end: state.rangeStart };
+    if (customRange) return customRange;
+    var y = selectedDate.getFullYear();
+    var m = selectedDate.getMonth();
+    var d = selectedDate.getDate();
+    if (mode === "day") {
+      return { start: new Date(y, m, d), end: new Date(y, m, d), isCustom: false };
     }
-    var dt = parseKey(state.selectedDate);
-    var y = dt.getFullYear();
-    var m = dt.getMonth();
-    var d = dt.getDate();
-
-    if (state.mode === "day") {
-      return { start: state.selectedDate, end: state.selectedDate };
+    if (mode === "week") {
+      var dow = selectedDate.getDay();
+      var diffToMon = dow === 0 ? -6 : 1 - dow;
+      var s = new Date(y, m, d + diffToMon);
+      var e = new Date(s.getFullYear(), s.getMonth(), s.getDate() + 6);
+      return { start: s, end: e, isCustom: false };
     }
-    if (state.mode === "week") {
-      var dayOfWeek = dt.getDay();
-      var diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-      var mon = new Date(y, m, d + diffToMon);
-      var sun = new Date(y, m, d + diffToMon + 6);
-      return { start: dateToKey(mon), end: dateToKey(sun) };
-    }
-    if (state.mode === "biweek") {
+    if (mode === "2weeks") {
       var lastDay = new Date(y, m + 1, 0).getDate();
       if (d <= 15) {
-        return { start: toKey(y, m, 1), end: toKey(y, m, 15) };
+        return { start: new Date(y, m, 1), end: new Date(y, m, 15), isCustom: false };
       } else {
-        return { start: toKey(y, m, 16), end: toKey(y, m, lastDay) };
+        return { start: new Date(y, m, 16), end: new Date(y, m, lastDay), isCustom: false };
       }
     }
-    if (state.mode === "month") {
+    if (mode === "month") {
       var lastM = new Date(y, m + 1, 0).getDate();
-      return { start: toKey(y, m, 1), end: toKey(y, m, lastM) };
+      return { start: new Date(y, m, 1), end: new Date(y, m, lastM), isCustom: false };
     }
-    if (state.mode === "year") {
-      return { start: toKey(y, 0, 1), end: toKey(y, 11, 31) };
+    if (mode === "year") {
+      return { start: new Date(y, 0, 1), end: new Date(y, 11, 31), isCustom: false };
     }
-    return { start: state.selectedDate, end: state.selectedDate };
+    return { start: new Date(y, m, d), end: new Date(y, m, d), isCustom: false };
   }
 
-  function enumerateDates(startKey, endKey) {
-    var res = [];
-    var cur = parseKey(startKey);
-    var end = parseKey(endKey);
-    while (cur <= end) {
-      res.push(dateToKey(cur));
-      cur.setDate(cur.getDate() + 1);
-    }
-    return res;
+  function formatMoney(val) {
+    var num = Math.round((val || 0) * 100) / 100;
+    return num.toLocaleString("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + " ₽";
+  }
+
+  function formatWeight(val) {
+    return (Math.round((val || 0) * 1000) / 1000) + " кг";
   }
 
   function renderCalendar() {
-    document.getElementById("monthTitle").textContent = MONTHS_NOM[state.viewMonth] + " " + state.viewYear;
-    var grid = document.getElementById("calGrid");
+    document.getElementById("monthTitle").textContent = MONTHS_NOM[viewMonth] + " " + viewYear;
+    var grid = document.getElementById("daysGrid");
     grid.innerHTML = "";
 
-    var firstDay = new Date(state.viewYear, state.viewMonth, 1).getDay();
-    var startOffset = firstDay === 0 ? 6 : firstDay - 1;
-    var daysInMonth = new Date(state.viewYear, state.viewMonth + 1, 0).getDate();
-    var prevMonthDays = new Date(state.viewYear, state.viewMonth, 0).getDate();
+    var firstDow = new Date(viewYear, viewMonth, 1).getDay();
+    var offset = firstDow === 0 ? 6 : firstDow - 1;
+    var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
 
-    var rng = getActiveRange();
-    var showRangeHighlight = (state.mode !== "day" || state.isCustomRange);
+    var range = getActiveRange();
+    var rStart = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate()).getTime();
+    var rEnd = new Date(range.end.getFullYear(), range.end.getMonth(), range.end.getDate()).getTime();
+    var selStr = toDateStr(selectedDate);
 
-    var totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
-    for (var i = 0; i < totalCells; i++) {
+    for (var i = 0; i < offset; i++) {
+      var emptyCell = document.createElement("div");
+      emptyCell.className = "day-cell empty";
+      grid.appendChild(emptyCell);
+    }
+
+    for (var day = 1; day <= daysInMonth; day++) {
+      var curDate = new Date(viewYear, viewMonth, day);
+      var dStr = toDateStr(curDate);
+      var t = curDate.getTime();
+
       var cell = document.createElement("div");
       cell.className = "day-cell";
-      var cellDateKey = "";
-      var dayNum = 0;
+      cell.setAttribute("data-date", dStr);
 
-      if (i < startOffset) {
-        dayNum = prevMonthDays - startOffset + i + 1;
-        var pm = state.viewMonth - 1;
-        var py = state.viewYear;
-        if (pm < 0) { pm = 11; py--; }
-        cellDateKey = toKey(py, pm, dayNum);
-        cell.classList.add("other-month");
-      } else if (i >= startOffset + daysInMonth) {
-        dayNum = i - (startOffset + daysInMonth) + 1;
-        var nm = state.viewMonth + 1;
-        var ny = state.viewYear;
-        if (nm > 11) { nm = 0; ny++; }
-        cellDateKey = toKey(ny, nm, dayNum);
-        cell.classList.add("other-month");
-      } else {
-        dayNum = i - startOffset + 1;
-        cellDateKey = toKey(state.viewYear, state.viewMonth, dayNum);
-      }
-
-      cell.dataset.date = cellDateKey;
-      var numSpan = document.createElement("span");
-      numSpan.textContent = dayNum;
-      cell.appendChild(numSpan);
-
-      if (state.dayOffs[cellDateKey]) {
-        cell.classList.add("day-off");
-        var off = document.createElement("span");
-        off.className = "off-mark";
-        off.textContent = "✕";
-        cell.appendChild(off);
-      }
-
-      var hasRecs = state.records[cellDateKey] && state.records[cellDateKey].length > 0;
-      if (hasRecs) {
-        var bar = document.createElement("div");
-        bar.className = "data-bar";
-        cell.appendChild(bar);
-      }
-
-      if (showRangeHighlight && cellDateKey >= rng.start && cellDateKey <= rng.end) {
+      if (t >= rStart && t <= rEnd && (rEnd > rStart)) {
         cell.classList.add("in-range");
       }
-      if (cellDateKey === state.selectedDate && !state.isCustomRange) {
+      if (dStr === selStr && !customRange) {
         cell.classList.add("selected");
-      } else if (state.isCustomRange && cellDateKey >= rng.start && cellDateKey <= rng.end) {
+      } else if (customRange && (dStr === toDateStr(range.start) || dStr === toDateStr(range.end))) {
         cell.classList.add("selected");
       }
 
-      cell.addEventListener("pointerdown", function(e) {
-        var dk = this.dataset.date;
-        state.isDragging = true;
-        state.dragAnchor = dk;
-        state.selectedDate = dk;
-        state.isCustomRange = false;
-        state.rangeStart = dk;
-        state.rangeEnd = dk;
-        var pDt = parseKey(dk);
-        state.viewYear = pDt.getFullYear();
-        state.viewMonth = pDt.getMonth();
-        updateAll();
-      });
+      if (state.dayOffs[dStr]) {
+        cell.classList.add("dayoff");
+        var xSpan = document.createElement("span");
+        xSpan.className = "off-x";
+        xSpan.textContent = "✕";
+        cell.appendChild(xSpan);
+      }
+
+      var numSpan = document.createElement("div");
+      numSpan.textContent = day;
+      cell.appendChild(numSpan);
+
+      if (state.records[dStr] && state.records[dStr].length > 0) {
+        var bar = document.createElement("div");
+        bar.className = "rec-bar";
+        cell.appendChild(bar);
+      }
 
       grid.appendChild(cell);
     }
   }
 
-  document.addEventListener("pointermove", function(e) {
-    if (!state.isDragging) return;
-    var el = document.elementFromPoint(e.clientX, e.clientY);
-    if (!el) return;
-    var cell = el.closest(".day-cell");
-    if (cell && cell.dataset.date && cell.dataset.date !== state.rangeEnd) {
-      state.rangeEnd = cell.dataset.date;
-      if (state.rangeEnd !== state.dragAnchor) {
-        state.isCustomRange = true;
-      }
-      renderCalendar();
-      renderRecordsAndSummary();
-    }
-  });
-
-  document.addEventListener("pointerup", function() {
-    if (state.isDragging) {
-      state.isDragging = false;
-    }
-  });
-
   function renderRecordsAndSummary() {
-    var rng = getActiveRange();
-    var dates = enumerateDates(rng.start, rng.end);
+    var range = getActiveRange();
+    var sStr = toDateStr(range.start);
+    var eStr = toDateStr(range.end);
+
+    var periodText = "";
+    if (sStr === eStr) {
+      periodText = formatDayGen(range.start);
+    } else if (mode === "year" && !customRange) {
+      periodText = range.start.getFullYear() + " ГОД";
+    } else {
+      periodText = formatDayGen(range.start) + " – " + formatDayGen(range.end);
+    }
+
+    var modeNames = { day: "ДЕНЬ", week: "НЕДЕЛЯ", "2weeks": "2Х НЕДЕЛИ", month: "МЕСЯЦ", year: "ГОД" };
+    var titlePrefix = customRange ? "ВЫБРАННЫЙ ПЕРИОД" : modeNames[mode];
+    document.getElementById("recordsTitle").textContent = "ЗАПИСИ (" + titlePrefix + " (" + periodText.toUpperCase() + "))";
+    document.getElementById("summaryLabel").textContent = "ИТОГ ЗА " + titlePrefix + " (" + periodText.toUpperCase() + ")";
+    document.getElementById("selectedDateLabel").textContent = formatDayGen(selectedDate);
+
     var listEl = document.getElementById("recordsList");
     listEl.innerHTML = "";
 
     var totalBoxes = 0;
     var totalWeight = 0;
-    var totalMoney = 0;
+    var totalPay = 0;
 
-    dates.forEach(function(dk) {
-      var recs = state.records[dk] || [];
-      var isOff = !!state.dayOffs[dk];
+    var cur = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate());
+    var end = new Date(range.end.getFullYear(), range.end.getMonth(), range.end.getDate());
 
-      if (isOff) {
+    while (cur <= end) {
+      var dStr = toDateStr(cur);
+      if (state.dayOffs[dStr]) {
         var offRow = document.createElement("div");
-        offRow.className = "rec-item";
-        offRow.innerHTML = "<span><b>" + formatHumanDate(dk) + "</b> — <span style='color:var(--red);font-weight:700'>Выходной</span></span>";
-        var delOff = document.createElement("span");
-        delOff.className = "rec-del";
-        delOff.textContent = "✕";
-        delOff.onclick = function() {
-          delete state.dayOffs[dk];
-          state.undoStack.push({ type: "dayoff", date: dk });
-          saveData();
-          updateAll();
-        };
-        offRow.appendChild(delOff);
+        offRow.className = "record-item off-row";
+        var offText = document.createElement("span");
+        offText.textContent = formatDayGen(cur) + ": Выходной";
+        var delOffBtn = document.createElement("button");
+        delOffBtn.className = "del-rec-btn";
+        delOffBtn.textContent = "✕";
+        delOffBtn.setAttribute("data-del-off", dStr);
+        offRow.appendChild(offText);
+        offRow.appendChild(delOffBtn);
         listEl.appendChild(offRow);
       }
-
-      recs.forEach(function(r, idx) {
-        var rowWeight = r.boxes * r.weight;
-        var rowSum = rowWeight * r.rate;
-        totalBoxes += r.boxes;
-        totalWeight += rowWeight;
-        totalMoney += rowSum;
+      var recs = state.records[dStr] || [];
+      recs.forEach(function(rec, idx) {
+        totalBoxes += rec.boxes;
+        totalWeight += rec.totalWeight;
+        totalPay += rec.totalPay;
 
         var row = document.createElement("div");
-        row.className = "rec-item";
-        row.innerHTML = "<span><b>" + formatHumanDate(dk) + "</b>: " + r.boxes + " кор. × " + fmtWeight(r.weight) + " кг = <b>" + fmtWeight(rowWeight) + " кг</b> (" + fmtMoney(rowSum) + " ₽)</span>";
-        var delBtn = document.createElement("span");
-        delBtn.className = "rec-del";
+        row.className = "record-item";
+        var txt = document.createElement("span");
+        txt.textContent = formatDayGen(cur) + ": " + rec.boxes + " кор × " + rec.weight + " = " + formatWeight(rec.totalWeight) + " (" + formatMoney(rec.totalPay) + ")";
+        var delBtn = document.createElement("button");
+        delBtn.className = "del-rec-btn";
         delBtn.textContent = "✕";
-        delBtn.onclick = function() {
-          var removed = state.records[dk].splice(idx, 1)[0];
-          if (state.records[dk].length === 0) delete state.records[dk];
-          state.undoStack.push({ type: "record", date: dk, item: removed });
-          saveData();
-          updateAll();
-        };
+        delBtn.setAttribute("data-del-rec", dStr + "|" + idx);
+        row.appendChild(txt);
         row.appendChild(delBtn);
         listEl.appendChild(row);
       });
-    });
-
-    if (listEl.children.length === 0) {
-      var empty = document.createElement("div");
-      empty.style.cssText = "text-align:center;color:var(--text-dim);font-size:11px;padding:4px 0;";
-      empty.textContent = "Нет записей за выбранный период";
-      listEl.appendChild(empty);
+      cur.setDate(cur.getDate() + 1);
     }
 
-    var titleMap = {
-      day: "ЗАПИСИ (ДЕНЬ)",
-      week: "ЗАПИСИ (НЕДЕЛЯ)",
-      biweek: "ЗАПИСИ (2Х НЕДЕЛИ)",
-      month: "ЗАПИСИ (МЕСЯЦ)",
-      year: "ЗАПИСИ (ГОД)"
-    };
-    var sumMap = {
-      day: "ИТОГ ЗА ДЕНЬ",
-      week: "ИТОГ ЗА НЕДЕЛЮ",
-      biweek: "ИТОГ ЗА 2 НЕДЕЛИ",
-      month: "ИТОГ ЗА МЕСЯЦ",
-      year: "ИТОГ ЗА ГОД"
-    };
+    document.getElementById("summaryStats").textContent = totalBoxes + " кор. | " + formatWeight(totalWeight);
+    document.getElementById("summaryPay").textContent = formatMoney(totalPay);
 
-    if (state.isCustomRange && rng.start !== rng.end) {
-      document.getElementById("recordsTitle").textContent = "ЗАПИСИ (" + formatShortDate(rng.start) + " – " + formatShortDate(rng.end) + ")";
-      document.getElementById("summaryLabel").textContent = "ИТОГ ЗА ПЕРИОД";
+    var undoGroup = document.getElementById("undoGroup");
+    if (undoStack.length > 0) {
+      undoGroup.style.display = "flex";
+      document.getElementById("undoBtn").textContent = "↩ Отменить удаление (" + undoStack.length + ")";
     } else {
-      document.getElementById("recordsTitle").textContent = titleMap[state.mode] || "ЗАПИСИ";
-      document.getElementById("summaryLabel").textContent = sumMap[state.mode] || "ИТОГ";
-    }
-
-    document.getElementById("summaryVals").textContent = totalBoxes + " кор. • " + fmtWeight(totalWeight) + " кг";
-    document.getElementById("summaryMoney").textContent = fmtMoney(totalMoney) + " ₽";
-    document.getElementById("selectedDateLabel").textContent = formatHumanDate(state.selectedDate);
-
-    var undoWrap = document.getElementById("undoWrap");
-    if (state.undoStack.length > 0) {
-      undoWrap.style.display = "flex";
-      document.getElementById("btnUndo").textContent = "↩ Отменить удаление (" + state.undoStack.length + ")";
-    } else {
-      undoWrap.style.display = "none";
+      undoGroup.style.display = "none";
     }
   }
 
   function updateShiftPreview() {
-    var b = cleanNum(document.getElementById("inpBoxes").value);
-    var w = cleanNum(document.getElementById("inpWeight").value);
-    var r = cleanNum(document.getElementById("inpRate").value);
-    var tw = b * w;
-    var tm = tw * r;
-    document.getElementById("shiftWeight").textContent = fmtWeight(tw) + " кг";
-    document.getElementById("shiftMoney").textContent = fmtMoney(tm) + " ₽";
+    var b = parseFloat(document.getElementById("boxesInput").value.replace(",", ".")) || 0;
+    var w = parseFloat(document.getElementById("weightInput").value.replace(",", ".")) || 0;
+    var r = parseFloat(document.getElementById("rateInput").value.replace(",", ".")) || 0;
+    var tw = Math.round(b * w * 1000) / 1000;
+    var tp = Math.round(tw * r * 100) / 100;
+    document.getElementById("previewWeight").textContent = formatWeight(tw);
+    document.getElementById("previewPay").textContent = formatMoney(tp);
   }
 
-  function updateAll() {
+  function refreshAll() {
     renderCalendar();
     renderRecordsAndSummary();
     updateShiftPreview();
   }
 
-  document.getElementById("prevMonth").onclick = function() {
-    state.viewMonth--;
-    if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
-    if (state.mode === "month" || state.mode === "year") {
-      state.selectedDate = toKey(state.viewYear, state.viewMonth, 1);
-      state.isCustomRange = false;
-    }
-    updateAll();
-  };
+  function buildReportText(type) {
+    var range = getActiveRange();
+    var sStr = toDateStr(range.start);
+    var eStr = toDateStr(range.end);
+    var wName = (state.workerName || "").trim();
 
-  document.getElementById("nextMonth").onclick = function() {
-    state.viewMonth++;
-    if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
-    if (state.mode === "month" || state.mode === "year") {
-      state.selectedDate = toKey(state.viewYear, state.viewMonth, 1);
-      state.isCustomRange = false;
-    }
-    updateAll();
-  };
+    var totalBoxes = 0;
+    var totalWeight = 0;
+    var totalPay = 0;
+    var dayLines = [];
 
-  document.querySelectorAll(".tab-btn").forEach(function(btn) {
-    btn.onclick = function() {
-      document.querySelectorAll(".tab-btn").forEach(function(b) { b.classList.remove("active"); });
-      this.classList.add("active");
-      state.mode = this.dataset.mode;
-      state.isCustomRange = false;
-      updateAll();
-    };
-  });
+    var cur = new Date(range.start.getFullYear(), range.start.getMonth(), range.start.getDate());
+    var end = new Date(range.end.getFullYear(), range.end.getMonth(), range.end.getDate());
 
-  document.getElementById("btnTheme").onclick = function() {
-    document.body.classList.toggle("light");
-    var isLight = document.body.classList.contains("light");
-    this.textContent = isLight ? "🌙" : "☀️";
-    safeSet(THEME_KEY, isLight ? "light" : "dark");
-  };
-
-  document.getElementById("btnCheckUpd").onclick = function() {
-    showToast("Проверка обновлений...");
-    if (navigator.onLine) {
-      setTimeout(function() {
-        window.location.reload(true);
-      }, 400);
-    } else {
-      showToast("Нет интернета (версия v " + APP_VERSION + ")");
-    }
-  };
-
-  document.getElementById("inpWorker").addEventListener("input", function() {
-    safeSet(WORKER_KEY, this.value.trim());
-  });
-
-  ["inpBoxes", "inpWeight", "inpRate"].forEach(function(id) {
-    document.getElementById(id).addEventListener("input", function() {
-      if (id === "inpBoxes") {
-        this.value = this.value.replace(/[^0-9]/g, "");
-      } else {
-        this.value = this.value.replace(",", ".").replace(/[^0-9.]/g, "");
-      }
-      if (id === "inpRate") safeSet(RATE_KEY, this.value);
-      updateShiftPreview();
-    });
-  });
-
-  document.getElementById("btnDayOff").onclick = function() {
-    var dk = state.selectedDate;
-    if (state.dayOffs[dk]) {
-      delete state.dayOffs[dk];
-    } else {
-      state.dayOffs[dk] = true;
-    }
-    saveData();
-    updateAll();
-  };
-
-  document.getElementById("btnAdd").onclick = function() {
-    var b = cleanNum(document.getElementById("inpBoxes").value);
-    var w = cleanNum(document.getElementById("inpWeight").value);
-    var r = cleanNum(document.getElementById("inpRate").value);
-    if (b <= 0 || w <= 0) {
-      showToast("Введите коробки и вес");
-      return;
-    }
-    var dk = state.selectedDate;
-    if (!state.records[dk]) state.records[dk] = [];
-    state.records[dk].push({ boxes: b, weight: w, rate: r, sum: b * w * r });
-    delete state.dayOffs[dk];
-    saveData();
-    document.getElementById("inpBoxes").value = "";
-    document.getElementById("inpWeight").value = "";
-    updateAll();
-  };
-
-  document.getElementById("btnUndo").onclick = function() {
-    if (state.undoStack.length === 0) return;
-    var last = state.undoStack.pop();
-    if (last.type === "dayoff") {
-      state.dayOffs[last.date] = true;
-    } else if (last.type === "record") {
-      if (!state.records[last.date]) state.records[last.date] = [];
-      state.records[last.date].push(last.item);
-    }
-    saveData();
-    updateAll();
-  };
-
-  document.getElementById("btnClearUndo").onclick = function() {
-    openConfirm("Все удаленные данные сотрутся. Вы уверены?", function() {
-      state.undoStack = [];
-      updateAll();
-    });
-  };
-
-  function padRight(str, len) {
-    str = String(str);
-    while (str.length < len) str += " ";
-    return str;
-  }
-
-  function buildFullReport() {
-    var worker = document.getElementById("inpWorker").value.trim();
-    var rng = getActiveRange();
-    var dates = enumerateDates(rng.start, rng.end);
-    var lines = [];
-
-    if (worker) lines.push(worker);
-    if (rng.start === rng.end) {
-      lines.push(formatHumanDate(rng.start));
-    } else {
-      lines.push(formatShortDate(rng.start) + " – " + formatShortDate(rng.end));
-    }
-
-    var totB = 0, totW = 0, totM = 0;
-
-    dates.forEach(function(dk) {
-      var recs = state.records[dk] || [];
-      var isOff = !!state.dayOffs[dk];
-      if (isOff && recs.length === 0) {
-        lines.push(padRight(formatShortDate(dk), 6) + " | вых");
+    while (cur <= end) {
+      var dStr = toDateStr(cur);
+      var recs = state.records[dStr] || [];
+      if (state.dayOffs[dStr] && recs.length === 0) {
+        dayLines.push(formatDayShort(cur) + " | вых");
       } else if (recs.length > 0) {
-        var dB = 0, dW = 0, dM = 0;
+        var dBoxes = 0, dWeight = 0, dPay = 0;
         recs.forEach(function(r) {
-          dB += r.boxes;
-          dW += r.boxes * r.weight;
-          dM += r.boxes * r.weight * r.rate;
+          dBoxes += r.boxes;
+          dWeight += r.totalWeight;
+          dPay += r.totalPay;
         });
-        totB += dB;
-        totW += dW;
-        totM += dM;
-        lines.push(
-          padRight(formatShortDate(dk), 6) + " | " +
-          dB + "кор | " +
-          fmtWeight(dW) + "кг | " +
-          fmtMoney(dM) + "₽"
-        );
+        totalBoxes += dBoxes;
+        totalWeight += dWeight;
+        totalPay += dPay;
+        var wClean = Math.round(dWeight * 10) / 10;
+        var pClean = Math.round(dPay * 100) / 100;
+        dayLines.push(formatDayShort(cur) + " | " + dBoxes + "кор | " + wClean + "кг | " + pClean + "₽");
       }
-    });
-
-    lines.push("ИТОГ: " + totB + "кор | " + fmtWeight(totW) + "кг | " + fmtMoney(totM) + "₽");
-    return lines.join("\n");
-  }
-
-  function buildShortReport() {
-    var worker = document.getElementById("inpWorker").value.trim();
-    var rng = getActiveRange();
-    var dates = enumerateDates(rng.start, rng.end);
-    var totB = 0, totW = 0;
-
-    dates.forEach(function(dk) {
-      var recs = state.records[dk] || [];
-      recs.forEach(function(r) {
-        totB += r.boxes;
-        totW += r.boxes * r.weight;
-      });
-    });
-
-    var lines = [];
-    if (worker) lines.push(worker);
-    if (state.isCustomRange && rng.start !== rng.end) {
-      lines.push(formatShortDate(rng.start) + " – " + formatShortDate(rng.end));
+      cur.setDate(cur.getDate() + 1);
     }
-    lines.push("Вес: " + fmtWeight(totW) + " кг " + totB + " кор.");
-    return lines.join("\n");
+
+    var totWClean = Math.round(totalWeight * 10) / 10;
+    var totPClean = Math.round(totalPay * 100) / 100;
+    var lines = [];
+
+    if (type === "short") {
+      if (wName) lines.push(wName);
+      if (range.isCustom && sStr !== eStr) {
+        lines.push(formatDayShort(range.start) + " – " + formatDayShort(range.end));
+      }
+      lines.push("Вес: " + totWClean + " кг " + totalBoxes + " кор.");
+      return lines.join("
+");
+    }
+
+    if (sStr === eStr && !range.isCustom) {
+      if (wName) lines.push(wName);
+      lines.push("Вес: " + totWClean + " кг " + totalBoxes + " кор.");
+      return lines.join("
+");
+    }
+
+    if (wName) lines.push(wName);
+    lines.push("Отчёт: " + formatDayGen(range.start) + " – " + formatDayGen(range.end));
+    lines.push("");
+    dayLines.forEach(function(l) { lines.push(l); });
+    lines.push("");
+    lines.push("ИТОГ: " + totalBoxes + "кор | " + totWClean + "кг | " + totPClean + "₽");
+    return lines.join("
+");
   }
 
-  function openReportPreview(title, text) {
-    document.getElementById("reportModalTitle").textContent = title;
-    document.getElementById("reportTextarea").value = text;
+  function openReportPreview(type) {
+    var text = buildReportText(type);
+    document.getElementById("reportModalTitle").textContent = type === "full" ? "Полный отчёт" : "Краткий отчёт";
+    document.getElementById("reportPreviewText").value = text;
     document.getElementById("reportModal").style.display = "flex";
   }
 
-  document.getElementById("btnFullRep").onclick = function() {
-    openReportPreview("Полный отчёт", buildFullReport());
-  };
-
-  document.getElementById("btnShortRep").onclick = function() {
-    openReportPreview("Краткий отчёт", buildShortReport());
-  };
-
-  document.getElementById("btnReportCancel").onclick = function() {
-    document.getElementById("reportModal").style.display = "none";
-  };
-
-  document.getElementById("btnReportSend").onclick = function() {
-    var text = document.getElementById("reportTextarea").value;
-    document.getElementById("reportModal").style.display = "none";
+  function sendTextToShare(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).catch(function() {});
     }
     if (navigator.share) {
       navigator.share({ text: text }).catch(function() {});
     } else {
-      window.location.href = "https://t.me/share/url?url=&text=" + encodeURIComponent(text);
-    }
-  };
-
-  function getBackups() {
-    try {
-      return JSON.parse(safeGet(BACKUPS_KEY, "[]")) || [];
-    } catch (e) {
-      return [];
+      window.location.href = "https://api.whatsapp.com/send?text=" + encodeURIComponent(text);
     }
   }
 
-  function setBackups(arr) {
-    safeSet(BACKUPS_KEY, JSON.stringify(arr));
+  function askConfirm(text, onYes) {
+    document.getElementById("confirmModalText").textContent = text;
+    pendingConfirmAction = onYes;
+    document.getElementById("confirmModal").style.display = "flex";
   }
 
-  document.getElementById("btnSaveBackup").onclick = function() {
-    var list = getBackups();
-    var now = new Date();
-    var stamp = pad2(now.getDate()) + "." + pad2(now.getMonth() + 1) + "." + now.getFullYear() + " " + pad2(now.getHours()) + ":" + pad2(now.getMinutes());
-    var count = 0;
-    Object.keys(state.records).forEach(function(k) { count += (state.records[k] || []).length; });
-    list.unshift({
-      id: Date.now(),
-      date: stamp,
-      count: count,
-      records: state.records,
-      dayOffs: state.dayOffs,
-      worker: document.getElementById("inpWorker").value.trim(),
-      rate: document.getElementById("inpRate").value.trim()
+  function renderBackupsModal() {
+    loadBackups(function(list) {
+      var cont = document.getElementById("backupsListContainer");
+      cont.innerHTML = "";
+      if (list.length === 0) {
+        cont.innerHTML = "<div style='font-size:12px;color:var(--subtext);padding:10px 0;'>Сохранённых копий пока нет.</div>";
+      } else {
+        list.forEach(function(item, idx) {
+          var row = document.createElement("div");
+          row.className = "backup-item";
+          var info = document.createElement("div");
+          info.className = "backup-info";
+          var rCnt = item.recCount !== undefined ? item.recCount : 0;
+          var oCnt = item.offCount !== undefined ? item.offCount : 0;
+          var tag = item.auto ? " (авто)" : "";
+          info.innerHTML = "<strong>" + (item.date || "Копия") + tag + "</strong><small>Записей: " + rCnt + ", вых: " + oCnt + "</small>";
+
+          var btns = document.createElement("div");
+          btns.className = "backup-item-btns";
+
+          var restBtn = document.createElement("button");
+          restBtn.className = "m-btn m-btn-ok";
+          restBtn.textContent = "Восстановить";
+          restBtn.onclick = function() {
+            try {
+              var parsed = JSON.parse(item.payload);
+              sanitizeState(parsed);
+              saveState();
+              document.getElementById("rateInput").value = state.rate;
+              document.getElementById("workerNameInput").value = state.workerName;
+              applyTheme();
+              refreshAll();
+              document.getElementById("backupsModal").style.display = "none";
+              showToast("База восстановлена");
+            } catch (e) {
+              showToast("Ошибка чтения копии");
+            }
+          };
+
+          var delBtn = document.createElement("button");
+          delBtn.className = "m-btn m-btn-danger";
+          delBtn.textContent = "✕";
+          delBtn.onclick = function() {
+            askConfirm("Удалить эту сохранённую базу? Вы уверены?", function() {
+              list.splice(idx, 1);
+              saveBackups(list);
+              renderBackupsModal();
+              showToast("Копия удалена");
+            });
+          };
+
+          btns.appendChild(restBtn);
+          btns.appendChild(delBtn);
+          row.appendChild(info);
+          row.appendChild(btns);
+          cont.appendChild(row);
+        });
+      }
+      document.getElementById("backupsModal").style.display = "flex";
     });
-    if (list.length > 8) list = list.slice(0, 8);
-    setBackups(list);
-    showToast("База сохранена (" + count + " зап.)");
-  };
+  }
 
-  function renderBackupList() {
-    var list = getBackups();
-    var box = document.getElementById("backupList");
-    box.innerHTML = "";
-    if (list.length === 0) {
-      box.innerHTML = "<div style='text-align:center;color:var(--text-dim);padding:10px'>Нет сохранённых копий</div>";
+  function checkForUpdates(manual) {
+    if (!navigator.onLine) {
+      if (manual) showToast("Нет подключения к интернету");
       return;
     }
-    list.forEach(function(item, idx) {
-      var row = document.createElement("div");
-      row.className = "backup-item";
-      var cnt = typeof item.count === "number" ? item.count : 0;
-      row.innerHTML = "<div><b>" + (item.date || "Копия") + "</b><br><span style='color:var(--text-dim);font-size:11px'>Записей: " + cnt + "</span></div>";
-
-      var btns = document.createElement("div");
-      btns.className = "backup-item-btns";
-
-      var btnRest = document.createElement("button");
-      btnRest.className = "btn-restore-sm";
-      btnRest.textContent = "Восстановить";
-      btnRest.onclick = function() {
-        state.records = item.records || {};
-        state.dayOffs = item.dayOffs || {};
-        if (item.worker) {
-          document.getElementById("inpWorker").value = item.worker;
-          safeSet(WORKER_KEY, item.worker);
+    var url = "index.html?nocache=" + Date.now();
+    fetch(url, { cache: "no-store" })
+      .then(function(res) { return res.text(); })
+      .then(function(html) {
+        var match = html.match(/var\s+APP_VERSION\s*=\s*"([^"]+)"/);
+        if (match && match[1]) {
+          var remoteVer = match[1];
+          if (parseFloat(remoteVer) > parseFloat(APP_VERSION)) {
+            showToast("Найдена v " + remoteVer + ", обновляю...");
+            if ("caches" in window) {
+              caches.keys().then(function(names) {
+                names.forEach(function(n) { caches.delete(n); });
+              });
+            }
+            setTimeout(function() {
+              window.location.href = window.location.pathname + "?v=" + Date.now();
+            }, 900);
+          } else if (manual) {
+            showToast("У вас актуальная версия v " + APP_VERSION);
+          }
+        } else if (manual) {
+          showToast("У вас актуальная версия v " + APP_VERSION);
         }
-        if (item.rate) {
-          document.getElementById("inpRate").value = item.rate;
-          safeSet(RATE_KEY, item.rate);
-        }
-        saveData();
-        updateAll();
-        document.getElementById("restoreModal").style.display = "none";
-        showToast("База восстановлена");
-      };
-
-      var btnDel = document.createElement("button");
-      btnDel.className = "btn-del-backup";
-      btnDel.textContent = "✕";
-      btnDel.onclick = function() {
-        openConfirm("Удалить эту сохранённую базу? Вы уверены?", function() {
-          var cur = getBackups();
-          cur.splice(idx, 1);
-          setBackups(cur);
-          renderBackupList();
-        });
-      };
-
-      btns.appendChild(btnRest);
-      btns.appendChild(btnDel);
-      row.appendChild(btns);
-      box.appendChild(row);
-    });
+      })
+      .catch(function() {
+        if (manual) showToast("Не удалось проверить обновление");
+      });
   }
 
-  document.getElementById("btnOpenRestore").onclick = function() {
-    renderBackupList();
-    document.getElementById("restoreModal").style.display = "flex";
+  // Event listeners
+  document.getElementById("prevMonthBtn").onclick = function() {
+    viewMonth--;
+    if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+    if (mode === "month" || mode === "year") {
+      selectedDate = new Date(viewYear, viewMonth, 1);
+      customRange = null;
+    }
+    refreshAll();
   };
 
-  document.getElementById("btnCloseRestore").onclick = function() {
-    document.getElementById("restoreModal").style.display = "none";
+  document.getElementById("nextMonthBtn").onclick = function() {
+    viewMonth++;
+    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    if (mode === "month" || mode === "year") {
+      selectedDate = new Date(viewYear, viewMonth, 1);
+      customRange = null;
+    }
+    refreshAll();
   };
 
-  loadData();
-  updateAll();
+  document.getElementById("themeBtn").onclick = function() {
+    state.theme = state.theme === "dark" ? "light" : "dark";
+    applyTheme();
+    saveState();
+  };
+
+  document.getElementById("checkUpdateBtn").onclick = function() {
+    checkForUpdates(true);
+  };
+
+  document.getElementById("modeTabs").onclick = function(e) {
+    var tab = e.target.closest(".tab");
+    if (!tab) return;
+    document.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
+    tab.classList.add("active");
+    mode = tab.getAttribute("data-mode");
+    customRange = null;
+    refreshAll();
+  };
+
+  var gridEl = document.getElementById("daysGrid");
+  function handleSelectCell(el) {
+    if (!el || !el.hasAttribute("data-date")) return;
+    var dStr = el.getAttribute("data-date");
+    selectedDate = parseDateStr(dStr);
+    customRange = null;
+    refreshAll();
+  }
+
+  gridEl.addEventListener("pointerdown", function(e) {
+    var cell = e.target.closest(".day-cell");
+    if (!cell || !cell.hasAttribute("data-date")) return;
+    isDragging = true;
+    dragStartStr = cell.getAttribute("data-date");
+    handleSelectCell(cell);
+  });
+
+  gridEl.addEventListener("pointermove", function(e) {
+    if (!isDragging) return;
+    var target = document.elementFromPoint(e.clientX, e.clientY);
+    var cell = target ? target.closest(".day-cell") : null;
+    if (!cell || !cell.hasAttribute("data-date")) return;
+    var curStr = cell.getAttribute("data-date");
+    if (curStr !== dragStartStr) {
+      var d1 = parseDateStr(dragStartStr);
+      var d2 = parseDateStr(curStr);
+      customRange = d1 <= d2 ? { start: d1, end: d2, isCustom: true } : { start: d2, end: d1, isCustom: true };
+      refreshAll();
+    }
+  });
+
+  window.addEventListener("pointerup", function() { isDragging = false; });
+
+  document.getElementById("dayOffBtn").onclick = function() {
+    var dStr = toDateStr(selectedDate);
+    if (state.dayOffs[dStr]) {
+      delete state.dayOffs[dStr];
+    } else {
+      state.dayOffs[dStr] = true;
+    }
+    saveState();
+    triggerDailyAutoBackup();
+    refreshAll();
+  };
+
+  document.getElementById("addRecordBtn").onclick = function() {
+    var b = parseFloat(document.getElementById("boxesInput").value.replace(",", ".")) || 0;
+    var w = parseFloat(document.getElementById("weightInput").value.replace(",", ".")) || 0;
+    var r = parseFloat(document.getElementById("rateInput").value.replace(",", ".")) || 0;
+    if (b <= 0 || w <= 0) {
+      showToast("Введите коробки и вес");
+      return;
+    }
+    var dStr = toDateStr(selectedDate);
+    if (!state.records[dStr]) state.records[dStr] = [];
+    var tw = Math.round(b * w * 1000) / 1000;
+    var tp = Math.round(tw * r * 100) / 100;
+    state.records[dStr].push({ boxes: b, weight: w, rate: r, totalWeight: tw, totalPay: tp });
+    state.rate = String(r);
+    saveState();
+    triggerDailyAutoBackup();
+    document.getElementById("boxesInput").value = "";
+    document.getElementById("weightInput").value = "";
+    refreshAll();
+  };
+
+  document.getElementById("recordsList").onclick = function(e) {
+    var delRec = e.target.getAttribute("data-del-rec");
+    if (delRec) {
+      var parts = delRec.split("|");
+      var dStr = parts[0];
+      var idx = parseInt(parts[1], 10);
+      var removed = state.records[dStr].splice(idx, 1)[0];
+      if (state.records[dStr].length === 0) delete state.records[dStr];
+      undoStack.push({ type: "rec", date: dStr, data: removed });
+      saveState();
+      refreshAll();
+      return;
+    }
+    var delOff = e.target.getAttribute("data-del-off");
+    if (delOff) {
+      delete state.dayOffs[delOff];
+      undoStack.push({ type: "off", date: delOff });
+      saveState();
+      refreshAll();
+    }
+  };
+
+  document.getElementById("undoBtn").onclick = function() {
+    if (undoStack.length === 0) return;
+    var last = undoStack.pop();
+    if (last.type === "rec") {
+      if (!state.records[last.date]) state.records[last.date] = [];
+      state.records[last.date].push(last.data);
+    } else if (last.type === "off") {
+      state.dayOffs[last.date] = true;
+    }
+    saveState();
+    refreshAll();
+  };
+
+  document.getElementById("clearUndoBtn").onclick = function() {
+    askConfirm("Все удаленные данные сотрутся. Вы уверены?", function() {
+      undoStack = [];
+      refreshAll();
+    });
+  };
+
+  document.getElementById("fullReportBtn").onclick = function() { openReportPreview("full"); };
+  document.getElementById("shortReportBtn").onclick = function() { openReportPreview("short"); };
+  document.getElementById("closeReportModalBtn").onclick = function() {
+    document.getElementById("reportModal").style.display = "none";
+  };
+  document.getElementById("confirmSendReportBtn").onclick = function() {
+    var txt = document.getElementById("reportPreviewText").value;
+    document.getElementById("reportModal").style.display = "none";
+    sendTextToShare(txt);
+  };
+
+  document.getElementById("saveBackupBtn").onclick = function() {
+    createBackupSnapshot(false, false);
+  };
+  document.getElementById("restoreBackupBtn").onclick = function() {
+    renderBackupsModal();
+  };
+  document.getElementById("closeBackupsModalBtn").onclick = function() {
+    document.getElementById("backupsModal").style.display = "none";
+  };
+
+  document.getElementById("openTransferBtn").onclick = function() {
+    document.getElementById("transferCodeArea").value = JSON.stringify(state);
+    document.getElementById("transferModal").style.display = "flex";
+  };
+  document.getElementById("closeTransferModalBtn").onclick = function() {
+    document.getElementById("transferModal").style.display = "none";
+  };
+  document.getElementById("copyTransferCodeBtn").onclick = function() {
+    var area = document.getElementById("transferCodeArea");
+    area.select();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(area.value).catch(function() {});
+    } else {
+      try { document.execCommand("copy"); } catch (e) {}
+    }
+    showToast("Код базы скопирован");
+  };
+  document.getElementById("importTransferCodeBtn").onclick = function() {
+    var raw = document.getElementById("transferCodeArea").value.trim();
+    if (!raw) { showToast("Вставьте код базы"); return; }
+    try {
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object" || (!parsed.records && !parsed.dayOffs)) {
+        showToast("Неверный формат кода");
+        return;
+      }
+      sanitizeState(parsed);
+      saveState();
+      document.getElementById("rateInput").value = state.rate;
+      document.getElementById("workerNameInput").value = state.workerName;
+      applyTheme();
+      refreshAll();
+      document.getElementById("transferModal").style.display = "none";
+      document.getElementById("backupsModal").style.display = "none";
+      showToast("База успешно загружена");
+    } catch (e) {
+      showToast("Ошибка: повреждённый код");
+    }
+  };
+
+  document.getElementById("confirmNoBtn").onclick = function() {
+    document.getElementById("confirmModal").style.display = "none";
+    pendingConfirmAction = null;
+  };
+  document.getElementById("confirmYesBtn").onclick = function() {
+    document.getElementById("confirmModal").style.display = "none";
+    if (pendingConfirmAction) {
+      pendingConfirmAction();
+      pendingConfirmAction = null;
+    }
+  };
+
+  ["boxesInput", "weightInput", "rateInput"].forEach(function(id) {
+    document.getElementById(id).addEventListener("input", function() {
+      this.value = this.value.replace(/[^0-9.,]/g, "");
+      if (id === "rateInput") {
+        state.rate = this.value;
+        saveState();
+      }
+      updateShiftPreview();
+    });
+  });
+
+  document.getElementById("workerNameInput").addEventListener("input", function() {
+    state.workerName = this.value;
+    saveState();
+  });
+
+  // Init load from dual storage
+  var lsRaw = null;
+  try { lsRaw = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+  if (lsRaw) {
+    try { sanitizeState(JSON.parse(lsRaw)); } catch (e) {}
+  }
+
+  idbGet(STORAGE_KEY, function(idbRaw) {
+    if (!lsRaw && idbRaw) {
+      try {
+        sanitizeState(JSON.parse(idbRaw));
+        saveState();
+      } catch (e) {}
+    } else if (lsRaw && !idbRaw) {
+      idbSet(STORAGE_KEY, lsRaw);
+    }
+    document.getElementById("rateInput").value = state.rate;
+    document.getElementById("workerNameInput").value = state.workerName;
+    applyTheme();
+    refreshAll();
+    setTimeout(function() { checkForUpdates(false); }, 1500);
+  });
 })();
 </script>
 </body>
