@@ -1,1153 +1,967 @@
-(function () {
+(function() {
   "use strict";
 
-  var APP_VERSION = "8.5";
-  var STORAGE_KEY = "obvalka_pro_db_v8";
-  var BACKUPS_KEY = "obvalka_pro_backups_v8";
-  var IDB_NAME = "ObvalkaProDB";
+  var APP_VERSION = "v 8.6";
+  var LS_KEY = "obvalka_pro_db_v1";
+  var IDB_NAME = "obvalka_pro_idb";
   var IDB_STORE = "kv";
+  var IDB_KEY = "main_db";
   var NL = String.fromCharCode(10);
 
-  var MONTHS_NOM = [
-    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
-  ];
-  var MONTHS_GEN = [
-    "января", "февраля", "марта", "апреля", "мая", "июня",
-    "июля", "августа", "сентября", "октября", "ноября", "декабря"
-  ];
-  var MONTHS_SHORT = [
-    "янв", "фев", "мар", "апр", "май", "июн",
-    "июл", "авг", "сен", "окт", "ноя", "дек"
-  ];
+  var MONTHS_NOM = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+  var MONTHS_GEN = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
+  var MONTHS_SHORT = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 
   var state = {
     viewYear: 2026,
     viewMonth: 10,
-    selectedDate: "2026-11-22",
-    rangeStart: "2026-11-22",
-    rangeEnd: "2026-11-22",
     periodMode: "day",
-    customRange: false,
+    selectedStart: "2026-11-22",
+    selectedEnd: "2026-11-22",
     workerName: "",
-    defaultRate: "",
+    defaultRate: 9.5,
     theme: "dark",
-    records: [],
-    updatedAt: 0
+    records: {},
+    backups: [],
+    updatedAt: 0,
+    lastAutoBackupDate: ""
   };
 
-  var backups = [];
-  var undoStack = [];
-  var undoTimer = null;
-  var pendingPreviewText = "";
   var isDragging = false;
-  var dragAnchor = null;
+  var dragAnchorDate = null;
+  var undoBuffer = null;
+  var undoTimer = null;
+  var currentReportText = "";
 
   function pad2(n) {
     return n < 10 ? "0" + n : "" + n;
   }
 
-  function toIsoDate(y, mZero, d) {
-    return y + "-" + pad2(mZero + 1) + "-" + pad2(d);
+  function toIso(y, m, d) {
+    return y + "-" + pad2(m + 1) + "-" + pad2(d);
   }
 
   function parseIso(iso) {
-    var parts = (iso || "").split("-");
-    if (parts.length !== 3) return new Date(2026, 10, 22);
-    return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    var parts = String(iso || "").split("-");
+    return new Date(parseInt(parts[0], 10) || 2026, (parseInt(parts[1], 10) || 1) - 1, parseInt(parts[2], 10) || 1);
   }
 
-  function dateToIso(dt) {
-    return toIsoDate(dt.getFullYear(), dt.getMonth(), dt.getDate());
-  }
-
-  function formatRuDayMonth(iso) {
-    var dt = parseIso(iso);
-    return dt.getDate() + " " + MONTHS_GEN[dt.getMonth()];
-  }
-
-  function formatRuShort(iso) {
+  function formatShortDate(iso) {
     var dt = parseIso(iso);
     return dt.getDate() + " " + MONTHS_SHORT[dt.getMonth()];
   }
 
+  function formatFullDate(iso) {
+    var dt = parseIso(iso);
+    return dt.getDate() + " " + MONTHS_GEN[dt.getMonth()];
+  }
+
   function parseNum(val) {
     if (typeof val === "number") return isFinite(val) ? val : 0;
-    if (!val) return 0;
-    var s = String(val).replace(",", ".").trim();
+    var s = String(val || "").replace(",", ".").trim();
     var out = "";
     var dotSeen = false;
     for (var i = 0; i < s.length; i++) {
       var ch = s.charAt(i);
-      if (ch >= "0" && ch <= "9") {
-        out += ch;
-      } else if (ch === "." && !dotSeen) {
-        out += ".";
-        dotSeen = true;
-      }
+      if (ch >= "0" && ch <= "9") out += ch;
+      else if (ch === "." && !dotSeen) { out += "."; dotSeen = true; }
     }
     var n = parseFloat(out);
     return isFinite(n) ? n : 0;
   }
 
   function round2(n) {
-    return Math.round((n + 1e-9) * 100) / 100;
+    return Math.round((n + Number.EPSILON) * 100) / 100;
   }
 
-  function fmtNum(n) {
+  function fmtMoney(n) {
     var r = round2(n);
-    return Number.isInteger(r) ? String(r) : r.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+    return (r % 1 === 0 ? r.toString() : r.toFixed(2)) + " ₽";
   }
 
-  function normalizeRecord(raw, fallbackRate) {
-    if (!raw || typeof raw !== "object") return null;
-    var date = raw.date || raw.d || state.selectedDate;
-    var isOff = Boolean(raw.isOff || raw.off || raw.dayOff);
-    var boxes = Math.round(parseNum(raw.boxes !== undefined ? raw.boxes : raw.b));
-    var boxWeight = parseNum(raw.boxWeight !== undefined ? raw.boxWeight : raw.bw);
-    var weight = parseNum(
-      raw.weight !== undefined ? raw.weight :
-      (raw.totalWeight !== undefined ? raw.totalWeight : raw.w)
-    );
-    if (!isOff && weight <= 0 && boxes > 0 && boxWeight > 0) {
+  function fmtWeight(n) {
+    var r = round2(n);
+    return (r % 1 === 0 ? r.toString() : r.toFixed(2)) + " кг";
+  }
+
+  function normalizeRecord(rec, fallbackRate) {
+    if (!rec || typeof rec !== "object") return null;
+    if (rec.isOff || rec.off || rec.type === "off") {
+      return { isOff: true, boxes: 0, boxWeight: 0, weight: 0, rate: 0, pay: 0 };
+    }
+    var boxes = parseNum(rec.boxes !== undefined ? rec.boxes : rec.b);
+    var boxWeight = parseNum(rec.boxWeight !== undefined ? rec.boxWeight : rec.bw);
+    var weight = parseNum(rec.weight !== undefined ? rec.weight : (rec.totalWeight !== undefined ? rec.totalWeight : rec.w));
+    if (weight <= 0 && boxes > 0 && boxWeight > 0) {
       weight = round2(boxes * boxWeight);
     }
-    var rate = parseNum(raw.rate !== undefined ? raw.rate : raw.r);
-    if (!isOff && rate <= 0 && fallbackRate > 0) {
-      rate = fallbackRate;
+    var rate = parseNum(rec.rate !== undefined ? rec.rate : rec.r);
+    if (rate <= 0 && weight > 0) {
+      rate = fallbackRate || 9.5;
     }
-    var pay = parseNum(
-      raw.pay !== undefined ? raw.pay :
-      (raw.totalPay !== undefined ? raw.totalPay : raw.sum)
-    );
-    if (!isOff && weight > 0 && rate > 0) {
+    var pay = parseNum(rec.pay !== undefined ? rec.pay : (rec.totalPay !== undefined ? rec.totalPay : rec.sum));
+    if (pay <= 0 && weight > 0 && rate > 0) {
       pay = round2(weight * rate);
     }
-    if (!isOff && boxes === 0 && weight === 0 && pay === 0) {
-      isOff = true;
+    if (boxes <= 0 && weight <= 0 && pay <= 0) {
+      return { isOff: true, boxes: 0, boxWeight: 0, weight: 0, rate: 0, pay: 0 };
     }
     return {
-      id: raw.id || (Date.now() + "_" + Math.random().toString(36).slice(2, 7)),
-      date: date,
-      isOff: isOff,
-      boxes: isOff ? 0 : boxes,
-      boxWeight: isOff ? 0 : round2(boxWeight),
-      weight: isOff ? 0 : round2(weight),
-      rate: isOff ? 0 : round2(rate),
-      pay: isOff ? 0 : round2(pay)
+      isOff: false,
+      boxes: boxes,
+      boxWeight: boxWeight,
+      weight: round2(weight),
+      rate: round2(rate),
+      pay: round2(pay)
     };
   }
 
-  function migratePayload(payload) {
-    if (!payload || typeof payload !== "object") return null;
-    var defRate = parseNum(payload.defaultRate || payload.rate || 9.5);
-    var rawList = Array.isArray(payload.records) ? payload.records : [];
-    var clean = [];
-    for (var i = 0; i < rawList.length; i++) {
-      var item = normalizeRecord(rawList[i], defRate);
-      if (item) clean.push(item);
-    }
-    return {
-      workerName: payload.workerName || payload.name || "",
-      defaultRate: defRate > 0 ? String(defRate) : "",
-      theme: payload.theme === "light" ? "light" : "dark",
-      records: clean,
-      updatedAt: Number(payload.updatedAt) || 0
-    };
-  }
-
-  function openIDB() {
-    return new Promise(function (resolve) {
-      if (!window.indexedDB) {
-        resolve(null);
-        return;
+  function normalizeDb(raw, fallbackRate) {
+    var rateDef = parseNum(raw && raw.defaultRate) || fallbackRate || 9.5;
+    var outRecords = {};
+    var src = (raw && raw.records) || {};
+    var keys = Object.keys(src);
+    for (var i = 0; i < keys.length; i++) {
+      var d = keys[i];
+      var arr = Array.isArray(src[d]) ? src[d] : [src[d]];
+      var cleanArr = [];
+      for (var j = 0; j < arr.length; j++) {
+        var item = normalizeRecord(arr[j], rateDef);
+        if (item) cleanArr.push(item);
       }
+      if (cleanArr.length > 0) outRecords[d] = cleanArr;
+    }
+    return {
+      workerName: (raw && raw.workerName) || "",
+      defaultRate: rateDef,
+      theme: (raw && raw.theme) || "dark",
+      records: outRecords,
+      backups: Array.isArray(raw && raw.backups) ? raw.backups : [],
+      updatedAt: Number(raw && raw.updatedAt) || 0,
+      lastAutoBackupDate: (raw && raw.lastAutoBackupDate) || ""
+    };
+  }
+
+  function countRecords(db) {
+    if (!db || !db.records) return 0;
+    var total = 0;
+    var ks = Object.keys(db.records);
+    for (var i = 0; i < ks.length; i++) {
+      total += Array.isArray(db.records[ks[i]]) ? db.records[ks[i]].length : 0;
+    }
+    return total;
+  }
+
+  function openIdb() {
+    return new Promise(function(resolve) {
+      if (!window.indexedDB) { resolve(null); return; }
       try {
         var req = window.indexedDB.open(IDB_NAME, 1);
-        req.onupgradeneeded = function (e) {
+        req.onupgradeneeded = function(e) {
           var db = e.target.result;
-          if (!db.objectStoreNames.contains(IDB_STORE)) {
-            db.createObjectStore(IDB_STORE);
-          }
+          if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
         };
-        req.onsuccess = function (e) {
-          resolve(e.target.result);
-        };
-        req.onerror = function () {
-          resolve(null);
-        };
-      } catch (err) {
-        resolve(null);
-      }
+        req.onsuccess = function(e) { resolve(e.target.result); };
+        req.onerror = function() { resolve(null); };
+      } catch (e) { resolve(null); }
     });
   }
 
-  function idbGet(key) {
-    return openIDB().then(function (db) {
+  function readIdb() {
+    return openIdb().then(function(db) {
       if (!db) return null;
-      return new Promise(function (resolve) {
+      return new Promise(function(resolve) {
         try {
           var tx = db.transaction(IDB_STORE, "readonly");
-          var store = tx.objectStore(IDB_STORE);
-          var req = store.get(key);
-          req.onsuccess = function () { resolve(req.result || null); };
-          req.onerror = function () { resolve(null); };
-        } catch (e) {
-          resolve(null);
-        }
+          var st = tx.objectStore(IDB_STORE);
+          var rq = st.get(IDB_KEY);
+          rq.onsuccess = function() { resolve(rq.result || null); };
+          rq.onerror = function() { resolve(null); };
+        } catch (e) { resolve(null); }
       });
     });
   }
 
-  function idbSet(key, val) {
-    return openIDB().then(function (db) {
+  function writeIdb(payload) {
+    return openIdb().then(function(db) {
       if (!db) return false;
-      return new Promise(function (resolve) {
+      return new Promise(function(resolve) {
         try {
           var tx = db.transaction(IDB_STORE, "readwrite");
-          var store = tx.objectStore(IDB_STORE);
-          store.put(val, key);
-          tx.oncomplete = function () { resolve(true); };
-          tx.onerror = function () { resolve(false); };
-        } catch (e) {
-          resolve(false);
-        }
+          var st = tx.objectStore(IDB_STORE);
+          st.put(payload, IDB_KEY);
+          tx.oncomplete = function() { resolve(true); };
+          tx.onerror = function() { resolve(false); };
+        } catch (e) { resolve(false); }
       });
     });
   }
 
-  function readWindowName() {
-    try {
-      if (!window.name || window.name.indexOf("OBVALKA_DB:") !== 0) return null;
-      var jsonStr = window.name.slice("OBVALKA_DB:".length);
-      return JSON.parse(jsonStr);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function writeWindowName(obj) {
-    try {
-      window.name = "OBVALKA_DB:" + JSON.stringify(obj);
-    } catch (e) {}
-  }
-
-  function getSnapshotObject() {
+  function serializeState() {
     return {
       workerName: state.workerName,
       defaultRate: state.defaultRate,
       theme: state.theme,
       records: state.records,
-      updatedAt: state.updatedAt
+      backups: state.backups,
+      updatedAt: state.updatedAt,
+      lastAutoBackupDate: state.lastAutoBackupDate
     };
   }
 
-  function persistAll(touchTime) {
-    if (touchTime !== false) {
-      state.updatedAt = Date.now();
-    }
-    var snap = getSnapshotObject();
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(snap));
-      localStorage.setItem(BACKUPS_KEY, JSON.stringify(backups));
-    } catch (e) {}
-    writeWindowName({ db: snap, backups: backups });
-    return Promise.all([
-      idbSet(STORAGE_KEY, snap),
-      idbSet(BACKUPS_KEY, backups)
-    ]);
+  function saveAllStorages(touchTime) {
+    if (touchTime !== false) state.updatedAt = Date.now();
+    var payload = serializeState();
+    var json = JSON.stringify(payload);
+    try { localStorage.setItem(LS_KEY, json); } catch (e) {}
+    try { window.name = "OBVALKA_DB:" + json; } catch (e) {}
+    return writeIdb(payload);
   }
 
-  function pickBestSource(candidates) {
+  function pickBestDb(candidates) {
     var best = null;
+    var bestScore = -1;
     for (var i = 0; i < candidates.length; i++) {
-      var c = migratePayload(candidates[i]);
+      var c = candidates[i];
       if (!c) continue;
-      if (!best) {
-        best = c;
-        continue;
-      }
-      if (c.updatedAt > best.updatedAt) {
-        best = c;
-      } else if (c.updatedAt === best.updatedAt && c.records.length > best.records.length) {
-        best = c;
+      var norm = normalizeDb(c, 9.5);
+      var cnt = countRecords(norm);
+      var bkp = norm.backups.length;
+      var score = cnt * 100000 + bkp * 1000 + (norm.updatedAt > 0 ? 1 : 0);
+      if (score > bestScore || (score === bestScore && norm.updatedAt > (best ? best.updatedAt : 0))) {
+        best = norm;
+        bestScore = score;
       }
     }
     return best;
   }
 
-  function showToast(msg) {
-    var el = document.getElementById("toast");
-    if (!el) return;
-    el.textContent = msg;
-    el.classList.add("show");
-    clearTimeout(el._timer);
-    el._timer = setTimeout(function () {
-      el.classList.remove("show");
-    }, 2800);
+  function loadAllStorages() {
+    var lsObj = null;
+    var wnObj = null;
+    try {
+      var s = localStorage.getItem(LS_KEY);
+      if (s) lsObj = JSON.parse(s);
+    } catch (e) {}
+    try {
+      if (window.name && window.name.indexOf("OBVALKA_DB:") === 0) {
+        wnObj = JSON.parse(window.name.slice("OBVALKA_DB:".length));
+      }
+    } catch (e) {}
+    return readIdb().then(function(idbObj) {
+      var chosen = pickBestDb([lsObj, idbObj, wnObj]);
+      if (chosen) {
+        state.workerName = chosen.workerName;
+        state.defaultRate = chosen.defaultRate;
+        state.theme = chosen.theme;
+        state.records = chosen.records;
+        state.backups = chosen.backups;
+        state.updatedAt = chosen.updatedAt;
+        state.lastAutoBackupDate = chosen.lastAutoBackupDate;
+      }
+      return saveAllStorages(false);
+    });
   }
 
-  function computeRangeForMode(baseIso, mode) {
-    var dt = parseIso(baseIso);
+  function createBackupSnapshot(tag) {
+    var now = new Date();
+    var label = pad2(now.getDate()) + "." + pad2(now.getMonth() + 1) + "." + now.getFullYear() + " " + pad2(now.getHours()) + ":" + pad2(now.getMinutes()) + (tag ? " " + tag : "");
+    var snap = {
+      id: "bkp_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+      label: label,
+      createdAt: Date.now(),
+      data: normalizeDb(serializeState(), state.defaultRate)
+    };
+    state.backups.unshift(snap);
+    if (state.backups.length > 25) state.backups = state.backups.slice(0, 25);
+  }
+
+  function ensureDailyAutoBackup() {
+    var now = new Date();
+    var todayKey = toIso(now.getFullYear(), now.getMonth(), now.getDate());
+    if (state.lastAutoBackupDate !== todayKey && countRecords(state) > 0) {
+      createBackupSnapshot("(авто)");
+      state.lastAutoBackupDate = todayKey;
+    }
+  }
+
+  function computePeriodBounds(mode, anchorIso) {
+    var dt = parseIso(anchorIso);
     var y = dt.getFullYear();
     var m = dt.getMonth();
     var d = dt.getDate();
-
     if (mode === "day") {
-      return { start: baseIso, end: baseIso };
+      return { start: anchorIso, end: anchorIso };
     }
     if (mode === "week") {
-      var dow = dt.getDay();
-      var diffToMon = dow === 0 ? -6 : 1 - dow;
-      var mon = new Date(y, m, d + diffToMon);
-      var sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
-      return { start: dateToIso(mon), end: dateToIso(sun) };
+      var dow = (dt.getDay() + 6) % 7;
+      var sDt = new Date(y, m, d - dow);
+      var eDt = new Date(y, m, d - dow + 6);
+      return {
+        start: toIso(sDt.getFullYear(), sDt.getMonth(), sDt.getDate()),
+        end: toIso(eDt.getFullYear(), eDt.getMonth(), eDt.getDate())
+      };
     }
-    if (mode === "two_weeks") {
+    if (mode === "2weeks") {
       var lastDay = new Date(y, m + 1, 0).getDate();
       if (d <= 15) {
-        return { start: toIsoDate(y, m, 1), end: toIsoDate(y, m, 15) };
-      } else {
-        return { start: toIsoDate(y, m, 16), end: toIsoDate(y, m, lastDay) };
+        return { start: toIso(y, m, 1), end: toIso(y, m, 15) };
       }
+      return { start: toIso(y, m, 16), end: toIso(y, m, lastDay) };
     }
     if (mode === "month") {
       var lastM = new Date(y, m + 1, 0).getDate();
-      return { start: toIsoDate(y, m, 1), end: toIsoDate(y, m, lastM) };
+      return { start: toIso(y, m, 1), end: toIso(y, m, lastM) };
     }
     if (mode === "year") {
-      return { start: toIsoDate(y, 0, 1), end: toIsoDate(y, 11, 31) };
+      return { start: toIso(y, 0, 1), end: toIso(y, 11, 31) };
     }
-    return { start: baseIso, end: baseIso };
+    return { start: anchorIso, end: anchorIso };
   }
 
   function setPeriodMode(mode) {
     state.periodMode = mode;
-    state.customRange = false;
-    var r = computeRangeForMode(state.selectedDate, mode);
-    state.rangeStart = r.start;
-    state.rangeEnd = r.end;
-    refreshAll();
-  }
-
-  function selectSingleDay(iso) {
-    state.selectedDate = iso;
-    var dt = parseIso(iso);
+    var bounds = computePeriodBounds(mode, state.selectedStart);
+    state.selectedStart = bounds.start;
+    state.selectedEnd = bounds.end;
+    var dt = parseIso(state.selectedStart);
     state.viewYear = dt.getFullYear();
     state.viewMonth = dt.getMonth();
-    state.customRange = false;
-    var r = computeRangeForMode(iso, state.periodMode);
-    state.rangeStart = r.start;
-    state.rangeEnd = r.end;
     refreshAll();
   }
 
-  function selectCustomSpan(isoA, isoB) {
-    var start = isoA <= isoB ? isoA : isoB;
-    var end = isoA <= isoB ? isoB : isoA;
-    state.selectedDate = isoB;
-    state.rangeStart = start;
-    state.rangeEnd = end;
-    state.customRange = start !== end;
-    refreshAll();
-  }
-
-  function getRangeRecords() {
-    var s = state.rangeStart;
-    var e = state.rangeEnd;
-    return state.records.filter(function (r) {
-      return r.date >= s && r.date <= e;
-    }).sort(function (a, b) {
-      return a.date.localeCompare(b.date);
-    });
-  }
-
-  function getPeriodTitle() {
-    if (state.customRange && state.rangeStart !== state.rangeEnd) {
-      return formatRuShort(state.rangeStart) + " – " + formatRuShort(state.rangeEnd);
-    }
-    if (state.periodMode === "day") {
-      return "ДЕНЬ (" + formatRuShort(state.selectedDate).toUpperCase() + ")";
-    }
-    if (state.periodMode === "week") {
-      return "НЕДЕЛЯ (" + formatRuShort(state.rangeStart) + " – " + formatRuShort(state.rangeEnd) + ")";
-    }
-    if (state.periodMode === "two_weeks") {
-      return "2Х НЕДЕЛИ (" + formatRuShort(state.rangeStart) + " – " + formatRuShort(state.rangeEnd) + ")";
-    }
-    if (state.periodMode === "month") {
-      var dt = parseIso(state.selectedDate);
-      return "МЕСЯЦ (" + MONTHS_NOM[dt.getMonth()].toUpperCase() + ")";
-    }
-    if (state.periodMode === "year") {
-      var dtY = parseIso(state.selectedDate);
-      return "ГОД (" + dtY.getFullYear() + ")";
-    }
-    return "ДЕНЬ";
+  function getOrderedRange() {
+    return state.selectedStart <= state.selectedEnd
+      ? { start: state.selectedStart, end: state.selectedEnd }
+      : { start: state.selectedEnd, end: state.selectedStart };
   }
 
   function renderCalendar() {
-    var titleEl = document.getElementById("monthTitle");
-    if (titleEl) {
-      titleEl.innerHTML = MONTHS_NOM[state.viewMonth] + " " + state.viewYear + ' <span class="ver-badge">v ' + APP_VERSION + "</span>";
-    }
+    var titleEl = document.getElementById("calMonthTitle");
+    var verEl = document.getElementById("appVersionBadge");
+    if (titleEl) titleEl.textContent = MONTHS_NOM[state.viewMonth] + " " + state.viewYear;
+    if (verEl) verEl.textContent = APP_VERSION;
 
-    var btns = document.querySelectorAll(".period-btn");
-    for (var i = 0; i < btns.length; i++) {
-      var m = btns[i].getAttribute("data-period");
-      if (!state.customRange && m === state.periodMode) {
-        btns[i].classList.add("active");
-      } else {
-        btns[i].classList.remove("active");
-      }
+    var tabs = document.querySelectorAll(".period-tab");
+    for (var t = 0; t < tabs.length; t++) {
+      var m = tabs[t].getAttribute("data-mode");
+      tabs[t].classList.toggle("active", m === state.periodMode);
     }
 
     var grid = document.getElementById("calGrid");
     if (!grid) return;
-
-    var recMap = {};
-    var offMap = {};
-    for (var r = 0; r < state.records.length; r++) {
-      var item = state.records[r];
-      if (item.isOff) {
-        offMap[item.date] = true;
-      } else {
-        recMap[item.date] = true;
-      }
-    }
 
     var firstDay = new Date(state.viewYear, state.viewMonth, 1);
     var startOffset = (firstDay.getDay() + 6) % 7;
     var daysInMonth = new Date(state.viewYear, state.viewMonth + 1, 0).getDate();
     var prevMonthDays = new Date(state.viewYear, state.viewMonth, 0).getDate();
 
+    var range = getOrderedRange();
     var cells = [];
+
     for (var p = startOffset - 1; p >= 0; p--) {
-      var py = state.viewMonth === 0 ? state.viewYear - 1 : state.viewYear;
-      var pm = state.viewMonth === 0 ? 11 : state.viewMonth - 1;
       var pd = prevMonthDays - p;
-      cells.push({ iso: toIsoDate(py, pm, pd), day: pd, other: true });
+      var pm = state.viewMonth - 1;
+      var py = state.viewYear;
+      if (pm < 0) { pm = 11; py--; }
+      cells.push({ iso: toIso(py, pm, pd), day: pd, other: true });
     }
     for (var d = 1; d <= daysInMonth; d++) {
-      cells.push({ iso: toIsoDate(state.viewYear, state.viewMonth, d), day: d, other: false });
+      cells.push({ iso: toIso(state.viewYear, state.viewMonth, d), day: d, other: false });
     }
-    var rem = cells.length % 7;
-    if (rem !== 0) {
-      var need = 7 - rem;
-      var ny = state.viewMonth === 11 ? state.viewYear + 1 : state.viewYear;
-      var nm = state.viewMonth === 11 ? 0 : state.viewMonth + 1;
-      for (var n = 1; n <= need; n++) {
-        cells.push({ iso: toIsoDate(ny, nm, n), day: n, other: true });
-      }
+    var rem = (7 - (cells.length % 7)) % 7;
+    for (var n = 1; n <= rem; n++) {
+      var nm = state.viewMonth + 1;
+      var ny = state.viewYear;
+      if (nm > 11) { nm = 0; ny++; }
+      cells.push({ iso: toIso(ny, nm, n), day: n, other: true });
     }
 
     var html = "";
-    for (var c = 0; c < cells.length; c++) {
-      var cell = cells[c];
-      var cls = ["day-cell"];
-      if (cell.other) cls.push("other-month");
-
-      var inRange = cell.iso >= state.rangeStart && cell.iso <= state.rangeEnd;
-      var isSingleActive = cell.iso === state.selectedDate && state.rangeStart === state.rangeEnd;
-      var isRangeEdge = inRange && state.rangeStart !== state.rangeEnd && (cell.iso === state.rangeStart || cell.iso === state.rangeEnd);
-
-      if (isSingleActive || isRangeEdge) {
-        cls.push("selected");
-      } else if (inRange && state.rangeStart !== state.rangeEnd) {
-        cls.push("in-range");
+    for (var i = 0; i < cells.length; i++) {
+      var c = cells[i];
+      var dayRecs = state.records[c.iso] || [];
+      var hasOff = false;
+      var hasWork = false;
+      for (var r = 0; r < dayRecs.length; r++) {
+        if (dayRecs[r].isOff) hasOff = true;
+        else hasWork = true;
       }
 
-      if (offMap[cell.iso]) {
-        cls.push("has-off");
-      } else if (recMap[cell.iso]) {
-        cls.push("has-record");
+      var isStart = c.iso === range.start;
+      var isEnd = c.iso === range.end;
+      var inRange = c.iso >= range.start && c.iso <= range.end;
+
+      var cls = "day-cell";
+      if (c.other) cls += " other-month";
+      if (hasOff) cls += " is-off";
+      else if (hasWork) cls += " has-work";
+
+      if (isStart || isEnd) {
+        cls += " selected-edge";
+      } else if (inRange) {
+        cls += " in-range";
       }
 
-      var markHtml = "";
-      if (offMap[cell.iso]) {
-        markHtml = '<span class="off-mark">✕</span>';
-      } else if (recMap[cell.iso]) {
-        markHtml = '<span class="rec-dot"></span>';
-      }
-
-      html += '<div class="' + cls.join(" ") + '" data-date="' + cell.iso + '"><span>' + cell.day + "</span>" + markHtml + "</div>";
+      var badge = hasOff ? '<span class="off-x">✕</span>' : (hasWork ? '<span class="work-dot"></span>' : "");
+      html += '<div class="' + cls + '" data-iso="' + c.iso + '"><span class="day-num">' + c.day + "</span>" + badge + "</div>";
     }
-
     grid.innerHTML = html;
   }
 
-  function renderRecordsAndSummary() {
-    var list = getRangeRecords();
-    var pTitle = getPeriodTitle();
+  function getPeriodLabel() {
+    var range = getOrderedRange();
+    if (state.periodMode === "day" && range.start === range.end) {
+      return "ДЕНЬ (" + formatShortDate(range.start).toUpperCase() + ")";
+    }
+    if (state.periodMode === "week") return "НЕДЕЛЯ (" + formatShortDate(range.start) + " – " + formatShortDate(range.end) + ")";
+    if (state.periodMode === "2weeks") return "2Х НЕДЕЛИ (" + formatShortDate(range.start) + " – " + formatShortDate(range.end) + ")";
+    if (state.periodMode === "month") return "МЕСЯЦ (" + MONTHS_NOM[parseIso(range.start).getMonth()].toUpperCase() + ")";
+    if (state.periodMode === "year") return "ГОД (" + parseIso(range.start).getFullYear() + ")";
+    return formatShortDate(range.start).toUpperCase() + " – " + formatShortDate(range.end).toUpperCase();
+  }
 
-    var headerEl = document.getElementById("recordsHeaderTitle");
-    if (headerEl) headerEl.textContent = "ЗАПИСИ (" + pTitle + ")";
+  function renderRecordsAndTotals() {
+    var range = getOrderedRange();
+    var pLabel = getPeriodLabel();
+    var recTitle = document.getElementById("recordsPeriodLabel");
+    var totTitle = document.getElementById("totalsPeriodLabel");
+    if (recTitle) recTitle.textContent = "ЗАПИСИ (" + pLabel + ")";
+    if (totTitle) totTitle.textContent = "ИТОГ ЗА " + pLabel;
 
-    var countEl = document.getElementById("recordsCountBadge");
-    if (countEl) countEl.textContent = list.length + " ШТ.";
+    var listEl = document.getElementById("recordsList");
+    var countBadge = document.getElementById("recordsCountBadge");
+    var allDates = Object.keys(state.records).sort();
+    var rows = [];
+    var totBoxes = 0;
+    var totWeight = 0;
+    var totPay = 0;
 
-    var sumTitleEl = document.getElementById("summaryTitle");
-    if (sumTitleEl) sumTitleEl.textContent = "ИТОГ ЗА " + pTitle;
-
-    var totalBoxes = 0;
-    var totalWeight = 0;
-    var totalPay = 0;
-
-    for (var i = 0; i < list.length; i++) {
-      if (!list[i].isOff) {
-        totalBoxes += list[i].boxes;
-        totalWeight = round2(totalWeight + list[i].weight);
-        totalPay = round2(totalPay + list[i].pay);
+    for (var i = 0; i < allDates.length; i++) {
+      var iso = allDates[i];
+      if (iso < range.start || iso > range.end) continue;
+      var arr = state.records[iso] || [];
+      for (var j = 0; j < arr.length; j++) {
+        var rec = arr[j];
+        rows.push({ iso: iso, idx: j, rec: rec });
+        if (!rec.isOff) {
+          totBoxes += rec.boxes || 0;
+          totWeight = round2(totWeight + (rec.weight || 0));
+          totPay = round2(totPay + (rec.pay || 0));
+        }
       }
     }
 
-    var bwEl = document.getElementById("summaryBoxesWeight");
-    if (bwEl) bwEl.textContent = totalBoxes + " кор. • " + fmtNum(totalWeight) + " кг";
+    if (countBadge) countBadge.textContent = rows.length + " ШТ.";
+    var totBoxesEl = document.getElementById("totalBoxes");
+    var totWeightEl = document.getElementById("totalWeight");
+    var totPayEl = document.getElementById("totalPay");
+    if (totBoxesEl) totBoxesEl.textContent = totBoxes + " кор.";
+    if (totWeightEl) totWeightEl.textContent = fmtWeight(totWeight);
+    if (totPayEl) totPayEl.textContent = fmtMoney(totPay);
 
-    var payEl = document.getElementById("summaryMoney");
-    if (payEl) payEl.textContent = fmtNum(totalPay) + " ₽";
-
-    var listEl = document.getElementById("recordsList");
     if (!listEl) return;
-
-    if (list.length === 0) {
+    if (rows.length === 0) {
       listEl.innerHTML = "";
       return;
     }
 
-    var rowsHtml = "";
-    for (var j = 0; j < list.length; j++) {
-      var r = list[j];
-      var dLabel = formatRuShort(r.date);
+    var html = "";
+    for (var k = 0; k < rows.length; k++) {
+      var item = rows[k];
+      var r = item.rec;
       if (r.isOff) {
-        rowsHtml +=
-          '<div class="record-row is-off">' +
-          '<div class="record-text">' + dLabel + ': <span class="off-tag">Выходной</span></div>' +
-          '<button type="button" class="del-rec-btn" data-id="' + r.id + '" title="Удалить">✕</button>' +
+        html += '<div class="record-row off-row">' +
+          '<span class="rec-text">' + formatShortDate(item.iso) + ': <strong class="off-label">Выходной</strong></span>' +
+          '<button class="del-rec-btn" data-iso="' + item.iso + '" data-idx="' + item.idx + '">✕</button>' +
           "</div>";
       } else {
-        var boxPart = r.boxes > 0 ? (r.boxes + " кор. • ") : "";
-        rowsHtml +=
-          '<div class="record-row">' +
-          '<div class="record-text">' + dLabel + ": " + boxPart + fmtNum(r.weight) + " кг × " + fmtNum(r.rate) + ' ₽ = <span class="money-tag">' + fmtNum(r.pay) + " ₽</span></div>" +
-          '<button type="button" class="del-rec-btn" data-id="' + r.id + '" title="Удалить">✕</button>' +
+        var boxPart = r.boxes > 0 ? r.boxes + " кор. • " : "";
+        html += '<div class="record-row">' +
+          '<span class="rec-text">' + formatShortDate(item.iso) + ": " + boxPart + fmtWeight(r.weight) + " × " + r.rate + ' ₽ = <strong class="rec-pay">' + fmtMoney(r.pay) + "</strong></span>" +
+          '<button class="del-rec-btn" data-iso="' + item.iso + '" data-idx="' + item.idx + '">✕</button>' +
           "</div>";
       }
     }
-    listEl.innerHTML = rowsHtml;
+    listEl.innerHTML = html;
 
-    var selLabelEl = document.getElementById("selectedDateLabel");
-    if (selLabelEl) selLabelEl.textContent = formatRuDayMonth(state.selectedDate);
+    var formDateEl = document.getElementById("selectedDateLabel");
+    if (formDateEl) {
+      formDateEl.textContent = range.start === range.end
+        ? formatFullDate(range.start)
+        : formatShortDate(range.start) + " – " + formatShortDate(range.end);
+    }
   }
 
-  function updateShiftPreview() {
-    var boxes = Math.round(parseNum(document.getElementById("boxesInput").value));
-    var boxW = parseNum(document.getElementById("boxWeightInput").value);
-    var rate = parseNum(document.getElementById("rateInput").value);
+  function updateLiveCalc() {
+    var boxes = parseNum(document.getElementById("inputBoxes").value);
+    var boxWeight = parseNum(document.getElementById("inputBoxWeight").value);
+    var rate = parseNum(document.getElementById("inputRate").value);
 
-    var weight = 0;
-    if (boxes > 0 && boxW > 0) {
-      weight = round2(boxes * boxW);
-    } else if (boxW > 0) {
-      weight = round2(boxW);
+    var totalWeight = 0;
+    if (boxes > 0 && boxWeight > 0) {
+      totalWeight = round2(boxes * boxWeight);
+    } else if (boxWeight > 0) {
+      totalWeight = round2(boxWeight);
     }
-    var pay = round2(weight * rate);
+    var totalPay = round2(totalWeight * rate);
 
-    var prevEl = document.getElementById("shiftPreviewVal");
-    if (prevEl) {
-      prevEl.innerHTML =
-        '<span class="w-val">' + fmtNum(weight) + ' кг</span> <span class="m-val">' + fmtNum(pay) + " ₽</span>";
-    }
+    var wEl = document.getElementById("previewWeight");
+    var pEl = document.getElementById("previewPay");
+    if (wEl) wEl.textContent = fmtWeight(totalWeight);
+    if (pEl) pEl.textContent = fmtMoney(totalPay);
+  }
+
+  function applyTheme() {
+    document.body.classList.toggle("light-theme", state.theme === "light");
+    var btn = document.getElementById("btnTheme");
+    if (btn) btn.textContent = state.theme === "light" ? "🌙" : "☀";
   }
 
   function refreshAll() {
-    document.body.setAttribute("data-theme", state.theme);
-    var themeBtn = document.getElementById("themeBtn");
-    if (themeBtn) themeBtn.textContent = state.theme === "dark" ? "☀" : "🌙";
-
-    var nameInput = document.getElementById("workerNameInput");
-    if (nameInput && nameInput.value !== state.workerName) {
-      nameInput.value = state.workerName;
-    }
-    var rateInput = document.getElementById("rateInput");
-    if (rateInput && !rateInput.value && state.defaultRate) {
-      rateInput.value = state.defaultRate;
-    }
-
+    applyTheme();
+    var nameInput = document.getElementById("inputWorkerName");
+    var rateInput = document.getElementById("inputRate");
+    if (nameInput && nameInput.value !== state.workerName) nameInput.value = state.workerName;
+    if (rateInput && !rateInput.dataset.edited) rateInput.value = state.defaultRate;
     renderCalendar();
-    renderRecordsAndSummary();
-    updateShiftPreview();
+    renderRecordsAndTotals();
+    updateLiveCalc();
   }
 
-  function createDailyAutoBackupIfNeeded() {
-    var today = dateToIso(new Date());
-    var tag = "Авто " + today;
-    var exists = backups.some(function (b) {
-      return b.label === tag;
-    });
-    if (!exists) {
-      backups.unshift({
-        id: "auto_" + Date.now(),
-        label: tag,
-        createdAt: new Date().toLocaleString("ru-RU"),
-        isAuto: true,
-        data: getSnapshotObject()
-      });
-      if (backups.length > 25) backups.length = 25;
-    }
+  function showToast(msg) {
+    var t = document.getElementById("toastBox");
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function() { t.classList.remove("show"); }, 2600);
   }
 
-  function addShiftRecord() {
-    var boxes = Math.round(parseNum(document.getElementById("boxesInput").value));
-    var boxW = parseNum(document.getElementById("boxWeightInput").value);
-    var rate = parseNum(document.getElementById("rateInput").value);
-
-    var weight = 0;
-    if (boxes > 0 && boxW > 0) {
-      weight = round2(boxes * boxW);
-    } else if (boxW > 0) {
-      weight = round2(boxW);
-    }
-
-    if (weight <= 0) {
-      showToast("Введите вес коробки (кг)");
-      return;
-    }
-
-    if (rate > 0) {
-      state.defaultRate = String(rate);
-    }
-
-    var pay = round2(weight * rate);
-    state.records.push({
-      id: Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-      date: state.selectedDate,
-      isOff: false,
-      boxes: boxes,
-      boxWeight: round2(boxW),
-      weight: weight,
-      rate: round2(rate),
-      pay: pay
-    });
-
-    document.getElementById("boxesInput").value = "";
-    document.getElementById("boxWeightInput").value = "";
-
-    createDailyAutoBackupIfNeeded();
-    persistAll(true);
-    refreshAll();
-    showToast("Запись добавлена");
-  }
-
-  function toggleDayOff() {
-    var target = state.selectedDate;
-    var idx = -1;
-    for (var i = 0; i < state.records.length; i++) {
-      if (state.records[i].date === target && state.records[i].isOff) {
-        idx = i;
-        break;
+  function triggerUndoBar(iso, idx, rec) {
+    undoBuffer = { iso: iso, idx: idx, rec: rec };
+    var bar = document.getElementById("undoBar");
+    var cntEl = document.getElementById("undoCountdown");
+    if (!bar) return;
+    bar.classList.remove("hidden");
+    var sec = 5;
+    if (cntEl) cntEl.textContent = sec;
+    clearInterval(undoTimer);
+    undoTimer = setInterval(function() {
+      sec--;
+      if (cntEl) cntEl.textContent = sec;
+      if (sec <= 0) {
+        clearInterval(undoTimer);
+        bar.classList.add("hidden");
+        undoBuffer = null;
       }
-    }
-    if (idx !== -1) {
-      state.records.splice(idx, 1);
-      showToast("Выходной снят");
-    } else {
-      state.records.push({
-        id: Date.now() + "_off",
-        date: target,
-        isOff: true,
-        boxes: 0,
-        boxWeight: 0,
-        weight: 0,
-        rate: 0,
-        pay: 0
-      });
-      createDailyAutoBackupIfNeeded();
-      showToast("Отмечен выходной");
-    }
-    persistAll(true);
-    refreshAll();
+    }, 1000);
   }
 
-  function deleteRecordById(id) {
-    var idx = -1;
-    for (var i = 0; i < state.records.length; i++) {
-      if (state.records[i].id === id) {
-        idx = i;
-        break;
-      }
-    }
-    if (idx === -1) return;
-    var removed = state.records.splice(idx, 1)[0];
-    undoStack.push(removed);
-    persistAll(true);
-    refreshAll();
-    showUndoBanner();
-  }
-
-  function showUndoBanner() {
-    var banner = document.getElementById("undoBanner");
-    var btn = document.getElementById("undoDeleteBtn");
-    if (!banner || !btn) return;
-    btn.textContent = "↩ Вернуть удалённое (" + undoStack.length + ")";
-    banner.style.display = "block";
-    clearTimeout(undoTimer);
-    undoTimer = setTimeout(function () {
-      undoStack = [];
-      banner.style.display = "none";
-    }, 9000);
-  }
-
-  function undoLastDelete() {
-    if (undoStack.length === 0) return;
-    var item = undoStack.pop();
-    state.records.push(item);
-    persistAll(true);
-    refreshAll();
-    if (undoStack.length > 0) {
-      showUndoBanner();
-    } else {
-      document.getElementById("undoBanner").style.display = "none";
-    }
-    showToast("Запись восстановлена");
-  }
-
-  function buildFullReportText() {
-    var list = getRangeRecords();
+  function buildReport(isShort) {
+    var range = getOrderedRange();
     var lines = [];
-    if (state.workerName.trim()) {
-      lines.push(state.workerName.trim());
-    }
-    var periodLine = state.rangeStart === state.rangeEnd
-      ? formatRuDayMonth(state.rangeStart)
-      : formatRuShort(state.rangeStart) + " – " + formatRuShort(state.rangeEnd);
-    lines.push("Период: " + periodLine);
+    if (state.workerName.trim()) lines.push(state.workerName.trim());
 
-    var totalBoxes = 0;
-    var totalWeight = 0;
-    var totalPay = 0;
+    var isStandardSinglePeriod = (state.periodMode === "day" && range.start === range.end) ||
+      state.periodMode === "week" || state.periodMode === "2weeks" ||
+      state.periodMode === "month" || state.periodMode === "year";
 
-    for (var i = 0; i < list.length; i++) {
-      var r = list[i];
-      if (r.isOff) {
-        lines.push(formatRuShort(r.date) + " | Выходной");
-      } else {
-        totalBoxes += r.boxes;
-        totalWeight = round2(totalWeight + r.weight);
-        totalPay = round2(totalPay + r.pay);
-        var bStr = r.boxes > 0 ? (r.boxes + "кор | ") : "";
-        lines.push(formatRuShort(r.date) + " | " + bStr + fmtNum(r.weight) + "кг | " + fmtNum(r.pay) + "₽");
+    var allDates = Object.keys(state.records).sort();
+    var totBoxes = 0;
+    var totWeight = 0;
+    var totPay = 0;
+    var dayLines = [];
+
+    for (var i = 0; i < allDates.length; i++) {
+      var iso = allDates[i];
+      if (iso < range.start || iso > range.end) continue;
+      var arr = state.records[iso] || [];
+      for (var j = 0; j < arr.length; j++) {
+        var r = arr[j];
+        if (r.isOff) {
+          dayLines.push(formatShortDate(iso) + " | Выходной");
+        } else {
+          totBoxes += r.boxes || 0;
+          totWeight = round2(totWeight + (r.weight || 0));
+          totPay = round2(totPay + (r.pay || 0));
+          var bStr = r.boxes > 0 ? r.boxes + "кор | " : "";
+          dayLines.push(formatShortDate(iso) + " | " + bStr + fmtWeight(r.weight).replace(" ", "") + " | " + fmtMoney(r.pay).replace(" ", ""));
+        }
       }
     }
 
-    lines.push("ИТОГ: " + totalBoxes + "кор | " + fmtNum(totalWeight) + "кг | " + fmtNum(totalPay) + "₽");
+    if (isShort) {
+      if (!isStandardSinglePeriod && range.start !== range.end) {
+        lines.push("Период: " + formatShortDate(range.start) + " – " + formatShortDate(range.end));
+      }
+      lines.push("Вес: " + fmtWeight(totWeight) + (totBoxes > 0 ? " (" + totBoxes + " кор.)" : ""));
+      lines.push("Итого: " + fmtMoney(totPay));
+    } else {
+      var pText = range.start === range.end ? formatFullDate(range.start) : formatShortDate(range.start) + " – " + formatShortDate(range.end);
+      lines.push("Период: " + pText);
+      for (var k = 0; k < dayLines.length; k++) lines.push(dayLines[k]);
+      lines.push("ИТОГ: " + (totBoxes > 0 ? totBoxes + "кор | " : "") + fmtWeight(totWeight).replace(" ", "") + " | " + fmtMoney(totPay).replace(" ", ""));
+    }
     return lines.join(NL);
   }
 
-  function buildShortReportText() {
-    var list = getRangeRecords();
-    var lines = [];
-    if (state.workerName.trim()) {
-      lines.push(state.workerName.trim());
-    }
-    if (state.customRange && state.rangeStart !== state.rangeEnd) {
-      lines.push("Период: " + formatRuShort(state.rangeStart) + " – " + formatRuShort(state.rangeEnd));
-    }
-
-    var totalBoxes = 0;
-    var totalWeight = 0;
-    for (var i = 0; i < list.length; i++) {
-      if (!list[i].isOff) {
-        totalBoxes += list[i].boxes;
-        totalWeight = round2(totalWeight + list[i].weight);
-      }
-    }
-    lines.push("Вес: " + fmtNum(totalWeight) + " кг " + totalBoxes + " кор.");
-    return lines.join(NL);
+  function openReportPreview(isShort) {
+    currentReportText = buildReport(isShort);
+    var pre = document.getElementById("reportPreviewText");
+    var modal = document.getElementById("reportModal");
+    if (pre) pre.textContent = currentReportText;
+    if (modal) modal.classList.remove("hidden");
   }
 
-  function openReportPreview(text) {
-    pendingPreviewText = text;
-    var box = document.getElementById("previewTextBox");
-    var modal = document.getElementById("previewModal");
-    if (box) box.textContent = text;
-    if (modal) modal.style.display = "flex";
-  }
-
-  function sendPreviewReport() {
-    var text = pendingPreviewText;
-    if (!text) return;
+  function shareReportText(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(function () {});
+      navigator.clipboard.writeText(text).catch(function() {});
     }
-    document.getElementById("previewModal").style.display = "none";
-
     if (navigator.share) {
-      navigator.share({
-        title: "Отчёт обвалки",
-        text: text
-      }).catch(function () {});
+      navigator.share({ text: text }).catch(function() {});
       return;
     }
-
-    var encoded = encodeURIComponent(text);
-    var ua = (navigator.userAgent || "").toLowerCase();
-    if (ua.indexOf("android") !== -1) {
-      window.location.href = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encoded + ";end";
-    } else {
+    try {
+      var intentUrl = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encodeURIComponent(text) + ";end";
+      window.location.href = intentUrl;
+    } catch (e) {
       showToast("Отчёт скопирован в буфер обмена");
     }
   }
 
-  function saveManualBackup() {
-    var now = new Date();
-    var label = "Копия " + pad2(now.getDate()) + "." + pad2(now.getMonth() + 1) + " " + pad2(now.getHours()) + ":" + pad2(now.getMinutes());
-    backups.unshift({
-      id: "man_" + Date.now(),
-      label: label,
-      createdAt: now.toLocaleString("ru-RU"),
-      isAuto: false,
-      data: getSnapshotObject()
-    });
-    if (backups.length > 25) backups.length = 25;
-    persistAll(false);
-    showToast("Резервная копия сохранена");
-  }
+  function runSafeUpdate() {
+    var ov = document.getElementById("updateOverlay");
+    var st = document.getElementById("updateStepText");
+    if (ov) ov.classList.remove("hidden");
+    if (st) st.textContent = "Шаг 1/4: Сохранение базы в память...";
 
-  function renderBackupsList() {
-    var listEl = document.getElementById("backupsList");
-    if (!listEl) return;
-    if (backups.length === 0) {
-      listEl.innerHTML = '<div class="empty-msg">Сохранённых копий пока нет</div>';
-      return;
-    }
-    var html = "";
-    for (var i = 0; i < backups.length; i++) {
-      var b = backups[i];
-      var cnt = (b.data && Array.isArray(b.data.records)) ? b.data.records.length : 0;
-      html +=
-        '<div class="backup-item">' +
-        '<div class="backup-info"><strong>' + b.label + "</strong><span>Записей: " + cnt + " • " + (b.createdAt || "") + "</span></div>" +
-        '<div class="backup-actions">' +
-        '<button type="button" class="mini-btn restore" data-bidx="' + i + '">Восстановить</button>' +
-        '<button type="button" class="mini-btn del" data-delidx="' + i + '">✕</button>' +
-        "</div>" +
-        "</div>";
-    }
-    listEl.innerHTML = html;
+    createBackupSnapshot("(перед обн.)");
+    saveAllStorages(true).then(function() {
+      setTimeout(function() {
+        if (st) st.textContent = "Шаг 2/4: Проверка целостности данных...";
+        setTimeout(function() {
+          if (st) st.textContent = "Шаг 3/4: Очистка старого кэша...";
+          var tasks = [];
+          if (window.caches && window.caches.keys) {
+            tasks.push(window.caches.keys().then(function(names) {
+              return Promise.all(names.map(function(n) { return window.caches.delete(n); }));
+            }));
+          }
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            tasks.push(navigator.serviceWorker.getRegistrations().then(function(regs) {
+              return Promise.all(regs.map(function(rg) { return rg.unregister(); }));
+            }));
+          }
+          Promise.all(tasks).catch(function() {}).then(function() {
+            setTimeout(function() {
+              if (st) st.textContent = "Шаг 4/4: Перезагрузка на новую версию...";
+              setTimeout(function() {
+                window.location.reload(true);
+              }, 600);
+            }, 700);
+          });
+        }, 700);
+      }, 700);
+    });
   }
 
   function openRestoreModal() {
-    document.getElementById("transferCodeBox").style.display = "none";
-    renderBackupsList();
-    document.getElementById("restoreModal").style.display = "flex";
-  }
-
-  function applyBackupIndex(idx) {
-    var b = backups[idx];
-    if (!b || !b.data) return;
-    var migrated = migratePayload(b.data);
-    if (!migrated) return;
-    state.workerName = migrated.workerName;
-    state.defaultRate = migrated.defaultRate;
-    state.records = migrated.records;
-    persistAll(true);
-    refreshAll();
-    document.getElementById("restoreModal").style.display = "none";
-    showToast("База восстановлена (" + state.records.length + " зап.)");
-  }
-
-  function deleteBackupIndex(idx) {
-    backups.splice(idx, 1);
-    persistAll(false);
-    renderBackupsList();
-    showToast("Копия удалена");
-  }
-
-  function showTransferCodeArea() {
-    var box = document.getElementById("transferCodeBox");
-    var ta = document.getElementById("transferCodeInput");
-    box.style.display = "block";
-    try {
-      var raw = JSON.stringify(getSnapshotObject());
-      ta.value = btoa(unescape(encodeURIComponent(raw)));
-    } catch (e) {
-      ta.value = JSON.stringify(getSnapshotObject());
-    }
-  }
-
-  function copyTransferCode() {
-    var ta = document.getElementById("transferCodeInput");
-    ta.select();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(ta.value).catch(function () {});
-    }
-    showToast("Код базы скопирован");
-  }
-
-  function importTransferCode() {
-    var val = (document.getElementById("transferCodeInput").value || "").trim();
-    if (!val) {
-      showToast("Вставьте код базы");
-      return;
-    }
-    try {
-      var parsed = null;
-      if (val.charAt(0) === "{") {
-        parsed = JSON.parse(val);
-      } else {
-        var decoded = decodeURIComponent(escape(atob(val)));
-        parsed = JSON.parse(decoded);
+    var list = document.getElementById("backupsList");
+    var modal = document.getElementById("restoreModal");
+    if (!list || !modal) return;
+    if (state.backups.length === 0) {
+      list.innerHTML = '<div class="empty-bkp">Резервных копий пока нет</div>';
+    } else {
+      var html = "";
+      for (var i = 0; i < state.backups.length; i++) {
+        var b = state.backups[i];
+        var cnt = countRecords(b.data);
+        html += '<div class="bkp-item">' +
+          '<div class="bkp-info"><strong>' + b.label + '</strong><span>Записей: ' + cnt + "</span></div>" +
+          '<div class="bkp-actions">' +
+          '<button class="btn-bkp-load" data-idx="' + i + '">Восстановить</button>' +
+          '<button class="btn-bkp-del" data-idx="' + i + '">✕</button>' +
+          "</div></div>";
       }
-      var migrated = migratePayload(parsed);
-      if (!migrated) throw new Error("bad");
-      state.workerName = migrated.workerName;
-      state.defaultRate = migrated.defaultRate;
-      state.records = migrated.records;
-      persistAll(true);
-      refreshAll();
-      document.getElementById("restoreModal").style.display = "none";
-      showToast("База перенесена (" + state.records.length + " зап.)");
-    } catch (e) {
-      showToast("Неверный код базы");
+      list.innerHTML = html;
     }
-  }
-
-  function sleep(ms) {
-    return new Promise(function (resolve) {
-      setTimeout(resolve, ms);
-    });
-  }
-
-  function runSafeUpdate() {
-    if (window.location.protocol === "file:") {
-      showToast("Локальный файл: обновите через Ctrl+F5");
-      return;
-    }
-    var overlay = document.getElementById("updateOverlay");
-    var stepText = document.getElementById("updateStepText");
-    overlay.style.display = "flex";
-
-    stepText.textContent = "Шаг 1/4: Сохранение базы в память...";
-    backups.unshift({
-      id: "upd_" + Date.now(),
-      label: "Авто (перед обн. v" + APP_VERSION + ")",
-      createdAt: new Date().toLocaleString("ru-RU"),
-      isAuto: true,
-      data: getSnapshotObject()
-    });
-    if (backups.length > 25) backups.length = 25;
-
-    persistAll(true)
-      .then(function () {
-        return sleep(700);
-      })
-      .then(function () {
-        stepText.textContent = "Шаг 2/4: Проверка целостности (" + state.records.length + " зап.)...";
-        return sleep(700);
-      })
-      .then(function () {
-        stepText.textContent = "Шаг 3/4: Очистка старого кэша...";
-        var tasks = [];
-        if (window.caches && window.caches.keys) {
-          tasks.push(
-            window.caches.keys().then(function (names) {
-              return Promise.all(names.map(function (n) { return window.caches.delete(n); }));
-            })
-          );
-        }
-        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
-          tasks.push(
-            navigator.serviceWorker.getRegistrations().then(function (regs) {
-              return Promise.all(regs.map(function (reg) { return reg.unregister(); }));
-            })
-          );
-        }
-        return Promise.all(tasks).then(function () { return sleep(700); });
-      })
-      .then(function () {
-        stepText.textContent = "Шаг 4/4: Перезагрузка на свежую версию...";
-        return sleep(500);
-      })
-      .then(function () {
-        var base = window.location.href.split("?")[0].split("#")[0];
-        window.location.replace(base + "?v=" + Date.now());
-      });
+    modal.classList.remove("hidden");
   }
 
   function bindEvents() {
-    document.getElementById("prevMonthBtn").addEventListener("click", function () {
-      if (state.viewMonth === 0) {
-        state.viewMonth = 11;
-        state.viewYear -= 1;
-      } else {
-        state.viewMonth -= 1;
-      }
-      selectSingleDay(toIsoDate(state.viewYear, state.viewMonth, 1));
+    var prevBtn = document.getElementById("btnPrevMonth");
+    var nextBtn = document.getElementById("btnNextMonth");
+    if (prevBtn) prevBtn.addEventListener("click", function() {
+      state.viewMonth--;
+      if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
+      renderCalendar();
+    });
+    if (nextBtn) nextBtn.addEventListener("click", function() {
+      state.viewMonth++;
+      if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+      renderCalendar();
     });
 
-    document.getElementById("nextMonthBtn").addEventListener("click", function () {
-      if (state.viewMonth === 11) {
-        state.viewMonth = 0;
-        state.viewYear += 1;
-      } else {
-        state.viewMonth += 1;
-      }
-      selectSingleDay(toIsoDate(state.viewYear, state.viewMonth, 1));
-    });
-
-    var periodBtns = document.querySelectorAll(".period-btn");
-    for (var i = 0; i < periodBtns.length; i++) {
-      periodBtns[i].addEventListener("click", function () {
-        setPeriodMode(this.getAttribute("data-period"));
+    var tabs = document.querySelectorAll(".period-tab");
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].addEventListener("click", function() {
+        setPeriodMode(this.getAttribute("data-mode"));
       });
     }
 
     var grid = document.getElementById("calGrid");
-    grid.addEventListener("pointerdown", function (e) {
-      var cell = e.target.closest(".day-cell");
-      if (!cell) return;
-      var iso = cell.getAttribute("data-date");
-      if (!iso) return;
-      isDragging = true;
-      dragAnchor = iso;
-      selectSingleDay(iso);
-    });
+    if (grid) {
+      grid.addEventListener("pointerdown", function(e) {
+        var cell = e.target.closest(".day-cell");
+        if (!cell) return;
+        var iso = cell.getAttribute("data-iso");
+        if (!iso) return;
+        isDragging = true;
+        dragAnchorDate = iso;
+        if (state.periodMode === "day") {
+          state.selectedStart = iso;
+          state.selectedEnd = iso;
+        } else {
+          var b = computePeriodBounds(state.periodMode, iso);
+          state.selectedStart = b.start;
+          state.selectedEnd = b.end;
+        }
+        refreshAll();
+      });
 
-    grid.addEventListener("pointermove", function (e) {
-      if (!isDragging || !dragAnchor) return;
-      var el = document.elementFromPoint(e.clientX, e.clientY);
-      if (!el) return;
-      var cell = el.closest(".day-cell");
-      if (!cell) return;
-      var iso = cell.getAttribute("data-date");
-      if (iso && iso !== state.rangeEnd) {
-        selectCustomSpan(dragAnchor, iso);
-      }
-    });
+      grid.addEventListener("pointermove", function(e) {
+        if (!isDragging || !dragAnchorDate) return;
+        var el = document.elementFromPoint(e.clientX, e.clientY);
+        var cell = el ? el.closest(".day-cell") : null;
+        if (!cell) return;
+        var iso = cell.getAttribute("data-iso");
+        if (!iso || iso === state.selectedEnd) return;
+        state.periodMode = "day";
+        state.selectedStart = dragAnchorDate;
+        state.selectedEnd = iso;
+        refreshAll();
+      });
 
-    window.addEventListener("pointerup", function () {
-      isDragging = false;
-      dragAnchor = null;
-    });
+      window.addEventListener("pointerup", function() {
+        isDragging = false;
+        dragAnchorDate = null;
+      });
+    }
 
-    document.getElementById("dayOffBtn").addEventListener("click", toggleDayOff);
-    document.getElementById("addRecordBtn").addEventListener("click", addShiftRecord);
-    document.getElementById("undoDeleteBtn").addEventListener("click", undoLastDelete);
-
-    document.getElementById("recordsList").addEventListener("click", function (e) {
-      var btn = e.target.closest(".del-rec-btn");
-      if (!btn) return;
-      deleteRecordById(btn.getAttribute("data-id"));
-    });
-
-    document.getElementById("workerNameInput").addEventListener("input", function () {
-      state.workerName = this.value;
-      persistAll(true);
-    });
-
-    document.getElementById("boxesInput").addEventListener("input", updateShiftPreview);
-    document.getElementById("boxWeightInput").addEventListener("input", updateShiftPreview);
-    document.getElementById("rateInput").addEventListener("input", function () {
-      state.defaultRate = this.value;
-      updateShiftPreview();
-      persistAll(true);
-    });
-
-    document.getElementById("themeBtn").addEventListener("click", function () {
-      state.theme = state.theme === "dark" ? "light" : "dark";
-      persistAll(false);
+    var btnOff = document.getElementById("btnDayOff");
+    if (btnOff) btnOff.addEventListener("click", function() {
+      var targetIso = getOrderedRange().start;
+      if (!state.records[targetIso]) state.records[targetIso] = [];
+      state.records[targetIso].push({ isOff: true, boxes: 0, boxWeight: 0, weight: 0, rate: 0, pay: 0 });
+      ensureDailyAutoBackup();
+      saveAllStorages(true);
       refreshAll();
+      showToast("Выходной добавлен на " + formatShortDate(targetIso));
     });
 
-    document.getElementById("updateBtn").addEventListener("click", runSafeUpdate);
+    var btnAdd = document.getElementById("btnAddRecord");
+    if (btnAdd) btnAdd.addEventListener("click", function() {
+      var boxes = parseNum(document.getElementById("inputBoxes").value);
+      var boxWeight = parseNum(document.getElementById("inputBoxWeight").value);
+      var rate = parseNum(document.getElementById("inputRate").value);
 
-    document.getElementById("fullReportBtn").addEventListener("click", function () {
-      openReportPreview(buildFullReportText());
-    });
-    document.getElementById("shortReportBtn").addEventListener("click", function () {
-      openReportPreview(buildShortReportText());
-    });
+      var weight = 0;
+      if (boxes > 0 && boxWeight > 0) weight = round2(boxes * boxWeight);
+      else if (boxWeight > 0) weight = round2(boxWeight);
 
-    document.getElementById("cancelPreviewBtn").addEventListener("click", function () {
-      document.getElementById("previewModal").style.display = "none";
-    });
-    document.getElementById("sendPreviewBtn").addEventListener("click", sendPreviewReport);
-
-    document.getElementById("saveBackupBtn").addEventListener("click", saveManualBackup);
-    document.getElementById("openRestoreBtn").addEventListener("click", openRestoreModal);
-    document.getElementById("closeRestoreBtn").addEventListener("click", function () {
-      document.getElementById("restoreModal").style.display = "none";
-    });
-
-    document.getElementById("backupsList").addEventListener("click", function (e) {
-      var rBtn = e.target.closest("[data-bidx]");
-      if (rBtn) {
-        applyBackupIndex(parseInt(rBtn.getAttribute("data-bidx"), 10));
+      if (weight <= 0) {
+        showToast("Введите вес коробки или количество коробок");
         return;
       }
-      var dBtn = e.target.closest("[data-delidx]");
-      if (dBtn) {
-        deleteBackupIndex(parseInt(dBtn.getAttribute("data-delidx"), 10));
+      if (rate > 0) state.defaultRate = rate;
+      var pay = round2(weight * rate);
+      var targetIso = getOrderedRange().start;
+      if (!state.records[targetIso]) state.records[targetIso] = [];
+      state.records[targetIso].push({
+        isOff: false,
+        boxes: boxes,
+        boxWeight: boxWeight,
+        weight: weight,
+        rate: rate,
+        pay: pay
+      });
+
+      document.getElementById("inputBoxes").value = "";
+      document.getElementById("inputBoxWeight").value = "";
+      ensureDailyAutoBackup();
+      saveAllStorages(true);
+      refreshAll();
+      showToast("Запись добавлена: " + fmtWeight(weight) + " • " + fmtMoney(pay));
+    });
+
+    ["inputBoxes", "inputBoxWeight", "inputRate"].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener("input", function() {
+        if (id === "inputRate") el.dataset.edited = "1";
+        updateLiveCalc();
+      });
+    });
+
+    var nameEl = document.getElementById("inputWorkerName");
+    if (nameEl) nameEl.addEventListener("input", function() {
+      state.workerName = this.value;
+      saveAllStorages(true);
+    });
+
+    var recList = document.getElementById("recordsList");
+    if (recList) recList.addEventListener("click", function(e) {
+      var btn = e.target.closest(".del-rec-btn");
+      if (!btn) return;
+      var iso = btn.getAttribute("data-iso");
+      var idx = parseInt(btn.getAttribute("data-idx"), 10);
+      var arr = state.records[iso];
+      if (!arr || !arr[idx]) return;
+      var removed = arr.splice(idx, 1)[0];
+      if (arr.length === 0) delete state.records[iso];
+      saveAllStorages(true);
+      refreshAll();
+      triggerUndoBar(iso, idx, removed);
+    });
+
+    var undoBtn = document.getElementById("btnUndoDelete");
+    if (undoBtn) undoBtn.addEventListener("click", function() {
+      if (!undoBuffer) return;
+      clearInterval(undoTimer);
+      if (!state.records[undoBuffer.iso]) state.records[undoBuffer.iso] = [];
+      state.records[undoBuffer.iso].splice(undoBuffer.idx, 0, undoBuffer.rec);
+      undoBuffer = null;
+      document.getElementById("undoBar").classList.add("hidden");
+      saveAllStorages(true);
+      refreshAll();
+      showToast("Запись восстановлена");
+    });
+
+    var btnTheme = document.getElementById("btnTheme");
+    if (btnTheme) btnTheme.addEventListener("click", function() {
+      state.theme = state.theme === "dark" ? "light" : "dark";
+      saveAllStorages(true);
+      applyTheme();
+    });
+
+    var btnUpd = document.getElementById("btnUpdate");
+    if (btnUpd) btnUpd.addEventListener("click", runSafeUpdate);
+
+    var btnFull = document.getElementById("btnFullReport");
+    var btnShort = document.getElementById("btnShortReport");
+    if (btnFull) btnFull.addEventListener("click", function() { openReportPreview(false); });
+    if (btnShort) btnShort.addEventListener("click", function() { openReportPreview(true); });
+
+    var btnCancelRep = document.getElementById("btnCancelReport");
+    var btnSendRep = document.getElementById("btnSendReport");
+    if (btnCancelRep) btnCancelRep.addEventListener("click", function() {
+      document.getElementById("reportModal").classList.add("hidden");
+    });
+    if (btnSendRep) btnSendRep.addEventListener("click", function() {
+      document.getElementById("reportModal").classList.add("hidden");
+      shareReportText(currentReportText);
+    });
+
+    var btnSaveDb = document.getElementById("btnSaveDb");
+    if (btnSaveDb) btnSaveDb.addEventListener("click", function() {
+      createBackupSnapshot("");
+      saveAllStorages(true);
+      showToast("Резервная копия сохранена");
+    });
+
+    var btnOpenRes = document.getElementById("btnOpenRestore");
+    if (btnOpenRes) btnOpenRes.addEventListener("click", openRestoreModal);
+
+    var btnCloseRes = document.getElementById("btnCloseRestore");
+    if (btnCloseRes) btnCloseRes.addEventListener("click", function() {
+      document.getElementById("restoreModal").classList.add("hidden");
+    });
+
+    var bkpList = document.getElementById("backupsList");
+    if (bkpList) bkpList.addEventListener("click", function(e) {
+      var loadBtn = e.target.closest(".btn-bkp-load");
+      var delBtn = e.target.closest(".btn-bkp-del");
+      if (loadBtn) {
+        var idx = parseInt(loadBtn.getAttribute("data-idx"), 10);
+        var b = state.backups[idx];
+        if (!b || !b.data) return;
+        var norm = normalizeDb(b.data, state.defaultRate);
+        state.workerName = norm.workerName || state.workerName;
+        state.defaultRate = norm.defaultRate || state.defaultRate;
+        state.records = norm.records;
+        saveAllStorages(true);
+        document.getElementById("restoreModal").classList.add("hidden");
+        refreshAll();
+        showToast("База восстановлена (" + countRecords(state) + " зап.)");
+      } else if (delBtn) {
+        var dIdx = parseInt(delBtn.getAttribute("data-idx"), 10);
+        state.backups.splice(dIdx, 1);
+        saveAllStorages(true);
+        openRestoreModal();
       }
     });
 
-    document.getElementById("toggleTransferBtn").addEventListener("click", showTransferCodeArea);
-    document.getElementById("copyCodeBtn").addEventListener("click", copyTransferCode);
-    document.getElementById("importCodeBtn").addEventListener("click", importTransferCode);
+    var btnToggleCode = document.getElementById("btnToggleCode");
+    if (btnToggleCode) btnToggleCode.addEventListener("click", function() {
+      var box = document.getElementById("codeTransferBox");
+      var area = document.getElementById("transferCodeArea");
+      if (!box) return;
+      box.classList.toggle("hidden");
+      if (!box.classList.contains("hidden") && area) {
+        area.value = JSON.stringify(serializeState());
+      }
+    });
+
+    var btnCopyCode = document.getElementById("btnCopyCode");
+    if (btnCopyCode) btnCopyCode.addEventListener("click", function() {
+      var area = document.getElementById("transferCodeArea");
+      if (!area) return;
+      area.select();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(area.value).catch(function() {});
+      }
+      showToast("Код базы скопирован");
+    });
+
+    var btnImportCode = document.getElementById("btnImportCode");
+    if (btnImportCode) btnImportCode.addEventListener("click", function() {
+      var area = document.getElementById("transferCodeArea");
+      if (!area || !area.value.trim()) return;
+      try {
+        var parsed = JSON.parse(area.value.trim());
+        var norm = normalizeDb(parsed, state.defaultRate);
+        state.workerName = norm.workerName || state.workerName;
+        state.defaultRate = norm.defaultRate || state.defaultRate;
+        state.records = norm.records;
+        saveAllStorages(true);
+        document.getElementById("restoreModal").classList.add("hidden");
+        refreshAll();
+        showToast("База загружена из кода (" + countRecords(state) + " зап.)");
+      } catch (err) {
+        showToast("Ошибка формата кода базы");
+      }
+    });
   }
 
-  function bootstrap() {
-    var today = new Date();
-    state.viewYear = today.getFullYear();
-    state.viewMonth = today.getMonth();
-    var todayIso = dateToIso(today);
-    state.selectedDate = todayIso;
-    state.rangeStart = todayIso;
-    state.rangeEnd = todayIso;
+  function init() {
+    var now = new Date();
+    var todayIso = toIso(now.getFullYear(), now.getMonth(), now.getDate());
+    state.viewYear = now.getFullYear();
+    state.viewMonth = now.getMonth();
+    state.selectedStart = todayIso;
+    state.selectedEnd = todayIso;
 
-    var lsDb = null;
-    var lsBackups = null;
-    try {
-      lsDb = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      lsBackups = JSON.parse(localStorage.getItem(BACKUPS_KEY) || "null");
-    } catch (e) {}
+    bindEvents();
+    refreshAll();
 
-    var wn = readWindowName();
-    var wnDb = wn && wn.db ? wn.db : null;
-    var wnBackups = wn && Array.isArray(wn.backups) ? wn.backups : null;
-
-    Promise.all([idbGet(STORAGE_KEY), idbGet(BACKUPS_KEY)]).then(function (res) {
-      var idbDb = res[0];
-      var idbBackups = res[1];
-
-      var best = pickBestSource([lsDb, idbDb, wnDb]);
-      if (best) {
-        state.workerName = best.workerName;
-        state.defaultRate = best.defaultRate;
-        state.theme = best.theme;
-        state.records = best.records;
-        state.updatedAt = best.updatedAt;
-      }
-
-      var bLists = [lsBackups, idbBackups, wnBackups];
-      var bestB = [];
-      for (var i = 0; i < bLists.length; i++) {
-        if (Array.isArray(bLists[i]) && bLists[i].length > bestB.length) {
-          bestB = bLists[i];
-        }
-      }
-      backups = bestB;
-
-      bindEvents();
+    loadAllStorages().then(function() {
       refreshAll();
-      persistAll(false);
     });
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootstrap);
+    document.addEventListener("DOMContentLoaded", init);
   } else {
-    bootstrap();
+    init();
   }
 })();
