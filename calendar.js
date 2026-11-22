@@ -1,85 +1,222 @@
-window.ObvalkaCalendar = (function() {
-  const MONTHS = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
-  const MONTHS_GEN = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
-  const MONTHS_SHORT = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+(function () {
+  var gridEl = null;
+  var isDragging = false;
+  var dragStart = null;
+  var touchStartX = 0;
+  var touchStartY = 0;
 
-  function pad(n) { return n < 10 ? "0" + n : "" + n; }
-  function toKey(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
-  function parseKey(k) {
-    const p = k.split("-");
-    return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-  }
-  function formatRuDay(k) {
-    const d = parseKey(k);
-    return d.getDate() + " " + MONTHS_GEN[d.getMonth()];
-  }
-  function formatShortDay(k) {
-    const d = parseKey(k);
-    return d.getDate() + " " + MONTHS_SHORT[d.getMonth()];
+  function pad2(n) {
+    return n < 10 ? "0" + n : "" + n;
   }
 
-  function render(state, onSelectRange) {
-    const grid = document.getElementById("daysGrid");
-    const label = document.getElementById("monthLabel");
-    if (!grid || !label) return;
-    label.textContent = MONTHS[state.viewMonth] + " " + state.viewYear;
-    grid.innerHTML = "";
+  function toKey(y, m, d) {
+    return y + "-" + pad2(m + 1) + "-" + pad2(d);
+  }
 
-    const firstDay = new Date(state.viewYear, state.viewMonth, 1);
-    let startOffset = firstDay.getDay() - 1;
-    if (startOffset < 0) startOffset = 6;
-    const startDate = new Date(state.viewYear, state.viewMonth, 1 - startOffset);
+  function getState() {
+    if (window.ObvalkaState) return window.ObvalkaState;
+    var now = new Date();
+    window.ObvalkaState = {
+      viewYear: now.getFullYear(),
+      viewMonth: now.getMonth(),
+      selectedStart: toKey(now.getFullYear(), now.getMonth(), now.getDate()),
+      selectedEnd: toKey(now.getFullYear(), now.getMonth(), now.getDate()),
+      periodMode: "day",
+      records: {}
+    };
+    return window.ObvalkaState;
+  }
 
-    let dragging = false;
-    let dragStart = null;
+  function isBetween(k, a, b) {
+    var minK = a <= b ? a : b;
+    var maxK = a <= b ? b : a;
+    return k >= minK && k <= maxK;
+  }
 
-    for (let i = 0; i < 42; i++) {
-      const cur = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
-      const key = toKey(cur);
-      const cell = document.createElement("div");
-      cell.className = "day-cell";
-      if (cur.getMonth() !== state.viewMonth) cell.classList.add("other");
+  function notifyChange(isManualRange) {
+    if (typeof window.onObvalkaRangeChange === "function") {
+      window.onObvalkaRangeChange(isManualRange);
+    }
+  }
 
-      if (state.rangeStart && state.rangeEnd) {
-        if (key === state.rangeStart || key === state.rangeEnd) cell.classList.add("selected");
-        else if (key > state.rangeStart && key < state.rangeEnd) cell.classList.add("in-range");
-      } else if (key === state.selectedDate) {
-        cell.classList.add("selected");
-      }
+  function renderCalendarGrid() {
+    gridEl = document.getElementById("calendarGrid");
+    if (!gridEl) return;
 
-      const num = document.createElement("span");
-      num.textContent = cur.getDate();
-      cell.appendChild(num);
+    var st = getState();
+    var y = st.viewYear;
+    var m = st.viewMonth;
 
-      const dayRecs = state.records.filter(function(r) { return r.date === key; });
-      if (dayRecs.length > 0) {
-        const dot = document.createElement("div");
-        dot.className = "day-dot";
-        if (dayRecs.some(function(r) { return r.isOff; })) dot.classList.add("off");
-        cell.appendChild(dot);
-      }
+    var firstDay = new Date(y, m, 1).getDay();
+    var offset = (firstDay + 6) % 7;
+    var daysInMonth = new Date(y, m + 1, 0).getDate();
+    var prevDays = new Date(y, m, 0).getDate();
 
-      cell.dataset.key = key;
-      cell.addEventListener("pointerdown", function(e) {
-        e.preventDefault();
-        dragging = true;
-        dragStart = key;
-        onSelectRange(key, key, false);
-      });
-      cell.addEventListener("pointerenter", function() {
-        if (dragging && dragStart) {
-          const a = dragStart < key ? dragStart : key;
-          const b = dragStart < key ? key : dragStart;
-          onSelectRange(a, b, true);
+    var now = new Date();
+    var todayKey = toKey(now.getFullYear(), now.getMonth(), now.getDate());
+
+    var html = [];
+    var totalCells = Math.ceil((offset + daysInMonth) / 7) * 7;
+
+    for (var i = 0; i < totalCells; i++) {
+      var cellY = y;
+      var cellM = m;
+      var cellD = 1;
+      var otherMonth = false;
+
+      if (i < offset) {
+        otherMonth = true;
+        cellD = prevDays - offset + 1 + i;
+        cellM = m - 1;
+        if (cellM < 0) {
+          cellM = 11;
+          cellY = y - 1;
         }
-      });
-      grid.appendChild(cell);
+      } else if (i >= offset + daysInMonth) {
+        otherMonth = true;
+        cellD = i - offset - daysInMonth + 1;
+        cellM = m + 1;
+        if (cellM > 11) {
+          cellM = 0;
+          cellY = y + 1;
+        }
+      } else {
+        cellD = i - offset + 1;
+      }
+
+      var k = toKey(cellY, cellM, cellD);
+      var classes = ["day-cell"];
+      if (otherMonth) classes.push("other-month");
+      if (k === todayKey) classes.push("today");
+      if (isBetween(k, st.selectedStart, st.selectedEnd)) {
+        classes.push("selected");
+        if (k === st.selectedStart || k === st.selectedEnd) {
+          classes.push("selected-edge");
+        }
+      }
+
+      var recs = st.records && st.records[k] ? st.records[k] : [];
+      var dotHtml = "";
+      if (recs.length > 0) {
+        var hasOff = false;
+        var hasWork = false;
+        for (var r = 0; r < recs.length; r++) {
+          if (recs[r] && recs[r].isOff) hasOff = true;
+          else hasWork = true;
+        }
+        if (hasWork) {
+          dotHtml = '<span class="day-dot work"></span>';
+        } else if (hasOff) {
+          dotHtml = '<span class="day-dot off"></span>';
+        }
+      }
+
+      html.push(
+        '<div class="' + classes.join(" ") + '" data-date="' + k + '">' +
+        '<span>' + cellD + '</span>' +
+        dotHtml +
+        '</div>'
+      );
     }
 
-    const stopDrag = function() { dragging = false; dragStart = null; };
-    window.removeEventListener("pointerup", stopDrag);
-    window.addEventListener("pointerup", stopDrag);
+    gridEl.innerHTML = html.join("");
   }
 
-  return { render: render, toKey: toKey, parseKey: parseKey, formatRuDay: formatRuDay, formatShortDay: formatShortDay };
+  function handleSelectStart(dateKey) {
+    if (!dateKey) return;
+    var st = getState();
+    isDragging = true;
+    dragStart = dateKey;
+    st.selectedStart = dateKey;
+    st.selectedEnd = dateKey;
+    st.periodMode = "day";
+    renderCalendarGrid();
+    notifyChange(false);
+  }
+
+  function handleSelectMove(dateKey) {
+    if (!isDragging || !dateKey || !dragStart) return;
+    var st = getState();
+    if (dateKey <= dragStart) {
+      st.selectedStart = dateKey;
+      st.selectedEnd = dragStart;
+    } else {
+      st.selectedStart = dragStart;
+      st.selectedEnd = dateKey;
+    }
+    st.periodMode = st.selectedStart === st.selectedEnd ? "day" : "custom";
+    renderCalendarGrid();
+    notifyChange(st.selectedStart !== st.selectedEnd);
+  }
+
+  function handleSelectEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    var st = getState();
+    notifyChange(st.selectedStart !== st.selectedEnd);
+  }
+
+  function bindGridEvents() {
+    var el = document.getElementById("calendarGrid");
+    if (!el || el.dataset.bound === "1") return;
+    el.dataset.bound = "1";
+
+    el.addEventListener("mousedown", function (e) {
+      var cell = e.target.closest(".day-cell");
+      if (!cell) return;
+      handleSelectStart(cell.getAttribute("data-date"));
+    });
+
+    el.addEventListener("mouseover", function (e) {
+      if (!isDragging) return;
+      var cell = e.target.closest(".day-cell");
+      if (!cell) return;
+      handleSelectMove(cell.getAttribute("data-date"));
+    });
+
+    window.addEventListener("mouseup", function () {
+      handleSelectEnd();
+    });
+
+    el.addEventListener("touchstart", function (e) {
+      if (!e.touches || e.touches.length === 0) return;
+      var t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      var cell = e.target.closest(".day-cell");
+      if (!cell) return;
+      handleSelectStart(cell.getAttribute("data-date"));
+    }, { passive: true });
+
+    el.addEventListener("touchmove", function (e) {
+      if (!isDragging || !e.touches || e.touches.length === 0) return;
+      var t = e.touches[0];
+      if (Math.abs(t.clientX - touchStartX) > 6 || Math.abs(t.clientY - touchStartY) > 6) {
+        if (e.cancelable) e.preventDefault();
+      }
+      var target = document.elementFromPoint(t.clientX, t.clientY);
+      if (!target) return;
+      var cell = target.closest(".day-cell");
+      if (!cell) return;
+      handleSelectMove(cell.getAttribute("data-date"));
+    }, { passive: false });
+
+    el.addEventListener("touchend", function () {
+      handleSelectEnd();
+    });
+  }
+
+  function bootCalendar() {
+    renderCalendarGrid();
+    bindGridEvents();
+  }
+
+  window.renderCalendarGrid = renderCalendarGrid;
+  window.bootCalendar = bootCalendar;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootCalendar);
+  } else {
+    bootCalendar();
+  }
 })();
