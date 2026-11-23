@@ -3,52 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Обвалка PRO v 8.7</title>
+<title>Обвалка PRO v 8.8</title>
 <style>
   :root {
     --bg: #121212;
     --card: #1e1e1e;
     --card-border: #2c2c2c;
-    --text: #f3f4f6;
-    --muted: #9ca3af;
     --input-bg: #2a2a2a;
-    --input-border: #3a3a3a;
+    --text: #f3f4f6;
+    --text-muted: #9ca3af;
     --green: #16a34a;
     --green-hover: #15803d;
     --green-soft: rgba(22, 163, 74, 0.16);
-    --orange: #eab308;
-    --orange-soft: rgba(234, 179, 8, 0.22);
-    --orange-border: rgba(234, 179, 8, 0.65);
+    --amber: #eab308;
+    --amber-text: #111827;
+    --amber-soft: rgba(234, 179, 8, 0.24);
+    --amber-border: rgba(234, 179, 8, 0.65);
     --red: #ef4444;
-    --red-soft: rgba(239, 68, 68, 0.18);
-    --red-border: rgba(239, 68, 68, 0.55);
-    --cell-border: #383838;
+    --red-soft: rgba(239, 68, 68, 0.16);
+    --red-border: rgba(239, 68, 68, 0.45);
+    --day-border: #383838;
+    --day-bg: #242424;
   }
+
   body.light {
     --bg: #f1f5f9;
     --card: #ffffff;
-    --card-border: #e2e8f0;
-    --text: #0f172a;
-    --muted: #64748b;
+    --card-border: #cbd5e1;
     --input-bg: #f8fafc;
-    --input-border: #cbd5e1;
+    --text: #0f172a;
+    --text-muted: #64748b;
     --green: #16a34a;
     --green-hover: #15803d;
     --green-soft: rgba(22, 163, 74, 0.12);
-    --orange: #d97706;
-    --orange-soft: rgba(245, 158, 11, 0.22);
-    --orange-border: rgba(217, 119, 6, 0.65);
+    --amber: #eab308;
+    --amber-text: #0f172a;
+    --amber-soft: rgba(234, 179, 8, 0.28);
+    --amber-border: rgba(202, 138, 4, 0.75);
     --red: #dc2626;
-    --red-soft: rgba(220, 38, 38, 0.12);
-    --red-border: rgba(220, 38, 38, 0.45);
-    --cell-border: #cbd5e1;
+    --red-soft: rgba(220, 38, 38, 0.1);
+    --red-border: rgba(220, 38, 38, 0.4);
+    --day-border: #cbd5e1;
+    --day-bg: #f8fafc;
   }
+
   * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
     margin: 0;
     padding: 0;
   }
+
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg);
@@ -58,96 +63,120 @@
     padding: 8px;
     min-height: 100vh;
   }
-  .app {
+
+  .app-wrap {
     width: 100%;
     max-width: 440px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding-bottom: 18px;
+    padding-bottom: 20px;
   }
+
   .card {
     background: var(--card);
     border: 1px solid var(--card-border);
-    border-radius: 14px;
+    border-radius: 12px;
     padding: 10px;
   }
-  .header-row {
+
+  /* Header */
+  .cal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
     margin-bottom: 8px;
+    gap: 6px;
   }
-  .nav-btn, .icon-btn {
+
+  .nav-btn {
     background: var(--input-bg);
-    border: 1px solid var(--input-border);
+    border: 1px solid var(--card-border);
     color: var(--text);
-    border-radius: 8px;
+    width: 32px;
     height: 30px;
-    min-width: 30px;
-    padding: 0 8px;
+    border-radius: 8px;
     font-size: 13px;
-    font-weight: 600;
     cursor: pointer;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
   }
-  .nav-btn:active, .icon-btn:active {
-    transform: scale(0.96);
-  }
+
   .month-title-wrap {
     display: flex;
     align-items: baseline;
     gap: 6px;
-    justify-content: center;
-    flex: 1;
   }
+
   .month-title {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 700;
   }
+
   .ver-badge {
     font-size: 11px;
-    color: var(--muted);
+    color: var(--text-muted);
     font-weight: 600;
   }
+
   .header-actions {
     display: flex;
-    gap: 5px;
+    align-items: center;
+    gap: 6px;
   }
-  .tabs {
+
+  .icon-btn {
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Period Tabs */
+  .period-tabs {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 4px;
     margin-bottom: 8px;
   }
+
   .tab-btn {
     background: var(--input-bg);
-    border: 1px solid var(--input-border);
+    border: 1px solid var(--card-border);
     color: var(--text);
-    border-radius: 8px;
     padding: 6px 2px;
+    border-radius: 8px;
     font-size: 11.5px;
     font-weight: 600;
     cursor: pointer;
     text-align: center;
   }
+
   .tab-btn.active {
     background: var(--green);
     border-color: var(--green);
     color: #ffffff;
   }
+
+  /* Calendar Grid */
   .weekdays {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     text-align: center;
     font-size: 11px;
-    color: var(--muted);
+    color: var(--text-muted);
     font-weight: 600;
     margin-bottom: 4px;
   }
+
   .cal-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -155,224 +184,235 @@
     user-select: none;
     touch-action: pan-y;
   }
+
   .day-cell {
-    height: 28px;
-    border-radius: 7px;
-    border: 1px solid var(--cell-border);
+    height: 27px;
+    border-radius: 6px;
+    border: 1px solid var(--day-border);
+    background: var(--day-bg);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     position: relative;
-    background: transparent;
-    color: var(--text);
   }
+
   .day-cell.other-month {
     opacity: 0.35;
   }
+
   .day-cell.in-range {
-    background: var(--orange-soft);
-    border-color: var(--orange-border);
+    background: var(--amber-soft);
+    border-color: var(--amber-border);
     color: var(--text);
   }
+
   .day-cell.selected {
-    background: var(--orange);
-    border-color: var(--orange);
-    color: #111827;
+    background: var(--amber);
+    border-color: var(--amber);
+    color: var(--amber-text);
     font-weight: 800;
   }
-  .day-cell.is-off {
+
+  .day-cell.has-off {
     background: var(--red-soft);
     border-color: var(--red-border);
-    color: var(--red);
   }
-  .day-cell.is-off.in-range {
-    background: var(--orange-soft);
+
+  .day-cell.has-off.in-range {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: var(--amber);
+  }
+
+  .day-cell.has-off.selected {
+    background: var(--amber);
     border-color: var(--red);
+    color: var(--amber-text);
   }
-  .day-cell.is-off.selected {
-    background: var(--orange);
-    border-color: var(--red);
-    color: #111827;
-  }
-  .off-mark {
-    position: absolute;
-    top: 1px;
-    right: 3px;
-    font-size: 8.5px;
-    font-weight: 900;
-    color: var(--red);
+
+  .day-num {
     line-height: 1;
   }
-  .work-dot {
+
+  .day-mark {
     position: absolute;
     bottom: 2px;
-    width: 12px;
-    height: 2px;
-    border-radius: 2px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
     background: var(--green);
   }
-  .day-cell.selected .work-dot {
-    background: #111827;
+
+  .day-off-x {
+    position: absolute;
+    top: 1px;
+    right: 2px;
+    font-size: 8px;
+    line-height: 1;
+    color: var(--red);
+    font-weight: 900;
   }
-  .hint-text {
+
+  .cal-hint {
     text-align: center;
     font-size: 10.5px;
-    color: var(--muted);
+    color: var(--text-muted);
     margin: 6px 0 5px;
   }
+
   .off-btn {
     width: 100%;
     height: 26px;
-    border-radius: 8px;
+    border-radius: 7px;
     border: 1px solid var(--red-border);
     background: var(--red-soft);
     color: var(--red);
     font-size: 11.5px;
     font-weight: 700;
+    cursor: pointer;
     letter-spacing: 0.4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
   }
-  .off-btn:active {
-    transform: scale(0.99);
-  }
-  .sec-head {
+
+  /* Records Card */
+  .rec-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
     margin-bottom: 6px;
-  }
-  .records-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    max-height: 170px;
-    overflow-y: auto;
-    margin-bottom: 7px;
-  }
-  .rec-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 7px;
-    padding: 2px 6px;
-    min-height: 23px;
-    font-size: 12px;
-    gap: 6px;
-  }
-  .rec-item.off-row {
-    border-color: var(--red-border);
-    background: var(--red-soft);
-    color: var(--red);
-  }
-  .rec-text {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-  }
-  .del-rec-btn {
-    width: 18px;
-    height: 18px;
-    border-radius: 5px;
-    border: 1px solid var(--red-border);
-    background: var(--red-soft);
-    color: var(--red);
-    font-size: 11px;
+    font-size: 11.5px;
+    color: var(--text-muted);
     font-weight: 700;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
   }
-  .undo-bar {
-    display: none;
-    margin-bottom: 7px;
-  }
-  .undo-bar.show {
-    display: block;
-  }
-  .undo-btn {
-    width: 100%;
-    height: 28px;
-    border-radius: 8px;
-    border: 1px solid var(--orange-border);
-    background: var(--orange);
-    color: #111827;
-    font-size: 12px;
-    font-weight: 800;
-    cursor: pointer;
-  }
+
   .summary-box {
     background: var(--green-soft);
     border: 1px solid rgba(22, 163, 74, 0.35);
     border-radius: 10px;
     padding: 8px 10px;
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
     gap: 8px;
   }
+
   .sum-info {
     display: flex;
     flex-direction: column;
     gap: 2px;
   }
+
   .sum-label {
     font-size: 10.5px;
     font-weight: 700;
     color: var(--green);
     text-transform: uppercase;
   }
-  .sum-metrics {
-    font-size: 13px;
-    font-weight: 700;
+
+  .sum-sub {
+    font-size: 12.5px;
+    font-weight: 600;
   }
+
   .sum-money {
-    font-size: 18px;
+    font-size: 19px;
     font-weight: 800;
-    color: var(--orange);
+    color: var(--amber);
   }
+
   .report-btns {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    min-width: 126px;
   }
-  .rep-btn {
-    height: 29px;
-    border-radius: 8px;
-    border: 1px solid var(--input-border);
-    background: var(--input-bg);
-    color: var(--text);
-    font-size: 12px;
+
+  .btn-rep-full {
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 6px 10px;
+    font-size: 11.5px;
     font-weight: 700;
     cursor: pointer;
-    padding: 0 10px;
+    white-space: nowrap;
+  }
+
+  .btn-rep-short {
+    background: var(--input-bg);
+    color: var(--text);
+    border: 1px solid var(--card-border);
+    border-radius: 7px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .records-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 6px;
+    max-height: 165px;
+    overflow-y: auto;
+  }
+
+  .rec-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 3px 7px;
+    min-height: 24px;
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .rec-item.off-item {
+    border-color: var(--red-border);
+    background: var(--red-soft);
+    color: var(--red);
+    font-weight: 600;
+  }
+
+  .rec-del-btn {
+    background: var(--red-soft);
+    border: 1px solid var(--red-border);
+    color: var(--red);
+    width: 19px;
+    height: 19px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    flex-shrink: 0;
   }
-  .rep-btn.primary {
-    background: var(--green);
-    border-color: var(--green);
-    color: #ffffff;
+
+  .undo-bar {
+    margin-top: 6px;
+    background: var(--amber);
+    color: var(--amber-text);
+    border: none;
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 800;
+    width: 100%;
+    cursor: pointer;
+    display: none;
+    text-align: center;
   }
+
+  /* Input Form Card */
   .form-head {
     display: flex;
     justify-content: space-between;
@@ -380,29 +420,34 @@
     margin-bottom: 8px;
     font-size: 13px;
   }
+
   .form-head span:first-child {
-    color: var(--muted);
+    color: var(--text-muted);
   }
+
   .form-head strong {
     font-size: 14px;
   }
+
   .form-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
     margin-bottom: 6px;
+    gap: 8px;
   }
+
   .form-row label {
     font-size: 13px;
-    color: var(--text);
+    font-weight: 500;
   }
+
   .form-input {
-    width: 155px;
+    width: 135px;
     height: 32px;
-    border-radius: 8px;
-    border: 1px solid var(--input-border);
     background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
     color: var(--text);
     padding: 0 10px;
     font-size: 14px;
@@ -410,57 +455,64 @@
     text-align: right;
     outline: none;
   }
+
   .form-input:focus {
     border-color: var(--green);
   }
+
   .shift-preview {
     background: var(--input-bg);
-    border: 1px solid var(--input-border);
+    border: 1px solid var(--card-border);
     border-radius: 8px;
     padding: 7px 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin: 8px 0;
     font-size: 12.5px;
     font-weight: 700;
-    margin: 6px 0 8px;
   }
-  .shift-vals {
+
+  .shift-preview-vals {
     display: flex;
     gap: 10px;
+    font-size: 13.5px;
   }
-  .shift-vals .w {
+
+  .val-kg {
     color: var(--green);
   }
-  .shift-vals .m {
-    color: var(--orange);
+
+  .val-rub {
+    color: var(--amber);
   }
+
   .add-btn {
     width: 100%;
     height: 38px;
-    border-radius: 10px;
-    border: none;
     background: var(--green);
     color: #ffffff;
+    border: none;
+    border-radius: 9px;
     font-size: 13.5px;
     font-weight: 800;
-    letter-spacing: 0.4px;
     cursor: pointer;
+    letter-spacing: 0.3px;
   }
-  .add-btn:active {
-    background: var(--green-hover);
-  }
-  .bottom-actions {
+
+  /* Bottom Backup Bar */
+  .backup-bar {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
-  .db-btn {
-    height: 36px;
-    border-radius: 10px;
-    border: 1px solid var(--card-border);
+
+  .backup-btn {
     background: var(--card);
+    border: 1px solid var(--card-border);
     color: var(--text);
+    height: 36px;
+    border-radius: 9px;
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
@@ -469,6 +521,8 @@
     justify-content: center;
     gap: 6px;
   }
+
+  /* Modals */
   .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -479,67 +533,68 @@
     padding: 14px;
     z-index: 100;
   }
-  .modal-backdrop.show {
+
+  .modal-backdrop.open {
     display: flex;
   }
-  .modal-backdrop.top-layer {
-    z-index: 200;
-  }
+
   .modal-box {
-    width: 100%;
-    max-width: 400px;
     background: var(--card);
     border: 1px solid var(--card-border);
     border-radius: 14px;
+    width: 100%;
+    max-width: 400px;
     padding: 14px;
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
+
   .modal-title {
     font-size: 15px;
     font-weight: 800;
   }
-  .report-preview-area {
+
+  .report-textarea {
     width: 100%;
-    min-height: 120px;
-    max-height: 240px;
+    min-height: 150px;
     background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    border-radius: 9px;
     color: var(--text);
     padding: 10px;
-    font-family: inherit;
-    font-size: 13px;
-    line-height: 1.4;
-    resize: none;
-    outline: none;
+    font-family: monospace;
+    font-size: 12.5px;
+    resize: vertical;
+    line-height: 1.45;
   }
-  .modal-btns {
+
+  .modal-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
-  .m-btn {
-    height: 36px;
-    border-radius: 9px;
-    border: 1px solid var(--input-border);
+
+  .btn-cancel {
     background: var(--input-bg);
+    border: 1px solid var(--card-border);
     color: var(--text);
-    font-size: 13px;
+    height: 36px;
+    border-radius: 8px;
     font-weight: 700;
     cursor: pointer;
   }
-  .m-btn.green {
+
+  .btn-primary {
     background: var(--green);
-    border-color: var(--green);
-    color: #ffffff;
+    border: none;
+    color: #fff;
+    height: 36px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
   }
-  .m-btn.red {
-    background: var(--red);
-    border-color: var(--red);
-    color: #ffffff;
-  }
+
   .backup-list {
     display: flex;
     flex-direction: column;
@@ -547,63 +602,83 @@
     max-height: 220px;
     overflow-y: auto;
   }
+
   .backup-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
     background: var(--input-bg);
-    border: 1px solid var(--input-border);
+    border: 1px solid var(--card-border);
     border-radius: 8px;
-    padding: 6px 8px;
+    padding: 7px 9px;
+    gap: 6px;
     font-size: 12px;
   }
-  .backup-meta {
-    flex: 1;
+
+  .backup-row-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     cursor: pointer;
+    flex: 1;
   }
+
+  .confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 200;
+  }
+
+  .confirm-overlay.open {
+    display: flex;
+  }
+
   .toast {
     position: fixed;
     bottom: 16px;
     left: 50%;
     transform: translateX(-50%);
     background: #111827;
-    color: #ffffff;
+    color: #f9fafb;
     border: 1px solid #374151;
     padding: 8px 14px;
-    border-radius: 10px;
-    font-size: 12.5px;
+    border-radius: 99px;
+    font-size: 12px;
     font-weight: 600;
     z-index: 300;
     display: none;
-    text-align: center;
-    max-width: 90%;
-  }
-  .toast.show {
-    display: block;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
   }
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app-wrap">
+
+  <!-- Calendar Card -->
   <div class="card">
-    <div class="header-row">
+    <div class="cal-header">
       <button type="button" class="nav-btn" id="prevMonthBtn">&#9664;</button>
       <div class="month-title-wrap">
         <span class="month-title" id="monthTitle">Ноябрь 2026</span>
-        <span class="ver-badge" id="verBadge">v 8.7</span>
+        <span class="ver-badge" id="verBadge">v 8.8</span>
       </div>
       <div class="header-actions">
         <button type="button" class="icon-btn" id="updateBtn" title="Обновить">&#128260;</button>
-        <button type="button" class="icon-btn" id="themeBtn" title="Тема">&#9728;</button>
+        <button type="button" class="icon-btn" id="themeBtn" title="Тема">&#9728;&#65039;</button>
         <button type="button" class="nav-btn" id="nextMonthBtn">&#9654;</button>
       </div>
     </div>
 
-    <div class="tabs" id="periodTabs">
+    <div class="period-tabs" id="periodTabs">
       <button type="button" class="tab-btn active" data-mode="day">День</button>
       <button type="button" class="tab-btn" data-mode="week">Неделя</button>
-      <button type="button" class="tab-btn" data-mode="twoWeeks">2х недели</button>
+      <button type="button" class="tab-btn" data-mode="2weeks">2х недели</button>
       <button type="button" class="tab-btn" data-mode="month">Месяц</button>
       <button type="button" class="tab-btn" data-mode="year">Год</button>
     </div>
@@ -614,53 +689,55 @@
 
     <div class="cal-grid" id="calGrid"></div>
 
-    <div class="hint-text">Нажмите на день или протяните пальцем для выбора периода</div>
-    <button type="button" class="off-btn" id="dayOffBtn">&#10005; ВЫХОДНОЙ</button>
+    <div class="cal-hint">Нажмите на день или протяните пальцем для выбора периода</div>
+    <button type="button" class="off-btn" id="addOffBtn">&#10005; ВЫХОДНОЙ</button>
   </div>
 
+  <!-- Summary & Records Card -->
   <div class="card">
-    <div class="sec-head">
-      <span id="recordsHeader">ЗАПИСИ (ДЕНЬ)</span>
+    <div class="rec-header">
+      <span id="recordsTitle">ЗАПИСИ (ДЕНЬ)</span>
       <span id="recordsCount">0 ШТ.</span>
-    </div>
-
-    <div class="records-list" id="recordsList"></div>
-
-    <div class="undo-bar" id="undoBar">
-      <button type="button" class="undo-btn" id="undoBtn">Отменить удаление (0)</button>
     </div>
 
     <div class="summary-box">
       <div class="sum-info">
         <div class="sum-label" id="sumLabel">ИТОГ ЗА ДЕНЬ</div>
-        <div class="sum-metrics" id="sumMetrics">0 кор. &bull; 0 кг</div>
+        <div class="sum-sub" id="sumSub">0 кор. &bull; 0 кг</div>
         <div class="sum-money" id="sumMoney">0 &#8381;</div>
       </div>
       <div class="report-btns">
-        <button type="button" class="rep-btn primary" id="fullReportBtn">&#128203; Полный отчёт</button>
-        <button type="button" class="rep-btn" id="shortReportBtn">&#128209; Краткий отчёт</button>
+        <button type="button" class="btn-rep-full" id="fullReportBtn">&#128203; Полный отчёт</button>
+        <button type="button" class="btn-rep-short" id="shortReportBtn">&#128209; Краткий отчёт</button>
       </div>
     </div>
+
+    <div class="records-list" id="recordsList"></div>
+    <button type="button" class="undo-bar" id="undoDeleteBtn">&#8634; Вернуть удалённую запись</button>
   </div>
 
+  <!-- Input Card -->
   <div class="card">
     <div class="form-head">
-      <span>Выбрана дата:</span>
-      <strong id="selectedDateLabel">22 ноября</strong>
+      <span>Выбрано:</span>
+      <strong id="selectedDateLabel">23 ноября</strong>
     </div>
 
     <div class="form-row">
-      <label for="workerInput">Обвальщик:</label>
-      <input type="text" class="form-input" id="workerInput" placeholder="Имя">
+      <label for="workerNameInput">Обвальщик:</label>
+      <input type="text" class="form-input" id="workerNameInput" placeholder="Имя">
     </div>
+
     <div class="form-row">
       <label for="boxesInput">Коробки (шт):</label>
-      <input type="text" inputmode="numeric" class="form-input" id="boxesInput" placeholder="0">
+      <input type="text" inputmode="decimal" class="form-input" id="boxesInput" placeholder="0">
     </div>
+
     <div class="form-row">
-      <label for="boxWeightInput">Вес коробки (кг):</label>
-      <input type="text" inputmode="decimal" class="form-input" id="boxWeightInput" placeholder="00.0">
+      <label for="weightInput">Вес коробки (кг):</label>
+      <input type="text" inputmode="decimal" class="form-input" id="weightInput" placeholder="00.0">
     </div>
+
     <div class="form-row">
       <label for="rateInput">Ставка за 1 кг (&#8381;):</label>
       <input type="text" inputmode="decimal" class="form-input" id="rateInput" placeholder="0.0">
@@ -668,68 +745,65 @@
 
     <div class="shift-preview">
       <span>ИТОГО ЗА СМЕНУ:</span>
-      <div class="shift-vals">
-        <span class="w" id="previewWeight">0 кг</span>
-        <span class="m" id="previewMoney">0 &#8381;</span>
+      <div class="shift-preview-vals">
+        <span class="val-kg" id="previewKg">0 кг</span>
+        <span class="val-rub" id="previewRub">0 &#8381;</span>
       </div>
     </div>
 
     <button type="button" class="add-btn" id="addRecordBtn">+ ДОБАВИТЬ ЗАПИСЬ</button>
   </div>
 
-  <div class="bottom-actions">
-    <button type="button" class="db-btn" id="saveDbBtn">&#128190; СОХРАНИТЬ БАЗУ</button>
-    <button type="button" class="db-btn" id="openRestoreBtn">&#128194; ВОССТАНОВИТЬ</button>
+  <!-- Backup Buttons -->
+  <div class="backup-bar">
+    <button type="button" class="backup-btn" id="saveBackupBtn">&#128190; СОХРАНИТЬ БАЗУ</button>
+    <button type="button" class="backup-btn" id="openRestoreBtn">&#128194; ВОССТАНОВИТЬ</button>
   </div>
+
 </div>
 
+<!-- Report Preview Modal -->
 <div class="modal-backdrop" id="reportModal">
   <div class="modal-box">
     <div class="modal-title">Предпросмотр отчёта</div>
-    <textarea class="report-preview-area" id="reportTextarea" readonly></textarea>
-    <div class="modal-btns">
-      <button type="button" class="m-btn" id="closeReportBtn">Отмена</button>
-      <button type="button" class="m-btn green" id="sendReportBtn">&#128228; Отправить</button>
+    <textarea class="report-textarea" id="reportText" readonly></textarea>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" id="closeReportBtn">Отмена</button>
+      <button type="button" class="btn-primary" id="sendReportBtn">&#128228; Отправить</button>
     </div>
   </div>
 </div>
 
+<!-- Restore & Transfer Modal -->
 <div class="modal-backdrop" id="restoreModal">
   <div class="modal-box">
-    <div class="modal-title">Резервные копии</div>
+    <div class="modal-title">Резервные копии и перенос</div>
     <div class="backup-list" id="backupList"></div>
-    <div class="modal-btns">
-      <button type="button" class="m-btn" id="openTransferBtn">&#128273; Перенос / Код</button>
-      <button type="button" class="m-btn" id="closeRestoreBtn">Закрыть</button>
+    <div style="border-top: 1px solid var(--card-border); padding-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+      <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 600;">Перенос базы кодом (на другой телефон):</div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" id="copyCodeBtn">&#128273; Скопировать код</button>
+        <button type="button" class="btn-primary" id="importCodeBtn">&#128229; Вставить код</button>
+      </div>
+    </div>
+    <button type="button" class="btn-cancel" id="closeRestoreBtn" style="width: 100%;">Закрыть</button>
+  </div>
+</div>
+
+<!-- Top-level Confirm Overlay -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="modal-box" style="max-width: 320px;">
+    <div class="modal-title" id="confirmTitle">Подтверждение</div>
+    <div style="font-size: 13px; color: var(--text-muted);" id="confirmMsg">Удалить эту резервную копию?</div>
+    <div class="modal-actions">
+      <button type="button" class="btn-cancel" id="confirmNoBtn">Отмена</button>
+      <button type="button" class="btn-primary" id="confirmYesBtn" style="background: var(--red);">Удалить</button>
     </div>
   </div>
 </div>
 
-<div class="modal-backdrop top-layer" id="confirmModal">
-  <div class="modal-box">
-    <div class="modal-title" id="confirmTitle">Удалить копию?</div>
-    <div id="confirmText" style="font-size:13px;color:var(--muted);">Эта резервная копия будет удалена без возможности возврата.</div>
-    <div class="modal-btns">
-      <button type="button" class="m-btn" id="confirmCancelBtn">Отмена</button>
-      <button type="button" class="m-btn red" id="confirmOkBtn">Удалить</button>
-    </div>
-  </div>
-</div>
+<div class="toast" id="toastBox"></div>
 
-<div class="modal-backdrop top-layer" id="transferModal">
-  <div class="modal-box">
-    <div class="modal-title">Перенос базы по коду</div>
-    <textarea class="report-preview-area" id="transferTextarea" placeholder="Нажмите «Скопировать код» или вставьте код базы сюда..."></textarea>
-    <div class="modal-btns">
-      <button type="button" class="m-btn" id="copyCodeBtn">Скопировать код</button>
-      <button type="button" class="m-btn green" id="importCodeBtn">Загрузить из кода</button>
-    </div>
-    <button type="button" class="m-btn" id="closeTransferBtn">Закрыть</button>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script src="app.js?v=8.7"></script>
+<script src="app.js?v=8.8"></script>
 </body>
 </html>
