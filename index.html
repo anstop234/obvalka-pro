@@ -7,11 +7,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Обвалка PRO v9.2</title>
-<!-- ПРОВЕРКА ВЕРСИИ ДО ЗАГРУЗКИ ПРИЛОЖЕНИЯ -->
+<title>Обвалка PRO v9.3</title>
 <script>
 (function(){
-  var CURRENT="9.2";
+  var CURRENT="9.3";
   fetch("version.json?v="+Date.now(),{cache:"no-store"})
     .then(function(r){if(!r.ok)throw new Error();return r.json()})
     .then(function(d){
@@ -727,7 +726,8 @@ body.light .day-cell .work-bar {
   var MONTHS_SHORT = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
   var DB_KEY = "obvalka_pro_v9";
   var BK_KEY = "obvalka_pro_backups_v9";
-  var APP_VERSION = "9.2";
+  var APP_VERSION = "9.3";
+  var MAX_BACKUPS = 10;
 
   var now = new Date();
   var state = {
@@ -935,7 +935,7 @@ body.light .day-cell .work-bar {
   }
 
   function saveBackups(arr) {
-    var trimmed = arr.slice(0, 15);
+    var trimmed = arr.slice(0, MAX_BACKUPS);
     var json = JSON.stringify(trimmed);
     try { localStorage.setItem(BK_KEY, json); } catch (e) {}
     return idbSet(BK_KEY, json);
@@ -960,6 +960,9 @@ body.light .day-cell .work-bar {
         autoUpdate: state.autoUpdate
       }
     });
+    if (arr.length > MAX_BACKUPS) {
+      arr = arr.slice(0, MAX_BACKUPS);
+    }
     return saveBackups(arr);
   }
 
@@ -1012,7 +1015,6 @@ body.light .day-cell .work-bar {
     if (sessionStorage.getItem(sessionKey)) {
       return;
     }
-
     fetch("version.json?v=" + Date.now(), { cache: "no-store" })
       .then(function(res) {
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -1021,7 +1023,6 @@ body.light .day-cell .work-bar {
       .then(function(data) {
         var remoteVer = String(data.version != null ? data.version : "").trim();
         var localVer = String(APP_VERSION).trim();
-
         if (remoteVer && remoteVer !== localVer) {
           if (isAuto && state.autoUpdate) {
             sessionStorage.setItem(sessionKey, "1");
@@ -1087,16 +1088,13 @@ body.light .day-cell .work-bar {
         state.updatedAt = best.updatedAt;
         state.autoUpdate = best.autoUpdate || false;
       }
-      
       document.getElementById("verBadge").textContent = "v " + APP_VERSION;
-      
       applyTheme();
       updateAutoUpdateUI();
       document.getElementById("workerInp").value = state.worker;
       document.getElementById("rateInp").value = state.rate;
       setPeriod(state.period, false);
       ensureDailyAutoBackup();
-
       setTimeout(function() {
         checkForUpdate(true);
       }, 2000);
@@ -1177,11 +1175,9 @@ body.light .day-cell .work-bar {
     document.getElementById("monthLabel").textContent = MONTHS[state.viewMonth] + " " + state.viewYear;
     var grid = document.getElementById("calGrid");
     grid.innerHTML = "";
-
     var firstDay = new Date(state.viewYear, state.viewMonth, 1);
     var startOffset = (firstDay.getDay() + 6) % 7;
     var gridStart = new Date(state.viewYear, state.viewMonth, 1 - startOffset);
-
     var workMap = {};
     var offMap = {};
     for (var i = 0; i < state.records.length; i++) {
@@ -1189,10 +1185,8 @@ body.light .day-cell .work-bar {
       if (r.isOff) offMap[r.date] = true;
       else workMap[r.date] = true;
     }
-
     var rMin = state.rangeStart <= state.rangeEnd ? state.rangeStart : state.rangeEnd;
     var rMax = state.rangeStart <= state.rangeEnd ? state.rangeEnd : state.rangeStart;
-
     for (var idx = 0; idx < 42; idx++) {
       var cur = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + idx);
       var iso = toIso(cur);
@@ -1203,25 +1197,21 @@ body.light .day-cell .work-bar {
       if (iso >= rMin && iso <= rMax) cell.classList.add("in-range");
       if (iso === state.selectedDate) cell.classList.add("selected");
       if (offMap[iso]) cell.classList.add("has-off");
-
       var num = document.createElement("span");
       num.textContent = cur.getDate();
       cell.appendChild(num);
-
       if (offMap[iso]) {
         var x = document.createElement("span");
         x.className = "off-x";
         x.textContent = "✕";
         cell.appendChild(x);
       }
-
       if (workMap[iso]) {
         cell.classList.add("has-work");
         var bar = document.createElement("span");
         bar.className = "work-bar";
         cell.appendChild(bar);
       }
-
       grid.appendChild(cell);
     }
   }
@@ -1255,16 +1245,13 @@ body.light .day-cell .work-bar {
     var pTitle = state.isManualRange ? "ПЕРИОД" : (pNames[state.period] || "ДЕНЬ");
     document.getElementById("recordsTitle").textContent = "ЗАПИСИ (" + pTitle + ")";
     document.getElementById("sumTitle").textContent = "ИТОГ ЗА " + pTitle;
-
     var list = getFilteredRecords();
     document.getElementById("recordsCount").textContent = list.length + " ШТ.";
-
     var boxEl = document.getElementById("recordsList");
     boxEl.innerHTML = "";
     var totBoxes = 0;
     var totWeight = 0;
     var totPay = 0;
-
     for (var i = 0; i < list.length; i++) {
       var r = list[i];
       var row = document.createElement("div");
@@ -1288,7 +1275,6 @@ body.light .day-cell .work-bar {
       row.appendChild(del);
       boxEl.appendChild(row);
     }
-
     document.getElementById("sumSub").textContent = totBoxes + " кор. • " + totWeight + " кг";
     document.getElementById("sumMoney").textContent = totPay + " ₽";
     updateUndoButtons();
@@ -1318,7 +1304,6 @@ body.light .day-cell .work-bar {
     var totWeight = 0;
     var totPay = 0;
     var dayLines = [];
-
     for (var i = 0; i < list.length; i++) {
       var r = list[i];
       if (r.isOff) {
@@ -1330,10 +1315,8 @@ body.light .day-cell .work-bar {
         dayLines.push(fmtDateShort(r.date) + " | " + r.boxes + "кор | " + r.weight + "кг | " + r.pay + "₽");
       }
     }
-
     var nameLine = state.worker.trim() || "Обвальщик";
     var lines = [nameLine];
-
     if (isShort) {
       if (state.isManualRange && rMin !== rMax) {
         lines.push("Период: " + fmtDateShort(rMin) + " – " + fmtDateShort(rMax));
@@ -1369,7 +1352,6 @@ body.light .day-cell .work-bar {
         return;
       } catch (e) {}
     }
-
     if (navigator.share) {
       navigator.share({ text: text })
         .catch(function(err) {
@@ -1379,7 +1361,6 @@ body.light .day-cell .work-bar {
         });
       return;
     }
-
     copyFallback(text);
   }
 
@@ -1428,7 +1409,6 @@ body.light .day-cell .work-bar {
       var btns = document.createElement("div");
       btns.style.display = "flex";
       btns.style.gap = "4px";
-
       var restBtn = document.createElement("button");
       restBtn.className = "m-btn primary";
       restBtn.style.height = "24px";
@@ -1436,7 +1416,6 @@ body.light .day-cell .work-bar {
       restBtn.style.fontSize = "11px";
       restBtn.textContent = "Восст.";
       restBtn.setAttribute("data-bk-restore", b.id);
-
       var delBtn = document.createElement("button");
       delBtn.className = "m-btn danger";
       delBtn.style.height = "24px";
@@ -1444,7 +1423,6 @@ body.light .day-cell .work-bar {
       delBtn.style.fontSize = "11px";
       delBtn.textContent = "✕";
       delBtn.setAttribute("data-bk-del", b.id);
-
       btns.appendChild(restBtn);
       btns.appendChild(delBtn);
       row.appendChild(info);
@@ -1486,8 +1464,7 @@ body.light .day-cell .work-bar {
 
   document.getElementById("settingsBtn").addEventListener("click", function(e) {
     e.stopPropagation();
-    var menu = document.getElementById("settingsMenu");
-    menu.classList.toggle("open");
+    document.getElementById("settingsMenu").classList.toggle("open");
   });
 
   document.addEventListener("click", function(e) {
@@ -1554,9 +1531,7 @@ body.light .day-cell .work-bar {
     lastMoveTime = n;
     var dx = Math.abs(e.clientX - (calGrid._startX || 0));
     var dy = Math.abs(e.clientY - (calGrid._startY || 0));
-    if (dx > dy && dx > 10) {
-      e.preventDefault();
-    }
+    if (dx > dy && dx > 10) { e.preventDefault(); }
     var el = document.elementFromPoint(e.clientX, e.clientY);
     var cell = el && el.closest(".day-cell");
     if (!cell) return;
@@ -1571,15 +1546,8 @@ body.light .day-cell .work-bar {
     }
   });
 
-  window.addEventListener("pointerup", function() {
-    isDragging = false;
-    dragStartIso = null;
-  });
-
-  window.addEventListener("pointercancel", function() {
-    isDragging = false;
-    dragStartIso = null;
-  });
+  window.addEventListener("pointerup", function() { isDragging = false; dragStartIso = null; });
+  window.addEventListener("pointercancel", function() { isDragging = false; dragStartIso = null; });
 
   document.getElementById("dayOffBtn").addEventListener("click", function() {
     var iso = state.selectedDate;
@@ -1594,13 +1562,7 @@ body.light .day-cell .work-bar {
     } else {
       state.records.push({
         id: Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-        date: iso,
-        boxes: 0,
-        boxWeight: 0,
-        weight: 0,
-        rate: 0,
-        pay: 0,
-        isOff: true
+        date: iso, boxes: 0, boxWeight: 0, weight: 0, rate: 0, pay: 0, isOff: true
       });
       showToast("Отмечен выходной");
     }
@@ -1614,8 +1576,7 @@ body.light .day-cell .work-bar {
     var id = btn.getAttribute("data-del-id");
     for (var i = 0; i < state.records.length; i++) {
       if (state.records[i].id === id) {
-        var removed = state.records.splice(i, 1)[0];
-        undoStack.push(removed);
+        undoStack.push(state.records.splice(i, 1)[0]);
         saveState();
         renderAll();
         showToast("Запись удалена");
@@ -1626,8 +1587,7 @@ body.light .day-cell .work-bar {
 
   document.getElementById("undoBtn").addEventListener("click", function() {
     if (undoStack.length === 0) return;
-    var rec = undoStack.pop();
-    state.records.push(rec);
+    state.records.push(undoStack.pop());
     saveState();
     renderAll();
     showToast("Запись восстановлена");
@@ -1647,9 +1607,7 @@ body.light .day-cell .work-bar {
 
   ["boxesInp", "boxWeightInp", "rateInp"].forEach(function(id) {
     document.getElementById(id).addEventListener("input", function(e) {
-      if (id === "rateInp") {
-        state.rate = e.target.value;
-      }
+      if (id === "rateInp") state.rate = e.target.value;
       updateLiveCalc();
       debouncedSave();
     });
@@ -1659,34 +1617,14 @@ body.light .day-cell .work-bar {
     var boxes = parseNum(document.getElementById("boxesInp").value);
     var bw = parseNum(document.getElementById("boxWeightInp").value);
     var rate = parseNum(document.getElementById("rateInp").value);
-
-    if (boxes <= 0) {
-      showToast("⚠ Введите количество коробок");
-      document.getElementById("boxesInp").focus();
-      return;
-    }
-    if (bw <= 0) {
-      showToast("⚠ Введите вес коробки");
-      document.getElementById("boxWeightInp").focus();
-      return;
-    }
-    if (rate <= 0) {
-      showToast("⚠ Введите ставку за 1 кг");
-      document.getElementById("rateInp").focus();
-      return;
-    }
-
+    if (boxes <= 0) { showToast("⚠ Введите количество коробок"); document.getElementById("boxesInp").focus(); return; }
+    if (bw <= 0) { showToast("⚠ Введите вес коробки"); document.getElementById("boxWeightInp").focus(); return; }
+    if (rate <= 0) { showToast("⚠ Введите ставку за 1 кг"); document.getElementById("rateInp").focus(); return; }
     var w = round2(boxes * bw);
     var pay = round2(w * rate);
     state.records.push({
       id: Date.now() + "_" + Math.random().toString(36).slice(2, 6),
-      date: state.selectedDate,
-      boxes: boxes,
-      boxWeight: bw,
-      weight: w,
-      rate: rate,
-      pay: pay,
-      isOff: false
+      date: state.selectedDate, boxes: boxes, boxWeight: bw, weight: w, rate: rate, pay: pay, isOff: false
     });
     document.getElementById("boxesInp").value = "";
     document.getElementById("boxWeightInp").value = "";
@@ -1697,89 +1635,52 @@ body.light .day-cell .work-bar {
 
   document.getElementById("fullRepBtn").addEventListener("click", function() { openPreview(false); });
   document.getElementById("shortRepBtn").addEventListener("click", function() { openPreview(true); });
-
-  document.getElementById("closePreviewBtn").addEventListener("click", function() {
-    document.getElementById("previewModal").classList.remove("open");
-  });
-  document.getElementById("sendPreviewBtn").addEventListener("click", function() {
-    var txt = document.getElementById("previewText").value;
-    shareReportText(txt);
-  });
+  document.getElementById("closePreviewBtn").addEventListener("click", function() { document.getElementById("previewModal").classList.remove("open"); });
+  document.getElementById("sendPreviewBtn").addEventListener("click", function() { shareReportText(document.getElementById("previewText").value); });
 
   document.getElementById("saveBkBtn").addEventListener("click", function() {
-    createBackup("вручную").then(function() {
-      showToast("✓ Резервная копия сохранена");
-    });
+    createBackup("вручную").then(function() { showToast("✓ Резервная копия сохранена"); });
   });
 
   document.getElementById("openBkBtn").addEventListener("click", function() {
     renderBackupList();
-    var codeObj = {
-      worker: state.worker,
-      rate: state.rate,
-      theme: state.theme,
-      records: state.records,
-      updatedAt: Date.now(),
-      autoUpdate: state.autoUpdate
-    };
-    document.getElementById("transferCode").value = JSON.stringify(codeObj);
+    document.getElementById("transferCode").value = JSON.stringify({
+      worker: state.worker, rate: state.rate, theme: state.theme,
+      records: state.records, updatedAt: Date.now(), autoUpdate: state.autoUpdate
+    });
     document.getElementById("bkModal").classList.add("open");
     history.pushState({ modal: "backup" }, "", window.location.href);
   });
 
-  document.getElementById("closeBkBtn").addEventListener("click", function() {
-    document.getElementById("bkModal").classList.remove("open");
-  });
+  document.getElementById("closeBkBtn").addEventListener("click", function() { document.getElementById("bkModal").classList.remove("open"); });
 
   document.getElementById("copyCodeBtn").addEventListener("click", function() {
     var ta = document.getElementById("transferCode");
     ta.select();
     ta.setSelectionRange(0, ta.value.length);
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(ta.value).then(function() {
-        showToast("✓ Код скопирован");
-      }).catch(function() {
-        try {
-          document.execCommand("copy");
-          showToast("✓ Код скопирован");
-        } catch (e) {
-          showToast("Выделите код вручную");
-        }
-      });
+      navigator.clipboard.writeText(ta.value).then(function() { showToast("✓ Код скопирован"); })
+        .catch(function() { try { document.execCommand("copy"); showToast("✓ Код скопирован"); } catch(e) { showToast("Выделите код вручную"); } });
     } else {
-      try {
-        document.execCommand("copy");
-        showToast("✓ Код скопирован");
-      } catch (e) {
-        showToast("Выделите код вручную");
-      }
+      try { document.execCommand("copy"); showToast("✓ Код скопирован"); } catch(e) { showToast("Выделите код вручную"); }
     }
   });
 
   document.getElementById("importCodeBtn").addEventListener("click", function() {
     var raw = document.getElementById("transferCode").value.trim();
     if (!raw) { showToast("⚠ Вставьте код базы"); return; }
-
     var btn = this;
-    var originalText = btn.textContent;
+    var orig = btn.textContent;
     btn.disabled = true;
     btn.textContent = "Загрузка...";
-
     setTimeout(function() {
       try {
-        var ok = applyImportedObject(JSON.parse(raw));
-        if (ok) {
-          btn.disabled = false;
-          btn.textContent = originalText;
-        } else {
-          btn.disabled = false;
-          btn.textContent = originalText;
-        }
+        applyImportedObject(JSON.parse(raw));
       } catch (e) {
         showToast("❌ Ошибка чтения кода");
-        btn.disabled = false;
-        btn.textContent = originalText;
       }
+      btn.disabled = false;
+      btn.textContent = orig;
     }, 50);
   });
 
@@ -1789,10 +1690,7 @@ body.light .day-cell .work-bar {
       var id = restBtn.getAttribute("data-bk-restore");
       var list = getBackups();
       for (var i = 0; i < list.length; i++) {
-        if (list[i].id === id) {
-          applyImportedObject(list[i].data);
-          break;
-        }
+        if (list[i].id === id) { applyImportedObject(list[i].data); break; }
       }
       return;
     }
@@ -1800,8 +1698,7 @@ body.light .day-cell .work-bar {
     if (delBtn) {
       var delId = delBtn.getAttribute("data-bk-del");
       askConfirm("Удалить копию?", "Выбранная резервная копия будет удалена безвозвратно.", function() {
-        var list = getBackups().filter(function(item) { return item.id !== delId; });
-        saveBackups(list).then(function() {
+        saveBackups(getBackups().filter(function(item) { return item.id !== delId; })).then(function() {
           renderBackupList();
           showToast("✓ Копия удалена");
         });
@@ -1816,39 +1713,27 @@ body.light .day-cell .work-bar {
 
   document.getElementById("confirmYesBtn").addEventListener("click", function() {
     document.getElementById("confirmModal").classList.remove("open");
-    if (typeof confirmCallback === "function") {
-      var fn = confirmCallback;
-      confirmCallback = null;
-      fn();
-    }
+    if (typeof confirmCallback === "function") { var fn = confirmCallback; confirmCallback = null; fn(); }
   });
 
-  window.addEventListener("popstate", function(e) {
+  window.addEventListener("popstate", function() {
     if (document.getElementById("confirmModal").classList.contains("open")) {
-      document.getElementById("confirmModal").classList.remove("open");
-      confirmCallback = null;
-      history.pushState(null, "", window.location.href);
-      return;
+      document.getElementById("confirmModal").classList.remove("open"); confirmCallback = null;
+      history.pushState(null, "", window.location.href); return;
     }
     if (document.getElementById("bkModal").classList.contains("open")) {
       document.getElementById("bkModal").classList.remove("open");
-      history.pushState(null, "", window.location.href);
-      return;
+      history.pushState(null, "", window.location.href); return;
     }
     if (document.getElementById("previewModal").classList.contains("open")) {
       document.getElementById("previewModal").classList.remove("open");
-      history.pushState(null, "", window.location.href);
-      return;
+      history.pushState(null, "", window.location.href); return;
     }
     history.pushState(null, "", window.location.href);
   });
 
   history.replaceState(null, "", window.location.href);
-
-  window.addEventListener("beforeunload", function(e) {
-    saveState();
-  });
-
+  window.addEventListener("beforeunload", function() { saveState(); });
   loadInitialData();
 })();
 </script>
