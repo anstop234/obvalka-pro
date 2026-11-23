@@ -345,11 +345,11 @@ body.light .day-cell .work-bar {
   min-height: 23px;
   font-size: 11.5px;
 }
-/* ИСПРАВЛЕНО: Убрана красная заливка у выходных в списке записей */
+/* ВЫХОДНОЙ В ЗАПИСЯХ: нейтральный фон + светло-красный текст */
 .rec-row.is-off {
   border-color: var(--border);
   background: var(--card2);
-  color: var(--muted);
+  color: var(--red);
 }
 .rec-del {
   background: transparent;
@@ -576,7 +576,8 @@ body.light .day-cell .work-bar {
   <div class="card">
     <div class="cal-head">
       <button class="icon-btn" id="prevMonthBtn" type="button">◀</button>
-      <div class="cal-title"><span id="monthLabel">Ноябрь 2026</span><span class="ver-badge" id="verBadge">v 9.0</span></div>
+      <!-- ИСПРАВЛЕНО: версия берётся из JS переменной -->
+      <div class="cal-title"><span id="monthLabel">Ноябрь 2026</span><span class="ver-badge" id="verBadge"></span></div>
       <div class="head-tools">
         <button class="icon-btn" id="updateBtn" type="button" title="Проверить обновление">🔄</button>
         <button class="icon-btn" id="themeBtn" type="button" title="Тема">☀️</button>
@@ -712,7 +713,9 @@ body.light .day-cell .work-bar {
   var MONTHS_SHORT = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
   var DB_KEY = "obvalka_pro_v9";
   var BK_KEY = "obvalka_pro_backups_v9";
-  var APP_VERSION = "9.0";
+  
+  // === ИЗМЕНЕНО: Версия задаётся здесь и отображается в заголовке ===
+  var APP_VERSION = "9.1";
 
   var now = new Date();
   var state = {
@@ -958,7 +961,7 @@ body.light .day-cell .work-bar {
     }
   }
 
-  // === СИСТЕМА ОБНОВЛЕНИЙ (ЗАЩИТА ОТ ЦИКЛОВ) ===
+  // === СИСТЕМА ОБНОВЛЕНИЙ ===
   function performUpdate() {
     showToast("Шаг 1/3: Сохранение базы...");
     Promise.all([
@@ -1030,7 +1033,6 @@ body.light .day-cell .work-bar {
         if (!isAuto) showToast("⚠ Не удалось проверить обновление");
       });
   }
-  // ================================================
 
   function loadInitialData() {
     var candidates = [];
@@ -1074,6 +1076,10 @@ body.light .day-cell .work-bar {
         state.updatedAt = best.updatedAt;
         state.autoUpdate = best.autoUpdate || false;
       }
+      
+      // === ИЗМЕНЕНО: Устанавливаем версию в заголовок при загрузке ===
+      document.getElementById("verBadge").textContent = "v " + APP_VERSION;
+      
       applyTheme();
       updateAutoUpdateUI();
       document.getElementById("workerInp").value = state.worker;
@@ -1255,6 +1261,7 @@ body.light .day-cell .work-bar {
       row.className = "rec-row" + (r.isOff ? " is-off" : "");
       var txt = document.createElement("span");
       if (r.isOff) {
+        // === ИЗМЕНЕНО: Слово "Выходной" светло-красным цветом ===
         txt.textContent = fmtDateShort(r.date) + ": Выходной";
       } else {
         totBoxes += r.boxes;
@@ -1340,10 +1347,42 @@ body.light .day-cell .work-bar {
   }
 
   // === ИСПРАВЛЕНО: Шаринг открывает меню мессенджеров ===
-  function fallbackCopy(text) {
+  function shareReportText(text) {
+    // 1. СНАЧАЛА пробуем нативный шаринг (меню выбора приложений)
+    if (navigator.share) {
+      navigator.share({ text: text })
+        .then(function() {
+          showToast("✓ Отправлено");
+        })
+        .catch(function(err) {
+          // Если пользователь отменил — ничего не делаем
+          // Если другая ошибка — пробуем скопировать
+          if (err && err.name !== "AbortError") {
+            copyToClipboard(text);
+          }
+        });
+      return;
+    }
+
+    // 2. Fallback для старых WebView Android
+    try {
+      var isWebView = /wv/.test(navigator.userAgent.toLowerCase()) ||
+                      window.AndroidWebView !== undefined;
+      if (isWebView) {
+        var encoded = encodeURIComponent(text);
+        window.location.href = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encoded + ";end";
+        return;
+      }
+    } catch (e) {}
+
+    // 3. Если шаринг недоступен — копируем в буфер
+    copyToClipboard(text);
+  }
+
+  function copyToClipboard(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function() {
-        showToast("📋 Текст скопирован — вставьте вручную");
+        showToast("📋 Скопировано — вставьте вручную");
       }).catch(function() {
         legacyCopy(text);
       });
@@ -1361,42 +1400,11 @@ body.light .day-cell .work-bar {
     ta.select();
     try {
       document.execCommand("copy");
-      showToast("📋 Текст скопирован — вставьте вручную");
+      showToast("📋 Скопировано — вставьте вручную");
     } catch (e) {
       showToast("⚠ Не удалось скопировать");
     }
     document.body.removeChild(ta);
-  }
-
-  function shareReportText(text) {
-    // 1. Сначала пробуем нативный шаринг (меню выбора мессенджеров)
-    if (navigator.share) {
-      navigator.share({ text: text })
-        .then(function() {
-          showToast("✓ Отправлено");
-        })
-        .catch(function(err) {
-          // Пользователь отменил — не показываем ошибку
-          if (err && err.name !== "AbortError") {
-            fallbackCopy(text);
-          }
-        });
-      return;
-    }
-
-    // 2. Fallback для WebView Android
-    try {
-      var isWebView = /wv/.test(navigator.userAgent.toLowerCase()) ||
-                      window.AndroidWebView !== undefined;
-      if (isWebView) {
-        var encoded = encodeURIComponent(text);
-        window.location.href = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encoded + ";end";
-        return;
-      }
-    } catch (e) {}
-
-    // 3. Если ничего не сработало — копируем
-    fallbackCopy(text);
   }
   // ===================================================
 
