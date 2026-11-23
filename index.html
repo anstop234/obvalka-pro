@@ -8,6 +8,22 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Обвалка PRO v9.2</title>
+<!-- ПРОВЕРКА ВЕРСИИ ДО ЗАГРУЗКИ ПРИЛОЖЕНИЯ -->
+<script>
+(function(){
+  var CURRENT="9.2";
+  fetch("version.json?v="+Date.now(),{cache:"no-store"})
+    .then(function(r){if(!r.ok)throw new Error();return r.json()})
+    .then(function(d){
+      var remote=String(d.version||"").trim();
+      if(remote&&remote!==CURRENT&&!sessionStorage.getItem("rv_"+remote)){
+        sessionStorage.setItem("rv_"+remote,"1");
+        window.location.replace(window.location.pathname+"?v="+Date.now());
+      }
+    })
+    .catch(function(){});
+})();
+</script>
 <style>
 :root {
   --bg: #121212;
@@ -345,7 +361,6 @@ body.light .day-cell .work-bar {
   min-height: 23px;
   font-size: 11.5px;
 }
-/* ВЫХОДНОЙ: нейтральный фон + красный текст */
 .rec-row.is-off {
   border-color: var(--border);
   background: var(--card2);
@@ -712,8 +727,6 @@ body.light .day-cell .work-bar {
   var MONTHS_SHORT = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
   var DB_KEY = "obvalka_pro_v9";
   var BK_KEY = "obvalka_pro_backups_v9";
-  
-  // === ВЕРСИЯ ПРИЛОЖЕНИЯ ===
   var APP_VERSION = "9.2";
 
   var now = new Date();
@@ -960,7 +973,6 @@ body.light .day-cell .work-bar {
     }
   }
 
-  // === СИСТЕМА ОБНОВЛЕНИЙ ===
   function performUpdate() {
     showToast("Шаг 1/3: Сохранение базы...");
     Promise.all([
@@ -1076,7 +1088,6 @@ body.light .day-cell .work-bar {
         state.autoUpdate = best.autoUpdate || false;
       }
       
-      // Устанавливаем версию в заголовок
       document.getElementById("verBadge").textContent = "v " + APP_VERSION;
       
       applyTheme();
@@ -1344,9 +1355,7 @@ body.light .day-cell .work-bar {
     history.pushState({ modal: "preview" }, "", window.location.href);
   }
 
-  // === ШАРИНГ: Android Intent как основной метод ===
   function shareReportText(text) {
-    // 1. Android Intent — надёжно открывает меню мессенджеров в WebView
     var isAndroid = /android/i.test(navigator.userAgent);
     if (isAndroid) {
       try {
@@ -1361,7 +1370,6 @@ body.light .day-cell .work-bar {
       } catch (e) {}
     }
 
-    // 2. Web Share API (Chrome, браузеры по HTTPS)
     if (navigator.share) {
       navigator.share({ text: text })
         .catch(function(err) {
@@ -1372,7 +1380,6 @@ body.light .day-cell .work-bar {
       return;
     }
 
-    // 3. Fallback — копирование
     copyFallback(text);
   }
 
