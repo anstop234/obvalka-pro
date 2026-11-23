@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Обвалка PRO v9.0</title>
+<title>Обвалка PRO v9.2</title>
 <style>
 :root {
   --bg: #121212;
@@ -345,7 +345,7 @@ body.light .day-cell .work-bar {
   min-height: 23px;
   font-size: 11.5px;
 }
-/* ВЫХОДНОЙ В ЗАПИСЯХ: нейтральный фон + светло-красный текст */
+/* ВЫХОДНОЙ: нейтральный фон + красный текст */
 .rec-row.is-off {
   border-color: var(--border);
   background: var(--card2);
@@ -576,7 +576,6 @@ body.light .day-cell .work-bar {
   <div class="card">
     <div class="cal-head">
       <button class="icon-btn" id="prevMonthBtn" type="button">◀</button>
-      <!-- ИСПРАВЛЕНО: версия берётся из JS переменной -->
       <div class="cal-title"><span id="monthLabel">Ноябрь 2026</span><span class="ver-badge" id="verBadge"></span></div>
       <div class="head-tools">
         <button class="icon-btn" id="updateBtn" type="button" title="Проверить обновление">🔄</button>
@@ -714,8 +713,8 @@ body.light .day-cell .work-bar {
   var DB_KEY = "obvalka_pro_v9";
   var BK_KEY = "obvalka_pro_backups_v9";
   
-  // === ИЗМЕНЕНО: Версия задаётся здесь и отображается в заголовке ===
-  var APP_VERSION = "9.1";
+  // === ВЕРСИЯ ПРИЛОЖЕНИЯ ===
+  var APP_VERSION = "9.2";
 
   var now = new Date();
   var state = {
@@ -1077,7 +1076,7 @@ body.light .day-cell .work-bar {
         state.autoUpdate = best.autoUpdate || false;
       }
       
-      // === ИЗМЕНЕНО: Устанавливаем версию в заголовок при загрузке ===
+      // Устанавливаем версию в заголовок
       document.getElementById("verBadge").textContent = "v " + APP_VERSION;
       
       applyTheme();
@@ -1261,7 +1260,6 @@ body.light .day-cell .work-bar {
       row.className = "rec-row" + (r.isOff ? " is-off" : "");
       var txt = document.createElement("span");
       if (r.isOff) {
-        // === ИЗМЕНЕНО: Слово "Выходной" светло-красным цветом ===
         txt.textContent = fmtDateShort(r.date) + ": Выходной";
       } else {
         totBoxes += r.boxes;
@@ -1346,40 +1344,39 @@ body.light .day-cell .work-bar {
     history.pushState({ modal: "preview" }, "", window.location.href);
   }
 
-  // === ИСПРАВЛЕНО: Шаринг открывает меню мессенджеров ===
+  // === ШАРИНГ: Android Intent как основной метод ===
   function shareReportText(text) {
-    // 1. СНАЧАЛА пробуем нативный шаринг (меню выбора приложений)
+    // 1. Android Intent — надёжно открывает меню мессенджеров в WebView
+    var isAndroid = /android/i.test(navigator.userAgent);
+    if (isAndroid) {
+      try {
+        var encoded = encodeURIComponent(text);
+        var intentUrl = "intent:#Intent;" +
+          "action=android.intent.action.SEND;" +
+          "type=text/plain;" +
+          "S.android.intent.extra.TEXT=" + encoded + ";" +
+          "end";
+        window.location.href = intentUrl;
+        return;
+      } catch (e) {}
+    }
+
+    // 2. Web Share API (Chrome, браузеры по HTTPS)
     if (navigator.share) {
       navigator.share({ text: text })
-        .then(function() {
-          showToast("✓ Отправлено");
-        })
         .catch(function(err) {
-          // Если пользователь отменил — ничего не делаем
-          // Если другая ошибка — пробуем скопировать
           if (err && err.name !== "AbortError") {
-            copyToClipboard(text);
+            copyFallback(text);
           }
         });
       return;
     }
 
-    // 2. Fallback для старых WebView Android
-    try {
-      var isWebView = /wv/.test(navigator.userAgent.toLowerCase()) ||
-                      window.AndroidWebView !== undefined;
-      if (isWebView) {
-        var encoded = encodeURIComponent(text);
-        window.location.href = "intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=" + encoded + ";end";
-        return;
-      }
-    } catch (e) {}
-
-    // 3. Если шаринг недоступен — копируем в буфер
-    copyToClipboard(text);
+    // 3. Fallback — копирование
+    copyFallback(text);
   }
 
-  function copyToClipboard(text) {
+  function copyFallback(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(function() {
         showToast("📋 Скопировано — вставьте вручную");
@@ -1394,9 +1391,9 @@ body.light .day-cell .work-bar {
   function legacyCopy(text) {
     var ta = document.createElement("textarea");
     ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
+    ta.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0;";
     document.body.appendChild(ta);
+    ta.focus();
     ta.select();
     try {
       document.execCommand("copy");
@@ -1404,9 +1401,8 @@ body.light .day-cell .work-bar {
     } catch (e) {
       showToast("⚠ Не удалось скопировать");
     }
-    document.body.removeChild(ta);
+    setTimeout(function() { document.body.removeChild(ta); }, 100);
   }
-  // ===================================================
 
   function renderBackupList() {
     var list = getBackups();
