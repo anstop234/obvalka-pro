@@ -239,15 +239,32 @@ body {
   color: var(--red);
   font-weight: 900;
 }
-.day-cell .work-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--green);
-  position: absolute;
-  bottom: 2px;
+
+/* === ИЗМЕНЕНО: Стиль для дней с записями === */
+.day-cell.has-work {
+  background: rgba(22, 163, 74, 0.15);
+  border-color: rgba(22, 163, 74, 0.3);
 }
-.day-cell.selected .work-dot { background: #111; }
+body.light .day-cell.has-work {
+  background: rgba(21, 128, 61, 0.12);
+  border-color: rgba(21, 128, 61, 0.25);
+}
+.day-cell .work-bar {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: #15803d; /* Тёмно-зелёный */
+  position: absolute;
+  bottom: 3px;
+}
+body.light .day-cell .work-bar {
+  background: #166534;
+}
+.day-cell.selected .work-bar {
+  background: #111;
+}
+/* ========================================== */
+
 .hint {
   text-align: center;
   font-size: 10px;
@@ -1103,11 +1120,16 @@ body {
         x.textContent = "✕";
         cell.appendChild(x);
       }
+      
+      // === ИЗМЕНЕНО: Отображение дней с записями ===
       if (workMap[iso]) {
-        var dot = document.createElement("span");
-        dot.className = "work-dot";
-        cell.appendChild(dot);
+        cell.classList.add("has-work");
+        var bar = document.createElement("span");
+        bar.className = "work-bar";
+        cell.appendChild(bar);
       }
+      // ============================================
+      
       grid.appendChild(cell);
     }
   }
@@ -1338,18 +1360,14 @@ body {
     history.pushState({ modal: "confirm" }, "", window.location.href);
   }
 
-  // ИСПРАВЛЕНО: Гарантированное сохранение перед обновлением
   document.getElementById("updateBtn").addEventListener("click", function() {
     showToast("Шаг 1/3: Сохранение базы...");
-    
-    // Создаём резервную копию И сохраняем состояние параллельно
     Promise.all([
       createBackup("перед обн."),
       saveState()
     ]).then(function() {
       showToast("Шаг 2/3: Очистка кэша...");
       var promises = [];
-      
       if ("caches" in window) {
         promises.push(
           caches.keys().then(function(keys) {
@@ -1357,7 +1375,6 @@ body {
           })
         );
       }
-      
       if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
         promises.push(
           navigator.serviceWorker.getRegistrations().then(function(regs) {
@@ -1365,7 +1382,6 @@ body {
           })
         );
       }
-      
       return Promise.all(promises);
     }).then(function() {
       showToast("Шаг 3/3: Перезагрузка...");
@@ -1378,7 +1394,6 @@ body {
     });
   });
 
-  // НОВОЕ: Шестерёнка с меню настроек
   document.getElementById("settingsBtn").addEventListener("click", function(e) {
     e.stopPropagation();
     var menu = document.getElementById("settingsMenu");
