@@ -957,7 +957,7 @@ body.light .day-cell .work-bar {
     }
   }
 
-  // === СИСТЕМА ОБНОВЛЕНИЙ ===
+  // === СИСТЕМА ОБНОВЛЕНИЙ (ИСПРАВЛЕНА ОТ ЦИКЛОВ) ===
   function performUpdate() {
     showToast("Шаг 1/3: Сохранение базы...");
     Promise.all([
@@ -993,34 +993,46 @@ body.light .day-cell .work-bar {
   }
 
   function checkForUpdate(isAuto) {
+    // ЗАЩИТА ОТ ЦИКЛА: если уже обновились в этой сессии — пропускаем
+    var sessionKey = "obv_upd_" + APP_VERSION;
+    if (sessionStorage.getItem(sessionKey)) {
+      return;
+    }
+
     fetch("version.json?v=" + Date.now(), { cache: "no-store" })
       .then(function(res) {
         if (!res.ok) throw new Error("HTTP " + res.status);
         return res.json();
       })
       .then(function(data) {
-        var remoteVer = String(data.version || "0");
-        var localVer = String(APP_VERSION);
-        
-        if (remoteVer !== localVer) {
+        // ЖЁСТКОЕ приведение к строке + trim для корректного сравнения
+        var remoteVer = String(data.version != null ? data.version : "").trim();
+        var localVer = String(APP_VERSION).trim();
+
+        // Обновляем только если версии РЕАЛЬНО разные И удалённая версия не пустая
+        if (remoteVer && remoteVer !== localVer) {
           if (isAuto && state.autoUpdate) {
+            sessionStorage.setItem(sessionKey, "1");
             performUpdate();
           } else if (!isAuto) {
             askConfirm(
               "Доступно обновление",
               "Новая версия: " + remoteVer + " (текущая: " + localVer + "). Обновить сейчас?",
-              function() { performUpdate(); }
+              function() {
+                sessionStorage.setItem(sessionKey, "1");
+                performUpdate();
+              }
             );
           }
         } else {
           if (!isAuto) showToast("✓ Уже последняя версия (" + localVer + ")");
         }
       })
-      .catch(function(err) {
+      .catch(function() {
         if (!isAuto) showToast("⚠ Не удалось проверить обновление");
       });
   }
-  // ========================
+  // ================================================
 
   function loadInitialData() {
     var candidates = [];
@@ -1070,7 +1082,7 @@ body.light .day-cell .work-bar {
       document.getElementById("rateInp").value = state.rate;
       setPeriod(state.period, false);
       ensureDailyAutoBackup();
-      
+
       // Автопроверка обновлений через 2 секунды после запуска
       setTimeout(function() {
         checkForUpdate(true);
@@ -1189,14 +1201,14 @@ body.light .day-cell .work-bar {
         x.textContent = "✕";
         cell.appendChild(x);
       }
-      
+
       if (workMap[iso]) {
         cell.classList.add("has-work");
         var bar = document.createElement("span");
         bar.className = "work-bar";
         cell.appendChild(bar);
       }
-      
+
       grid.appendChild(cell);
     }
   }
@@ -1345,7 +1357,7 @@ body.light .day-cell .work-bar {
       return;
     }
     try {
-      var isWebView = /wv/.test(navigator.userAgent.toLowerCase()) || 
+      var isWebView = /wv/.test(navigator.userAgent.toLowerCase()) ||
                       window.AndroidWebView !== undefined;
       if (isWebView) {
         var encoded = encodeURIComponent(text);
@@ -1607,7 +1619,7 @@ body.light .day-cell .work-bar {
     var boxes = parseNum(document.getElementById("boxesInp").value);
     var bw = parseNum(document.getElementById("boxWeightInp").value);
     var rate = parseNum(document.getElementById("rateInp").value);
-    
+
     if (boxes <= 0) {
       showToast("⚠ Введите количество коробок");
       document.getElementById("boxesInp").focus();
@@ -1623,7 +1635,7 @@ body.light .day-cell .work-bar {
       document.getElementById("rateInp").focus();
       return;
     }
-    
+
     var w = round2(boxes * bw);
     var pay = round2(w * rate);
     state.records.push({
@@ -1645,7 +1657,7 @@ body.light .day-cell .work-bar {
 
   document.getElementById("fullRepBtn").addEventListener("click", function() { openPreview(false); });
   document.getElementById("shortRepBtn").addEventListener("click", function() { openPreview(true); });
-  
+
   document.getElementById("closePreviewBtn").addEventListener("click", function() {
     document.getElementById("previewModal").classList.remove("open");
   });
@@ -1707,12 +1719,12 @@ body.light .day-cell .work-bar {
   document.getElementById("importCodeBtn").addEventListener("click", function() {
     var raw = document.getElementById("transferCode").value.trim();
     if (!raw) { showToast("⚠ Вставьте код базы"); return; }
-    
+
     var btn = this;
     var originalText = btn.textContent;
     btn.disabled = true;
     btn.textContent = "Загрузка...";
-    
+
     setTimeout(function() {
       try {
         var ok = applyImportedObject(JSON.parse(raw));
