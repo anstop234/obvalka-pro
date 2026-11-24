@@ -7,10 +7,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Обвалка PRO v9.8</title>
+<title>Обвалка PRO v9.9</title>
 <script>
 (function(){
-  var CURRENT="9.8";
+  var CURRENT="9.9";
   fetch("version.json?v="+Date.now(),{cache:"no-store"})
     .then(function(r){if(!r.ok)throw new Error();return r.json()})
     .then(function(d){
@@ -158,7 +158,7 @@ body {
   letter-spacing: 0.5px;
 }
 
-.icon-btn, .tab, .off-btn, .rep-btn, .add-btn, .undo-btn, .undo-clear, .bk-btn, .m-btn, .stat-btn, .achievements-btn {
+.icon-btn, .tab, .off-btn, .rep-btn, .add-btn, .undo-btn, .undo-clear, .bk-btn, .m-btn, .stat-btn, .achievements-btn, .receipt-btn {
   touch-action: manipulation;
 }
 .icon-btn {
@@ -250,7 +250,7 @@ body.light .day-cell .work-bar { background: #166534; }
 .rep-full.locked { opacity: 0.7; }
 .rep-short { background: var(--card); color: var(--text); border: 1px solid var(--border); }
 .buttons-row { display: flex; gap: 6px; margin-top: 6px; }
-.stat-btn, .achievements-btn {
+.stat-btn, .achievements-btn, .receipt-btn {
   flex: 1;
   background: var(--purple-bg);
   border: 1px solid var(--purple);
@@ -265,7 +265,7 @@ body.light .day-cell .work-bar { background: #166534; }
   justify-content: center;
   gap: 6px;
 }
-.stat-btn:active, .achievements-btn:active { opacity: 0.85; }
+.stat-btn:active, .achievements-btn:active, .receipt-btn:active { opacity: 0.85; }
 .stat-btn.locked, .achievements-btn.locked { opacity: 0.6; }
 .comparison-box {
   margin-top: 6px;
@@ -366,8 +366,37 @@ body.light .day-cell .work-bar { background: #166534; }
 .pro-feature.unlocked { opacity: 1; border: 1px solid var(--green); }
 .pro-code-input { width: 100%; height: 40px; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 0 12px; font-size: 14px; font-weight: 700; text-align: center; text-transform: uppercase; letter-spacing: 2px; }
 .pro-code-input:focus { outline: none; border-color: var(--purple); }
+.pro-code-input.shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
 .pro-price { text-align: center; font-size: 13px; color: var(--muted); padding: 8px; background: var(--card2); border-radius: 8px; }
 .pro-price b { color: var(--text); font-size: 18px; }
+.payment-details { 
+  background: var(--card2); 
+  border: 1px dashed var(--border); 
+  border-radius: 8px; 
+  padding: 10px; 
+  margin: 8px 0; 
+  font-size: 12px; 
+  color: var(--text); 
+  text-align: center; 
+  line-height: 1.6;
+}
+.copy-requisites-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  cursor: pointer;
+  margin-top: 6px;
+}
+.copy-requisites-btn:active { opacity: 0.7; }
 
 /* === ДОСТИЖЕНИЯ === */
 .achievements-tabs {
@@ -417,6 +446,10 @@ body.light .day-cell .work-bar { background: #166534; }
 .achievement-card.unlocked {
   border-color: var(--green);
   background: var(--green-bg);
+}
+.achievement-card.hidden-achievement {
+  opacity: 0.4;
+  filter: grayscale(1);
 }
 .achievement-card.rarity-common { border-color: var(--silver); }
 .achievement-card.rarity-uncommon { border-color: var(--green); }
@@ -671,6 +704,18 @@ body.light .day-cell .work-bar { background: #166534; }
 .record-value, .number-value { font-size: 18px; font-weight: 800; color: var(--text); }
 .record-date { font-size: 10px; color: var(--muted); }
 .record-icon { font-size: 32px; }
+
+/* === ЧЕК === */
+.receipt-preview-container {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+}
+.receipt-img {
+  max-width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
 </style>
 </head>
 <body>
@@ -707,6 +752,10 @@ body.light .day-cell .work-bar { background: #166534; }
             <div class="settings-item" id="autoUpdateToggle">
               <span>Автообновление</span>
               <div class="settings-checkbox" id="autoUpdateCheck"></div>
+            </div>
+            <div class="settings-item" id="manualUpdateBtn">
+              <span>🔄 Проверить обновление</span>
+              <span style="color:var(--muted);">→</span>
             </div>
             <div class="settings-item" id="glovesToggle">
               <span>🧤 Режим в перчатках</span>
@@ -764,6 +813,7 @@ body.light .day-cell .work-bar { background: #166534; }
       <button class="stat-btn" id="openStatBtn" type="button">📊 Статистика</button>
       <button class="achievements-btn" id="openAchievementsBtn" type="button">🏆 Достижения</button>
     </div>
+    <button class="receipt-btn" id="generateReceiptBtn" type="button" style="margin-top:6px; width:100%;">🧾 Чек для бригадира</button>
   </div>
 
   <div class="card">
@@ -985,6 +1035,21 @@ body.light .day-cell .work-bar { background: #166534; }
   </div>
 </div>
 
+<!-- МОДАЛКА ЧЕКА -->
+<div class="modal" id="receiptModal">
+  <div class="modal-box">
+    <div class="modal-title">🧾 Чек для бригадира</div>
+    <div class="receipt-preview-container">
+      <img id="receiptImage" class="receipt-img" alt="Чек обвальщика">
+    </div>
+    <div class="modal-actions">
+      <button class="m-btn" id="copyReceiptTextBtn" type="button">📋 Текст</button>
+      <button class="m-btn primary" id="shareReceiptBtn" type="button">📤 Отправить</button>
+    </div>
+    <button class="m-btn" id="closeReceiptBtn" type="button" style="margin-top:4px;">Закрыть</button>
+  </div>
+</div>
+
 <!-- Достижения -->
 <div class="modal" id="achievementsModal">
   <div class="modal-box">
@@ -995,7 +1060,7 @@ body.light .day-cell .work-bar { background: #166534; }
   </div>
 </div>
 
-<!-- Pro -->
+<!-- Pro / Покупка -->
 <div class="modal" id="proModal">
   <div class="modal-box">
     <div class="pro-header">
@@ -1009,14 +1074,24 @@ body.light .day-cell .work-bar { background: #166534; }
       <div class="pro-feature" id="proFeatureFull"><span class="pro-feature-icon">🔒</span><span>📋 Полный отчёт</span></div>
       <div class="pro-feature" id="proFeatureFuture1"><span class="pro-feature-icon">🔒</span><span>Экспорт в Excel/PDF</span></div>
     </div>
-    <div class="pro-price">Разовая покупка навсегда<br><b>299 ₽</b></div>
+    
+    <div class="payment-details" id="paymentDetails">
+      Переведи <b>199 ₽</b> по СБП<br>
+      на номер: <b>+7 (XXX) XXX-XX-XX</b><br>
+      Получатель: <b>Иван И.</b><br>
+      <button class="copy-requisites-btn" id="copyRequisitesBtn">📋 Скопировать реквизиты</button>
+    </div>
+    <div id="rustorePaymentBlock" style="display:none; text-align:center; margin: 10px 0;">
+      <button class="m-btn primary" id="rustoreBuyBtn" style="width:100%;">💳 Купить через RuStore (199 ₽)</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px;">
+      После оплаты пришли скриншот чека в Telegram-бот<br>и получи уникальный промокод
+    </div>
+
     <input class="pro-code-input" id="proCodeInput" type="text" placeholder="ПРОМОКОД" maxlength="20" autocomplete="off">
     <div class="modal-actions">
       <button class="m-btn" id="closeProBtn" type="button">Закрыть</button>
       <button class="m-btn purple" id="activateProBtn" type="button">Активировать</button>
-    </div>
-    <div style="font-size:10px;color:var(--muted);text-align:center;padding:4px;">
-      Промокод выдаётся в Telegram-боте после оплаты
     </div>
   </div>
 </div>
@@ -1061,11 +1136,14 @@ body.light .day-cell .work-bar { background: #166534; }
   var DB_KEY = "obvalka_pro_v9";
   var BK_KEY = "obvalka_pro_backups_v9";
   var DRAFT_KEY = "obvalka_draft_v9";
-  var APP_VERSION = "9.8";
+  var APP_VERSION = "9.9";
   var MAX_BACKUPS = 10;
   var UPDATE_CHECK_INTERVAL = 6 * 60 * 60 * 1000;
+  var ADMIN_CODE = "OBVALKA-ADMIN-2026"; // Бессрочный код
 
-  var VALID_PROMO_CODES = ["PRO2026", "ОБВАЛКА299", "DEMO", "VIP"];
+  // База активных промокодов (в реальном проекте это должно быть на сервере или в боте)
+  // Для демо оставим несколько тестовых
+  var ACTIVE_CODES = ["TEST-CODE-1", "TEST-CODE-2", "WELCOME2026"];
 
   // === XP за редкость ===
   var XP_BY_RARITY = {
@@ -1082,6 +1160,8 @@ body.light .day-cell .work-bar { background: #166534; }
     { id: "first_shift", category: "start", name: "Первая смена", desc: "Добавить первую запись", icon: "🐣", rarity: "common", check: function(s) { return s.totalRecords >= 1; }, max: 1 },
     { id: "first_thousand", category: "start", name: "Первая тысяча", desc: "1 000 кг всего", icon: "⚔️", rarity: "uncommon", check: function(s) { return s.totalWeight >= 1000; }, max: 1000 },
     { id: "ten_thousand", category: "start", name: "Десять тысяч", desc: "10 000 кг всего", icon: "🗡️", rarity: "rare", check: function(s) { return s.totalWeight >= 10000; }, max: 10000 },
+    { id: "start_100k", category: "start", name: "Тоннажник PRO", desc: "100 000 кг всего", icon: "🚛", rarity: "epic", check: function(s) { return s.totalWeight >= 100000; }, max: 100000 },
+    { id: "start_1m", category: "start", name: "Легенда завода", desc: "1 000 000 кг всего", icon: "🏭", rarity: "legendary", check: function(s) { return s.totalWeight >= 1000000; }, max: 1000000 },
 
     // Финансы (перемещены сюда)
     { id: "first_money", category: "finance", name: "За это ещё и платят?", desc: "Заработать 1 000 ₽ всего", icon: "😱", rarity: "common", check: function(s) { return s.totalPay >= 1000; }, max: 1000 },
@@ -1175,7 +1255,8 @@ body.light .day-cell .work-bar { background: #166534; }
     workEnd: "17:00",
     achievements: {},
     currentAchievementTab: "start",
-    currentStatsTab: "overview"
+    currentStatsTab: "overview",
+    usedCodes: [] // Список использованных одноразовых кодов
   };
   var undoStack = [];
   var dragStartIso = null;
@@ -1302,7 +1383,8 @@ body.light .day-cell .work-bar { background: #166534; }
       workEnd: typeof raw.workEnd === "string" ? raw.workEnd : "17:00",
       achievements: raw.achievements || {},
       currentAchievementTab: typeof raw.currentAchievementTab === "string" ? raw.currentAchievementTab : "start",
-      currentStatsTab: typeof raw.currentStatsTab === "string" ? raw.currentStatsTab : "overview"
+      currentStatsTab: typeof raw.currentStatsTab === "string" ? raw.currentStatsTab : "overview",
+      usedCodes: Array.isArray(raw.usedCodes) ? raw.usedCodes : []
     };
   }
 
@@ -1368,7 +1450,8 @@ body.light .day-cell .work-bar { background: #166534; }
       workStart: state.workStart, workEnd: state.workEnd,
       achievements: state.achievements,
       currentAchievementTab: state.currentAchievementTab,
-      currentStatsTab: state.currentStatsTab
+      currentStatsTab: state.currentStatsTab,
+      usedCodes: state.usedCodes
     };
     var json = JSON.stringify(payload);
     try { localStorage.setItem(DB_KEY, json); } catch (e) {
@@ -1462,7 +1545,8 @@ body.light .day-cell .work-bar { background: #166534; }
         workStart: state.workStart, workEnd: state.workEnd,
         achievements: state.achievements,
         currentAchievementTab: state.currentAchievementTab,
-        currentStatsTab: state.currentStatsTab
+        currentStatsTab: state.currentStatsTab,
+        usedCodes: state.usedCodes
       }
     });
     if (arr.length > MAX_BACKUPS) arr = arr.slice(0, MAX_BACKUPS);
@@ -1579,12 +1663,14 @@ body.light .day-cell .work-bar { background: #166534; }
         state.achievements = best.achievements || {};
         state.currentAchievementTab = best.currentAchievementTab || "start";
         state.currentStatsTab = best.currentStatsTab || "overview";
+        state.usedCodes = best.usedCodes || [];
       }
       document.getElementById("verBadge").textContent = "v " + APP_VERSION;
       applyTheme();
       updateAutoUpdateUI();
       updateProUI();
       updateGlovesUI();
+      checkRustoreEnv(); // Проверка среды RuStore
       document.getElementById("workerInp").value = state.worker;
       document.getElementById("rateInp").value = state.rate;
       document.getElementById("workStartInp").value = state.workStart;
@@ -1671,20 +1757,189 @@ body.light .day-cell .work-bar { background: #166534; }
     }
   }
 
+  // === ПРОВЕРКА СРЕДЫ RUSTORE ===
+  function checkRustoreEnv() {
+    var isRustore = /rustore/i.test(navigator.userAgent) || 
+                    window.RuStoreSdk !== undefined || 
+                    document.referrer.indexOf("rustore.ru") !== -1;
+    
+    var detailsBlock = document.getElementById("paymentDetails");
+    var rustoreBlock = document.getElementById("rustorePaymentBlock");
+    
+    if (isRustore) {
+      detailsBlock.style.display = "none";
+      rustoreBlock.style.display = "block";
+    } else {
+      detailsBlock.style.display = "block";
+      rustoreBlock.style.display = "none";
+    }
+  }
+
+  // === АКТИВАЦИЯ ПРОМОКОДА ===
   function activatePro(code) {
     var normalized = String(code || "").trim().toUpperCase();
     if (!normalized) { showToast("⚠ Введите промокод"); return false; }
-    if (VALID_PROMO_CODES.indexOf(normalized) !== -1) {
+
+    // Проверка админского кода
+    if (normalized === ADMIN_CODE) {
       state.isPro = true;
+      saveState();
+      updateProUI();
+      document.getElementById("proModal").classList.remove("open");
+      showToast("💎 Админ-доступ активирован!");
+      return true;
+    }
+
+    // Проверка одноразового кода
+    var codeIndex = ACTIVE_CODES.indexOf(normalized);
+    if (codeIndex !== -1 && state.usedCodes.indexOf(normalized) === -1) {
+      state.isPro = true;
+      state.usedCodes.push(normalized); // Помечаем как использованный
+      ACTIVE_CODES.splice(codeIndex, 1); // Удаляем из активных (в памяти)
       saveState();
       updateProUI();
       document.getElementById("proModal").classList.remove("open");
       showToast("💎 Pro активирован!");
       return true;
+    }
+
+    // Если код уже использован или неверен
+    var input = document.getElementById("proCodeInput");
+    input.classList.add("shake");
+    playErrorSound();
+    setTimeout(function() { input.classList.remove("shake"); }, 400);
+    
+    if (state.usedCodes.indexOf(normalized) !== -1) {
+      showToast("❌ Этот код уже использован");
     } else {
       showToast("❌ Неверный промокод");
-      return false;
     }
+    return false;
+  }
+
+  function playClickSound() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 1200;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.05);
+    } catch(e) {}
+  }
+
+  function playErrorSound() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 200;
+      osc.type = "sawtooth";
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
+    } catch(e) {}
+  }
+
+  // === ГЕНЕРАТОР ЧЕКОВ (SVG) ===
+  function generateReceiptSVG(data) {
+    var w = 300;
+    var lineHeight = 20;
+    var padding = 20;
+    var headerH = 60;
+    var footerH = 40;
+    var contentH = 180;
+    var h = headerH + contentH + footerH + padding * 2;
+    
+    // Зигзаг внизу
+    var zigzag = "";
+    var step = 10;
+    for(var x=0; x<=w; x+=step) {
+      zigzag += (x===0?"M":"L") + x + "," + (h-padding) + " ";
+      zigzag += "L" + (x+step/2) + "," + (h-padding+8) + " ";
+    }
+
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'">' +
+      '<rect width="'+w+'" height="'+h+'" fill="#fff" rx="8"/>' +
+      '<path d="'+zigzag+'" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="4,4"/>' +
+      '<text x="'+w/2+'" y="35" font-family="monospace" font-size="16" font-weight="bold" text-anchor="middle" fill="#333">ОБВАЛКА PRO</text>' +
+      '<text x="'+w/2+'" y="55" font-family="monospace" font-size="10" text-anchor="middle" fill="#888">v'+APP_VERSION+'</text>' +
+      
+      '<line x1="'+padding+'" y1="'+headerH+'" x2="'+(w-padding)+'" y2="'+headerH+'" stroke="#eee" stroke-dasharray="4,4"/>' +
+      
+      '<text x="'+padding+'" y="'+(headerH+30)+'" font-family="monospace" font-size="12" fill="#333">👤 '+data.worker+'</text>' +
+      '<text x="'+padding+'" y="'+(headerH+55)+'" font-family="monospace" font-size="12" fill="#333">📅 '+data.date+'</text>' +
+      
+      '<line x1="'+padding+'" y1="'+(headerH+70)+'" x2="'+(w-padding)+'" y2="'+(headerH+70)+'" stroke="#eee"/>' +
+      
+      '<text x="'+padding+'" y="'+(headerH+100)+'" font-family="monospace" font-size="12" fill="#333">⚖️ Вес: '+data.weight+' кг</text>' +
+      '<text x="'+padding+'" y="'+(headerH+125)+'" font-family="monospace" font-size="12" fill="#333">📦 Коробок: '+data.boxes+' шт</text>' +
+      '<text x="'+padding+'" y="'+(headerH+150)+'" font-family="monospace" font-size="12" fill="#333">⚡ Скорость: '+data.speed+' кг/мин</text>' +
+      
+      '<line x1="'+padding+'" y1="'+(headerH+170)+'" x2="'+(w-padding)+'" y2="'+(headerH+170)+'" stroke="#eee" stroke-dasharray="4,4"/>' +
+      
+      '<text x="'+w/2+'" y="'+(headerH+210)+'" font-family="monospace" font-size="24" font-weight="bold" text-anchor="middle" fill="#16a34a">'+data.pay+' ₽</text>' +
+      
+      '<text x="'+w/2+'" y="'+(h-15)+'" font-family="monospace" font-size="8" text-anchor="middle" fill="#aaa">Сгенерировано в Обвалка PRO</text>' +
+      '</svg>';
+      
+    return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+  }
+
+  function openReceiptModal() {
+    // Берем данные последней добавленной смены или текущие введенные
+    var boxes = parseNum(document.getElementById("boxesInp").value);
+    var bw = parseNum(document.getElementById("boxWeightInp").value);
+    var rate = parseNum(document.getElementById("rateInp").value);
+    var w = round2(boxes * bw);
+    var pay = round2(w * rate);
+    
+    // Если поля пустые, берем итоги за сегодня
+    if (w === 0 && pay === 0) {
+      var list = getFilteredRecords();
+      for(var i=0; i<list.length; i++) {
+        if(!list[i].isOff) {
+          boxes += list[i].boxes;
+          w = round2(w + list[i].weight);
+          pay = round2(pay + list[i].pay);
+        }
+      }
+    }
+
+    var workedMin = getWorkedMinutes();
+    var speed = workedMin > 0 ? (w / workedMin).toFixed(2) : "0.00";
+
+    var data = {
+      worker: state.worker || "Обвальщик",
+      date: fmtDateFull(state.selectedDate),
+      weight: w,
+      boxes: boxes,
+      speed: speed,
+      pay: pay
+    };
+
+    var src = generateReceiptSVG(data);
+    document.getElementById("receiptImage").src = src;
+    document.getElementById("receiptModal").classList.add("open");
+    
+    // Сохраняем текстовую версию для кнопки копирования
+    window._currentReceiptText = 
+      "📋 ОТЧЕТ ОБВАЛЬЩИКА\n" +
+      "👤 " + data.worker + " | 📅 " + data.date + "\n" +
+      "⚖️ Вес: " + data.weight + " кг | 📦 Коробок: " + data.boxes + " шт\n" +
+      "💰 Заработок: " + data.pay + " ₽\n" +
+      "⚡ Скорость: " + data.speed + " кг/мин\n" +
+      "🔗 Обвалка PRO v" + APP_VERSION;
+      
+    history.pushState({ modal: "receipt" }, "", window.location.href);
   }
 
   // === УРОВЕНЬ UI ===
@@ -2081,6 +2336,7 @@ body.light .day-cell .work-bar { background: #166534; }
     state.achievements = norm.achievements || {};
     state.currentAchievementTab = norm.currentAchievementTab || "start";
     state.currentStatsTab = norm.currentStatsTab || "overview";
+    state.usedCodes = norm.usedCodes || [];
     document.getElementById("workerInp").value = state.worker;
     document.getElementById("rateInp").value = state.rate;
     document.getElementById("workStartInp").value = state.workStart;
@@ -2337,17 +2593,35 @@ body.light .day-cell .work-bar { background: #166534; }
       var ach = filtered[j];
       var card = document.createElement("div");
       var isUnlocked = !!state.achievements[ach.id];
-      card.className = "achievement-card rarity-" + ach.rarity + (isUnlocked ? " unlocked" : "");
+      
+      // Логика видимости: первые 3 всегда видны, остальные скрыты если не получен предыдущий ИЛИ <50%
+      var isVisible = true;
+      if (j >= 3 && !isUnlocked) {
+        var prevAch = filtered[j-1];
+        var prevUnlocked = !!state.achievements[prevAch.id];
+        var currentProgress = ach.getCurrent ? ach.getCurrent(stats) : 0;
+        var percent = ach.max > 0 ? (currentProgress / ach.max) : 0;
+        
+        if (!prevUnlocked && percent < 0.5) {
+          isVisible = false;
+        }
+      }
+
+      card.className = "achievement-card rarity-" + ach.rarity + (isUnlocked ? " unlocked" : "") + (!isVisible ? " hidden-achievement" : "");
 
       var current = ach.getCurrent ? ach.getCurrent(stats) : 0;
       var progress = ach.max > 0 ? Math.min(100, (current / ach.max) * 100) : (isUnlocked ? 100 : 0);
       var xp = XP_BY_RARITY[ach.rarity] || 0;
 
-      card.innerHTML = '<div class="achievement-icon">' + ach.icon + '</div>' +
+      var nameHtml = isVisible ? ach.name : "???";
+      var descHtml = isVisible ? ach.desc : "Выполните предыдущие достижения";
+      var iconHtml = isVisible ? ach.icon : "🔒";
+
+      card.innerHTML = '<div class="achievement-icon">' + iconHtml + '</div>' +
         '<div class="achievement-info">' +
-        '<div class="achievement-name"><span>' + ach.name + '</span><span class="achievement-xp">+' + xp + ' XP</span></div>' +
-        '<div class="achievement-desc">' + ach.desc + '</div>' +
-        (!isUnlocked && ach.max > 1 ? '<div class="achievement-progress"><div class="achievement-progress-bar" style="width:' + progress + '%"></div></div>' : '') +
+        '<div class="achievement-name"><span>' + nameHtml + '</span>' + (isVisible ? '<span class="achievement-xp">+' + xp + ' XP</span>' : '') + '</div>' +
+        '<div class="achievement-desc">' + descHtml + '</div>' +
+        (isVisible && !isUnlocked && ach.max > 1 ? '<div class="achievement-progress"><div class="achievement-progress-bar" style="width:' + progress + '%"></div></div>' : '') +
         (isUnlocked ? '<div class="achievement-date">Получено: ' + new Date(state.achievements[ach.id]).toLocaleDateString("ru-RU") + '</div>' : '') +
         '</div>';
 
@@ -2628,6 +2902,12 @@ body.light .day-cell .work-bar { background: #166534; }
     showToast(state.autoUpdate ? "✓ Автообновление включено" : "Автообновление выключено");
   });
 
+  // Ручное обновление из настроек
+  document.getElementById("manualUpdateBtn").addEventListener("click", function() {
+    document.getElementById("settingsMenu").classList.remove("open");
+    checkForUpdate(false);
+  });
+
   document.getElementById("glovesToggle").addEventListener("click", function() {
     state.glovesMode = !state.glovesMode;
     updateGlovesUI(); saveState();
@@ -2869,6 +3149,41 @@ body.light .day-cell .work-bar { background: #166534; }
     document.getElementById("achievementsModal").classList.remove("open");
   });
 
+  // === ЧЕК ===
+  document.getElementById("generateReceiptBtn").addEventListener("click", function() {
+    openReceiptModal();
+  });
+  document.getElementById("closeReceiptBtn").addEventListener("click", function() {
+    document.getElementById("receiptModal").classList.remove("open");
+  });
+  document.getElementById("copyReceiptTextBtn").addEventListener("click", function() {
+    if (window._currentReceiptText) {
+      copyFallback(window._currentReceiptText);
+    }
+  });
+  document.getElementById("shareReceiptBtn").addEventListener("click", function() {
+    // Пытаемся поделиться картинкой через Web Share API
+    if (navigator.share) {
+      // Конвертируем base64 в Blob для шеринга
+      fetch(document.getElementById("receiptImage").src)
+        .then(res => res.blob())
+        .then(blob => {
+          var file = new File([blob], "check-obvalka.png", { type: "image/png" });
+          navigator.share({
+            files: [file],
+            title: "Отчет обвальщика",
+            text: window._currentReceiptText || ""
+          }).catch(function() {});
+        })
+        .catch(function() {
+          // Fallback если не удалось создать файл
+          shareReportText(window._currentReceiptText || "");
+        });
+    } else {
+      shareReportText(window._currentReceiptText || "");
+    }
+  });
+
   document.getElementById("closeProBtn").addEventListener("click", function() {
     document.getElementById("proModal").classList.remove("open");
   });
@@ -2878,6 +3193,17 @@ body.light .day-cell .work-bar { background: #166534; }
   });
   document.getElementById("proCodeInput").addEventListener("keydown", function(e) {
     if (e.key === "Enter") { e.preventDefault(); activatePro(this.value); }
+  });
+  
+  document.getElementById("copyRequisitesBtn").addEventListener("click", function() {
+    var text = "Переведи 199 ₽ по СБП на номер: +7 (XXX) XXX-XX-XX (Иван И.)";
+    copyFallback(text);
+  });
+
+  // Обработчик кнопки RuStore (заглушка для демонстрации)
+  document.getElementById("rustoreBuyBtn").addEventListener("click", function() {
+    showToast("⚠️ Интеграция с RuStore SDK требует нативной обёртки");
+    // Здесь должен быть вызов RuStore Pay SDK
   });
 
   document.getElementById("saveBkBtn").addEventListener("click", function() {
@@ -2893,7 +3219,8 @@ body.light .day-cell .work-bar { background: #166534; }
       workStart: state.workStart, workEnd: state.workEnd,
       achievements: state.achievements,
       currentAchievementTab: state.currentAchievementTab,
-      currentStatsTab: state.currentStatsTab
+      currentStatsTab: state.currentStatsTab,
+      usedCodes: state.usedCodes
     });
     document.getElementById("bkModal").classList.add("open");
     history.pushState({ modal: "backup" }, "", window.location.href);
@@ -2971,6 +3298,10 @@ body.light .day-cell .work-bar { background: #166534; }
     }
     if (document.getElementById("detailedStatsPage").classList.contains("open")) {
       document.getElementById("detailedStatsPage").classList.remove("open");
+      history.pushState(null, "", window.location.href); return;
+    }
+    if (document.getElementById("receiptModal").classList.contains("open")) {
+      document.getElementById("receiptModal").classList.remove("open");
       history.pushState(null, "", window.location.href); return;
     }
     if (document.getElementById("achievementsModal").classList.contains("open")) {
