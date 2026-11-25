@@ -7,10 +7,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Обвалка PRO v10.1</title>
+<title>Обвалка PRO v10.2</title>
 <script>
 (function(){
-  var CURRENT="10.1";
+  var CURRENT="10.2";
   fetch("version.json?v="+Date.now(),{cache:"no-store"})
     .then(function(r){if(!r.ok)throw new Error();return r.json()})
     .then(function(d){
@@ -38,7 +38,6 @@
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
-/* === ТЕМЫ === */
 body.theme-light {
   --bg: #f1f5f9; --card: #ffffff; --card2: #f8fafc; --text: #0f172a;
   --muted: #64748b; --border: #cbd5e1; --cell-border: #cbd5e1;
@@ -643,13 +642,14 @@ body.theme-light .day-cell .work-bar { background: #166534; }
   var DB_KEY = "obvalka_pro_v9";
   var BK_KEY = "obvalka_pro_backups_v9";
   var DRAFT_KEY = "obvalka_draft_v9";
-  var APP_VERSION = "10.1";
+  
+  // === АВТОМАТИЧЕСКАЯ ГЕНЕРАЦИЯ КЛЮЧА И ВЕРСИИ ===
+  var APP_VERSION = "10.2";
+  var SECRET_KEY = "OVALKA_SECRET_" + APP_VERSION;
+  
   var MAX_BACKUPS = 10;
   var UPDATE_CHECK_INTERVAL = 6 * 60 * 60 * 1000;
   var ADMIN_CODE = "OBVALKA-ADMIN-2026";
-  
-  // ОБЩИЙ СЕКРЕТНЫЙ КЛЮЧ ДЛЯ ПРОВЕРКИ КОДОВ
-  const SECRET_KEY = "OVALKA_SECRET_KEY_2026_V10";
 
   var THEMES = ["dark", "light", "gray", "blue", "green"];
   var THEME_NAMES = {dark: "🌙 Темная", light: "☀️ Светлая", gray: "⚪ Серая", blue: "🔵 Голубая", green: "🟢 Зеленая"};
@@ -748,17 +748,12 @@ body.theme-light .day-cell .work-bar { background: #166534; }
     try {
       const parts = code.split('-');
       if(parts.length !== 3 || parts[0] !== 'PRO') return false;
-      
       const randomPart = parts[1];
       const providedSig = parts[2];
-      
       const enc = new TextEncoder();
-      const cryptoKey = await window.crypto.subtle.importKey(
-        "raw", enc.encode(SECRET_KEY), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
-      );
+      const cryptoKey = await window.crypto.subtle.importKey("raw", enc.encode(SECRET_KEY), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
       const signature = await window.crypto.subtle.sign("HMAC", cryptoKey, enc.encode(randomPart));
       const calculatedSig = Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 8);
-      
       return calculatedSig === providedSig;
     } catch(e) { return false; }
   }
@@ -838,17 +833,38 @@ body.theme-light .day-cell .work-bar { background: #166534; }
   }
 
   function showUpdateNotice(version) { var notice = document.getElementById("updateNotice"); notice.textContent = "🔄 Доступна версия " + version; notice.classList.add("show"); clearTimeout(notice._timer); notice._timer = setTimeout(function() { notice.classList.remove("show"); }, 10000); }
+  
+  // === ИСПРАВЛЕННАЯ ПРОВЕРКА ОБНОВЛЕНИЙ ===
   function checkForUpdate(isAuto) {
     var lastCheck = 0; try { lastCheck = parseInt(localStorage.getItem("obv_last_update_check") || "0", 10); } catch (e) {}
-    var now = Date.now(); if (!isAuto && (now - lastCheck) < UPDATE_CHECK_INTERVAL) return;
-    try { localStorage.setItem("obv_last_update_check", String(now)); } catch (e) {}
-    fetch("version.json?v=" + now, { cache: "no-store" }).then(function(res) { if (!res.ok) throw new Error("HTTP " + res.status); return res.json(); }).then(function(data) {
-      var remoteVer = String(data.version != null ? data.version : "").trim(), localVer = String(APP_VERSION).trim();
-      if (remoteVer && remoteVer !== localVer) { if (isAuto && state.autoUpdate) performUpdate(); else showUpdateNotice(remoteVer); }
-    }).catch(function() {});
+    var nowTime = Date.now(); 
+    if (!isAuto && (nowTime - lastCheck) < UPDATE_CHECK_INTERVAL) return;
+    try { localStorage.setItem("obv_last_update_check", String(nowTime)); } catch (e) {}
+
+    fetch("version.json?v=" + nowTime, { cache: "no-store" })
+      .then(function(res) { if (!res.ok) throw new Error("HTTP " + res.status); return res.json(); })
+      .then(function(data) {
+        var remoteVer = String(data.version != null ? data.version : "").trim();
+        var localVer = String(APP_VERSION).trim();
+        if (remoteVer && remoteVer !== localVer) {
+          if (isAuto && state.autoUpdate) performUpdate();
+          else showUpdateNotice(remoteVer);
+        } else {
+          // Явное сообщение, если версии совпадают
+          if (!isAuto) showToast("✅ Уже последняя версия (" + localVer + ")");
+        }
+      })
+      .catch(function() {
+        // Явное сообщение об ошибке
+        if (!isAuto) showToast("⚠️ Не удалось проверить обновление");
+      });
   }
 
   function loadInitialData() {
+    // === ИСПРАВЛЕНИЕ КНОПКИ "НАЗАД" ===
+    // Очищаем историю переходов, чтобы нельзя было вернуться на старую версию
+    history.replaceState(null, "", window.location.pathname);
+
     var candidates = [], legacyKeys = [DB_KEY, "obvalka_pro_v8", "obvalka_pro_v7", "obvalka_pro_data", "obvalkaData"];
     for (var i = 0; i < legacyKeys.length; i++) { try { var raw = localStorage.getItem(legacyKeys[i]); if (raw) { var parsed = normalizeState(JSON.parse(raw)); if (parsed) candidates.push(parsed); } } catch (e) {} }
     try { if (window.name && window.name.indexOf("OBV_DATA:") === 0) { var wn = normalizeState(JSON.parse(window.name.slice(9))); if (wn) candidates.push(wn); } } catch (e) {}
@@ -897,35 +913,29 @@ body.theme-light .day-cell .work-bar { background: #166534; }
     }
   }
 
-  // === АКТИВАЦИЯ ПРОМОКОДА С ПРОВЕРКОЙ ПОДПИСИ ===
+  // === АКТИВАЦИЯ ПРОМОКОДА ===
   async function activatePro(code) {
     var normalized = String(code || "").trim().toUpperCase();
     if (!normalized) { showToast("⚠ Введите промокод"); return false; }
 
-    // 1. Проверка админского кода
     if (normalized === ADMIN_CODE) {
       state.isPro = true; saveState(); updateProUI();
       document.getElementById("proModal").classList.remove("open");
       showToast("💎 Админ-доступ активирован!"); return true;
     }
 
-    // 2. Криптографическая проверка подписи
     const isValidSignature = await verifyCodeSignature(normalized);
     
-    // 3. Проверка на повторное использование
     if (isValidSignature && state.usedCodes.indexOf(normalized) === -1) {
       state.isPro = true;
-      state.usedCodes.push(normalized); // Помечаем как использованный
-      
+      state.usedCodes.push(normalized);
       saveState(); updateProUI();
       document.getElementById("proModal").classList.remove("open");
       showToast("💎 Pro активирован!"); 
-      playAchievementSound();
-      showConfetti();
+      playAchievementSound(); showConfetti();
       return true;
     }
 
-    // Ошибка
     var input = document.getElementById("proCodeInput");
     input.classList.add("shake"); playErrorSound();
     setTimeout(function() { input.classList.remove("shake"); }, 400);
@@ -1255,7 +1265,6 @@ body.theme-light .day-cell .work-bar { background: #166534; }
   document.getElementById("manualUpdateBtn").addEventListener("click", function() { document.getElementById("settingsMenu").classList.remove("open"); checkForUpdate(false); });
   document.getElementById("glovesToggle").addEventListener("click", function() { state.glovesMode = !state.glovesMode; updateGlovesUI(); saveState(); showToast(state.glovesMode ? "🧤 Режим в перчатках включён" : "Обычный режим"); });
   
-  // Переключение тем (циклическое)
   document.getElementById("themeBtn").addEventListener("click", function() {
     var idx = THEMES.indexOf(state.theme);
     idx = (idx + 1) % THEMES.length;
@@ -1349,6 +1358,7 @@ body.theme-light .day-cell .work-bar { background: #166534; }
   document.getElementById("confirmNoBtn").addEventListener("click", function() { document.getElementById("confirmModal").classList.remove("open"); confirmCallback = null; });
   document.getElementById("confirmYesBtn").addEventListener("click", function() { document.getElementById("confirmModal").classList.remove("open"); if (typeof confirmCallback === "function") { var fn = confirmCallback; confirmCallback = null; fn(); } });
 
+  // === ИСПРАВЛЕНИЕ КНОПКИ "НАЗАД" ДЛЯ ВСЕХ МОДАЛОК ===
   window.addEventListener("popstate", function() {
     if (document.getElementById("confirmModal").classList.contains("open")) { document.getElementById("confirmModal").classList.remove("open"); confirmCallback = null; history.pushState(null, "", window.location.href); return; }
     if (document.getElementById("bkModal").classList.contains("open")) { document.getElementById("bkModal").classList.remove("open"); history.pushState(null, "", window.location.href); return; }
@@ -1357,9 +1367,13 @@ body.theme-light .day-cell .work-bar { background: #166534; }
     if (document.getElementById("detailedStatsPage").classList.contains("open")) { document.getElementById("detailedStatsPage").classList.remove("open"); history.pushState(null, "", window.location.href); return; }
     if (document.getElementById("achievementsModal").classList.contains("open")) { document.getElementById("achievementsModal").classList.remove("open"); history.pushState(null, "", window.location.href); return; }
     if (document.getElementById("proModal").classList.contains("open")) { document.getElementById("proModal").classList.remove("open"); history.pushState(null, "", window.location.href); return; }
+    
+    // Если открыта любая модалка, просто закрываем её и не даем уйти со страницы
+    // Если модалок нет, но есть состояние в истории - очищаем его
     history.pushState(null, "", window.location.href);
   });
 
+  // Инициализация чистого состояния истории при первом запуске
   history.replaceState(null, "", window.location.href);
   window.addEventListener("beforeunload", function() { saveState(); saveDraft(); });
   loadInitialData();
