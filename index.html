@@ -7,11 +7,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Обвалка PRO v10.7</title>
+<title>Обвалка PRO v10.8</title>
 <script>
 (function(){
-  var CURRENT="10.7";
-  // Защита от возврата на старые версии
+  var CURRENT="10.8";
   if (window.history.replaceState) {
     window.history.replaceState(null, null, window.location.href);
   }
@@ -58,7 +57,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .day-cell.other{opacity:.35} .day-cell.in-range{background:var(--orange-bg);border-color:var(--orange);color:var(--text)} .day-cell.selected{background:var(--orange);border-color:var(--orange);color:#111;font-weight:800; z-index:2} 
 .day-cell.has-off{background:var(--red-bg);border-color:var(--red)} .day-cell .off-x{position:absolute;top:1px;right:2px;font-size:9px;line-height:1;color:var(--red);font-weight:900} .day-cell.has-work{background:rgba(22,163,74,.15);border-color:rgba(22,163,74,.3)} body.theme-light .day-cell.has-work{background:rgba(21,128,61,.12);border-color:rgba(21,128,61,.25)} .day-cell .work-bar{width:14px;height:3px;border-radius:2px;background:#15803d;position:absolute;bottom:3px} body.theme-light .day-cell .work-bar{background:#166534} .day-cell.selected .work-bar{background:#111}
 .day-cell.in-vahta{background:var(--vahta-bg);border-color:var(--vahta);color:var(--text);font-weight:bold}
-/* Если день выбран И в вахте - приоритет выбору */
 .day-cell.in-vahta.selected { background:var(--orange); border-color:var(--orange); color:#111; }
 
 .hint{text-align:center;font-size:10px;color:var(--muted);margin:4px 0}
@@ -85,7 +83,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .modal-title{font-size:15px;font-weight:800}
 .preview-ta{width:100%;height:150px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px;font-size:12.5px;font-family:inherit;resize:none;-webkit-user-select:text;user-select:text}
 .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.m-btn{height:34px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-weight:700;font-size:12.5px;cursor:pointer} .m-btn:disabled{opacity:.5;cursor:not-allowed} .m-btn.primary{background:var(--green);border-color:var(--green);color:#fff} .m-btn.danger{background:var(--red);border-color:var(--red);color:#fff} .m-btn.purple{background:var(--purple);border-color:var(--purple);color:#fff} .m-btn.vahta{background:var(--vahta);border-color:var(--vahta);color:#000}
+.m-btn{height:34px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-weight:700;font-size:12.5px;cursor:pointer} .m-btn:disabled{opacity:.5;cursor:not-allowed} .m-btn.primary{background:var(--green);border-color:var(--green);color:#fff} .m-btn.danger{background:var(--red);border-color:var(--red);color:#fff} .m-btn.purple{background:var(--purple);border-color:var(--purple);color:#fff} .m-btn.vahta{background:var(--vahta);border-color:var(--vahta);color:#000} .m-btn.deep{background:var(--gold);border-color:var(--gold);color:#000}
 .bk-list{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:4px} .bk-item{display:flex;justify-content:space-between;align-items:center;background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:11.5px;gap:6px}
 .toast{position:fixed;bottom:calc(16px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:#111827;color:#fff;border:1px solid #374151;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;z-index:200;display:none;white-space:nowrap;max-width:90vw}
 .save-indicator{position:fixed;top:calc(10px + var(--safe-top));right:10px;background:var(--green);color:#fff;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;opacity:0;transform:translateY(-10px);transition:opacity .3s,transform .3s;z-index:300;pointer-events:none} .save-indicator.show{opacity:1;transform:translateY(0)}
@@ -157,7 +155,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
         <button class="icon-btn" id="nextMonthBtn" type="button">▶</button>
       </div>
     </div>
-    <!-- ИСПРАВЛЕННЫЕ КНОПКИ ПЕРИОДОВ -->
     <div class="tabs" id="periodTabs">
       <button class="tab active" data-period="day" type="button">День</button>
       <button class="tab" data-period="week" type="button">Неделя</button>
@@ -349,13 +346,14 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   <div class="modal-box">
     <div class="modal-title">Резервные копии и перенос</div>
     <div class="bk-list" id="bkList"></div>
-    <div style="font-size:11px;color:var(--muted);font-weight:700;">Код переноса базы:</div>
+    <div style="font-size:11px;color:var(--muted);font-weight:700; margin-top:10px;">Код переноса базы:</div>
     <textarea class="preview-ta" id="transferCode" style="height:64px;font-size:11px;" placeholder="Скопируйте код или вставьте код с другого телефона"></textarea>
     <div class="modal-actions">
       <button class="m-btn" id="copyCodeBtn" type="button">📋 Копировать код</button>
       <button class="m-btn primary" id="importCodeBtn" type="button">📥 Загрузить код</button>
     </div>
-    <button class="m-btn" id="closeBkBtn" type="button">Закрыть</button>
+    <button class="m-btn deep" id="deepBackupBtn" type="button" style="margin-top:8px;">💎 Глубокий резерв</button>
+    <button class="m-btn" id="closeBkBtn" type="button" style="margin-top:4px;">Закрыть</button>
   </div>
 </div>
 
@@ -385,8 +383,9 @@ var MONTHS_SHORT=["янв","фев","мар","апр","май","июн","июл"
 var DB_KEY="obvalka_db_universal"; 
 var BK_KEY="obvalka_pro_backups_v9";
 var DRAFT_KEY="obvalka_draft_v9";
+var DEEP_BACKUP_KEY="obvalka_deep_backup"; // НОВЫЙ КЛЮЧ
 
-var APP_VERSION="10.7";
+var APP_VERSION="10.8";
 var SECRET_KEY="OVALKA_SECRET_"+APP_VERSION;
 var MAX_BACKUPS=10,UPDATE_CHECK_INTERVAL=6*60*60*1000,ADMIN_CODE="OBVALKA-ADMIN-2026";
 var THEMES=["dark","light","gray","blue","green"];
@@ -514,12 +513,32 @@ function idbGet(key){return idbOpen().then(function(db){if(!db)return null;retur
 
 function showSaveIndicator(){var ind=document.getElementById("saveIndicator");var n=new Date();ind.textContent="✓ Сохранено в "+String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");ind.classList.add("show");clearTimeout(ind._timer);ind._timer=setTimeout(function(){ind.classList.remove("show")},2000)}
 
+// ГЛУБОКИЙ РЕЗЕРВ
+function saveDeepBackup() {
+  try {
+    var payload={worker:state.worker,rate:state.rate,theme:state.theme,records:state.records,updatedAt:Date.now(),autoUpdate:state.autoUpdate,isPro:state.isPro,proExpireDate:state.proExpireDate,glovesMode:state.glovesMode,workStart:state.workStart,workEnd:state.workEnd,achievements:state.achievements,currentAchievementTab:state.currentAchievementTab,currentStatsTab:state.currentStatsTab,usedCodes:state.usedCodes,vahtaStart:state.vahtaStart,vahtaDays:state.vahtaDays};
+    localStorage.setItem(DEEP_BACKUP_KEY, JSON.stringify(payload));
+    showToast("💎 Глубокий резерв сохранен");
+  } catch(e) {
+    showToast("⚠ Ошибка глубокого резерва");
+  }
+}
+
 function saveState(){
   state.updatedAt=Date.now();
   var payload={worker:state.worker,rate:state.rate,theme:state.theme,records:state.records,updatedAt:state.updatedAt,autoUpdate:state.autoUpdate,isPro:state.isPro,proExpireDate:state.proExpireDate,glovesMode:state.glovesMode,workStart:state.workStart,workEnd:state.workEnd,achievements:state.achievements,currentAchievementTab:state.currentAchievementTab,currentStatsTab:state.currentStatsTab,usedCodes:state.usedCodes,vahtaStart:state.vahtaStart,vahtaDays:state.vahtaDays};
   var json=JSON.stringify(payload);
   try{localStorage.setItem(DB_KEY,json)}catch(e){showToast("⚠ Память переполнена")}
   try{window.name="OBV_DATA:"+json}catch(e){}
+  
+  // Автосохранение в глубокий резерв раз в день
+  var lastDeep = localStorage.getItem("obv_last_deep_save");
+  var today = toIso(new Date());
+  if(lastDeep !== today) {
+     saveDeepBackup();
+     localStorage.setItem("obv_last_deep_save", today);
+  }
+
   return idbSet(DB_KEY,json).then(function(){showSaveIndicator()})
 }
 function debouncedSave(){clearTimeout(saveTimeout);saveTimeout=setTimeout(function(){saveState()},500)}
@@ -611,11 +630,23 @@ function loadInitialData(){
     migrateData();
   }
   
+  // Восстановление из window.name
   if(!localStorage.getItem(DB_KEY) && window.name && window.name.indexOf("OBV_DATA:")===0) {
      try {
         var recovered = window.name.substring(9);
         localStorage.setItem(DB_KEY, recovered);
         showToast("♻️ База восстановлена из кэша");
+     } catch(e){}
+  }
+
+  // Восстановление из ГЛУБОКОГО РЕЗЕРВА
+  if(!localStorage.getItem(DB_KEY)) {
+     try {
+        var deepRaw = localStorage.getItem(DEEP_BACKUP_KEY);
+        if(deepRaw) {
+           localStorage.setItem(DB_KEY, deepRaw);
+           showToast("💎 База восстановлена из глубокого резерва");
+        }
      } catch(e){}
   }
 
@@ -789,13 +820,10 @@ function renderCalendar(){
     var cur=new Date(gridStart.getFullYear(),gridStart.getMonth(),gridStart.getDate()+idx),iso=toIso(cur);
     var cell=document.createElement("div");cell.className="day-cell";cell.setAttribute("data-iso",iso);
     if(cur.getMonth()!==state.viewMonth)cell.classList.add("other");
-    
-    // Логика подсветки
     if(iso>=rMin&&iso<=rMax) {
         if(isVahtaMode) cell.classList.add("in-vahta");
         else cell.classList.add("in-range");
     }
-    
     if(iso===state.selectedDate)cell.classList.add("selected");
     if(offMap[iso])cell.classList.add("has-off");
     var num=document.createElement("span");num.textContent=cur.getDate();cell.appendChild(num);
@@ -848,26 +876,26 @@ function buildReport(isShort){
   else{var pText=rMin===rMax?fmtDateFull(rMin):(fmtDateFull(rMin)+" – "+fmtDateFull(rMax));lines.push("Период: "+pText);for(var j=0;j<dayLines.length;j++)lines.push(dayLines[j]);lines.push("ИТОГ: "+totBoxes+"кор | "+totWeight+"кг | "+totPay+"₽");return lines.join(NL)}
 }
 
-// ИСПРАВЛЕННЫЙ ЭКСПОРТ В EXCEL
+// ИСПРАВЛЕННЫЙ ЭКСПОРТ В EXCEL (CSV)
 function exportToExcel() {
   var list = getFilteredRecords();
-  var csvContent = "Дата;Коробки;Вес;Ставка;Зарплата;Статус\n";
+  var csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for Excel
+  csvContent += "Дата;Коробки;Вес;Ставка;Зарплата;Статус\n";
   list.forEach(function(r) {
     var status = r.isOff ? "Выходной" : "Работа";
     csvContent += r.date+";"+r.boxes+";"+r.weight+";"+r.rate+";"+r.pay+";"+status+"\n";
   });
   
-  var blob = new Blob(["\ufeff", csvContent], { type: 'text/csv;charset=utf-8;' });
-  var url = URL.createObjectURL(blob);
+  var encodedUri = encodeURI(csvContent);
   var link = document.createElement("a");
-  link.setAttribute("href", url);
+  link.setAttribute("href", encodedUri);
   link.setAttribute("download", "otchet_obvalka.csv");
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  showToast("📊 Файл CSV сохранен");
 }
 
-// ИСПРАВЛЕННЫЙ ЭКСПОРТ В PDF
 function exportToPdf() {
   var text = document.getElementById("previewText").value;
   var win = window.open('', '_blank');
@@ -878,7 +906,6 @@ function exportToPdf() {
   win.document.close();
   setTimeout(function(){ 
     win.print(); 
-    // Не закрываем автоматически, даем пользователю самому закрыть
   }, 500);
 }
 
@@ -1198,6 +1225,12 @@ document.getElementById("openBkBtn").addEventListener("click",function(){
   document.getElementById("bkModal").classList.add("open");history.pushState({modal:"backup"},"",window.location.href);
 });
 document.getElementById("closeBkBtn").addEventListener("click",function(){document.getElementById("bkModal").classList.remove("open")});
+
+// КНОПКА ГЛУБОКОГО РЕЗЕРВА
+document.getElementById("deepBackupBtn").addEventListener("click", function(){
+  saveDeepBackup();
+});
+
 document.getElementById("copyCodeBtn").addEventListener("click",function(){var ta=document.getElementById("transferCode");ta.select();ta.setSelectionRange(0,ta.value.length);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value).then(function(){showToast("✓ Код скопирован")}).catch(function(){try{document.execCommand("copy");showToast("✓ Код скопирован")}catch(e){showToast("Выделите код вручную")}})}else{try{document.execCommand("copy");showToast("✓ Код скопирован")}catch(e){showToast("Выделите код вручную")}}});
 document.getElementById("importCodeBtn").addEventListener("click",function(){var raw=document.getElementById("transferCode").value.trim();if(!raw){showToast("⚠ Вставьте код базы");return}var btn=this,orig=btn.textContent;btn.disabled=true;btn.textContent="Загрузка...";setTimeout(function(){try{applyImportedObject(JSON.parse(raw))}catch(e){showToast("❌ Ошибка чтения кода")}btn.disabled=false;btn.textContent=orig},50)});
 
