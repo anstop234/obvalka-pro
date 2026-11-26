@@ -7,10 +7,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Обвалка PRO v10.2</title>
+<title>Обвалка PRO v10.3</title>
 <script>
 (function(){
-  var CURRENT="10.2";
+  var CURRENT="10.3";
   fetch("version.json?v="+Date.now(),{cache:"no-store"})
     .then(function(r){if(!r.ok)throw new Error();return r.json()})
     .then(function(d){
@@ -501,7 +501,7 @@ var MONTHS=["Январь","Февраль","Март","Апрель","Май","
 var MONTHS_GEN=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
 var MONTHS_SHORT=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
 var DB_KEY="obvalka_pro_v9",BK_KEY="obvalka_pro_backups_v9",DRAFT_KEY="obvalka_draft_v9";
-var APP_VERSION="10.2";
+var APP_VERSION="10.3";
 var SECRET_KEY="OVALKA_SECRET_"+APP_VERSION;
 var MAX_BACKUPS=10,UPDATE_CHECK_INTERVAL=6*60*60*1000,ADMIN_CODE="OBVALKA-ADMIN-2026";
 var THEMES=["dark","light","gray","blue","green"];
@@ -706,7 +706,13 @@ function loadInitialData(){
     applyTheme();updateAutoUpdateUI();updateProUI();updateGlovesUI();
     document.getElementById("workerInp").value=state.worker;document.getElementById("rateInp").value=state.rate;
     document.getElementById("workStartInp").value=state.workStart;document.getElementById("workEndInp").value=state.workEnd;
-    restoreDraft();setPeriod(state.period,false);ensureDailyAutoBackup();
+    restoreDraft();
+    
+    // ГАРАНТИРОВАННАЯ ОТРИСОВКА КАЛЕНДАРЯ ПРИ ЗАГРУЗКЕ
+    setPeriod(state.period,false);
+    renderCalendar(); 
+    
+    ensureDailyAutoBackup();
     lastLevel=calculateLevel(calculateTotalXP());updateLevelUI();checkAchievements(true);
     setTimeout(function(){checkForUpdate(true)},2000);
   });
@@ -1076,7 +1082,12 @@ document.getElementById("settingsBtn").addEventListener("click",function(e){e.st
 document.addEventListener("click",function(e){var menu=document.getElementById("settingsMenu"),btn=document.getElementById("settingsBtn");if(!menu.contains(e.target)&&e.target!==btn)menu.classList.remove("open")});
 
 document.getElementById("autoUpdateToggle").addEventListener("click",function(){state.autoUpdate=!state.autoUpdate;updateAutoUpdateUI();saveState();showToast(state.autoUpdate?"✓ Автообновление включено":"Автообновление выключено")});
-document.getElementById("manualUpdateBtn").addEventListener("click",function(){document.getElementById("settingsMenu").classList.remove("open");checkForUpdate(false)});
+document.getElementById("manualUpdateBtn").addEventListener("click",function(){
+  document.getElementById("settingsMenu").classList.remove("open");
+  // Принудительная перезагрузка с очисткой кэша
+  showToast("🔄 Перезагрузка приложения...");
+  setTimeout(function(){window.location.replace(window.location.href.split("?")[0].split("#")[0]+"?v="+Date.now())},500);
+});
 document.getElementById("glovesToggle").addEventListener("click",function(){state.glovesMode=!state.glovesMode;updateGlovesUI();saveState();showToast(state.glovesMode?"🧤 Режим в перчатках включён":"Обычный режим")});
 document.getElementById("themeBtn").addEventListener("click",function(){var idx=THEMES.indexOf(state.theme);idx=(idx+1)%THEMES.length;state.theme=THEMES[idx];applyTheme();saveState();showToast(THEME_NAMES[state.theme])});
 document.getElementById("openProBtn").addEventListener("click",function(){document.getElementById("settingsMenu").classList.remove("open");document.getElementById("proCodeInput").value="";document.getElementById("proModal").classList.add("open");history.pushState({modal:"pro"},"",window.location.href)});
