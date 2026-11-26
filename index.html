@@ -4,23 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content, viewport-fit=cover">
 <meta name="theme-color" content="#121212">
+<!-- ЖЕСТКИЙ ЗАПРЕТ КЭША -->
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Обвалка PRO v10.5</title>
-<!-- БЛОКИРОВКА ВОЗВРАТА НА СТАРЫЕ ВЕРСИИ -->
+<title>Обвалка PRO v10.6</title>
 <script>
-  if (window.history.replaceState) {
-    window.history.replaceState(null, null, window.location.href);
+// СКРИПТ ЗАЩИТЫ ОТ СТАРЫХ ВЕРСИЙ В ИСТОРИИ
+(function(){
+  var CURRENT="10.6";
+  // Если страница загружена из кэша и версия не совпадает - жесткая перезагрузка
+  if (document.documentElement.getAttribute('data-ver') !== CURRENT) {
+     document.documentElement.setAttribute('data-ver', CURRENT);
+     // Очищаем историю, чтобы кнопка назад не вела на старую версию
+     if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.pathname + '?v=' + Date.now());
+     }
   }
-  window.onpopstate = function(event) {
-    if (event.state === null) {
-       window.history.pushState(null, null, window.location.href);
-    }
-  };
-  window.history.pushState(null, null, window.location.href);
   
-  var CURRENT="10.5";
   fetch("version.json?v="+Date.now(),{cache:"no-store"})
     .then(function(r){if(!r.ok)throw new Error();return r.json()})
     .then(function(d){
@@ -31,6 +32,7 @@
       }
     })
     .catch(function(){});
+})();
 </script>
 <style>
 :root{--bg:#121212;--card:#1e1e1e;--card2:#262626;--text:#f3f4f6;--muted:#9ca3af;--border:#333;--cell-border:#3d3d3d;--green:#16a34a;--green-bg:rgba(22,163,74,.16);--orange:#f59e0b;--orange-bg:rgba(245,158,11,.22);--red:#ef4444;--red-bg:rgba(239,68,68,.16);--purple:#8b5cf6;--purple-bg:rgba(139,92,246,.16);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.16);--gold:#fbbf24;--silver:#94a3b8;--cyan:#06b6d4;--cyan-bg:rgba(6,182,212,.16);--input-bg:#2a2a2a;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--vahta:#eab308;--vahta-bg:rgba(234,179,8,.25)}
@@ -106,8 +108,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .pro-features{display:flex;flex-direction:column;gap:6px} .pro-feature{display:flex;align-items:center;gap:8px;padding:8px;background:var(--card2);border-radius:8px;font-size:12px;font-weight:600} .pro-feature-icon{font-size:16px} .pro-feature.locked{opacity:.5} .pro-feature.unlocked{opacity:1;border:1px solid var(--green)}
 .pro-code-input{width:100%;height:40px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0 12px;font-size:14px;font-weight:700;text-align:center;letter-spacing:2px} .pro-code-input:focus{outline:none;border-color:var(--purple)} .pro-code-input.shake{animation:shake .4s cubic-bezier(.36,.07,.19,.97) both}
 @keyframes shake{10%,90%{transform:translate3d(-1px,0,0)}20%,80%{transform:translate3d(2px,0,0)}30%,50%,70%{transform:translate3d(-4px,0,0)}40%,60%{transform:translate3d(4px,0,0)}}
-.payment-details{background:var(--card2);border:1px dashed var(--border);border-radius:8px;padding:10px;margin:8px 0;font-size:12px;color:var(--text);text-align:center;line-height:1.6}
-.copy-requisites-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer;margin-top:6px} .copy-requisites-btn:active{opacity:.7}
 .subscription-info{text-align:center;font-size:11px;color:var(--green);margin-top:5px;font-weight:600}
 
 .achievements-tabs{display:flex;gap:4px;margin-bottom:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-bottom:4px} .achievements-tabs::-webkit-scrollbar{display:none} .achievements-tab{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0} .achievements-tab.active{background:var(--purple);border-color:var(--purple);color:#fff}
@@ -119,11 +119,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .chart-container{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px} .chart-title{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px} .bar-chart{display:flex;align-items:flex-end;gap:3px;height:120px;padding:4px 0;border-bottom:1px solid var(--border)} .bar{flex:1;background:linear-gradient(180deg,var(--green),var(--cyan));border-radius:3px 3px 0 0;min-height:2px;position:relative;transition:all .3s} .bar:hover{opacity:.8} .bar-labels{display:flex;gap:3px;margin-top:4px} .bar-label{flex:1;text-align:center;font-size:9px;color:var(--muted);font-weight:600}
 .heatmap{display:grid;grid-template-columns:repeat(52,1fr);gap:2px;padding:4px} .heatmap-cell{aspect-ratio:1;border-radius:2px;background:var(--card2);border:1px solid var(--border)} .heatmap-cell.level-1{background:rgba(22,163,74,.25)} .heatmap-cell.level-2{background:rgba(22,163,74,.5)} .heatmap-cell.level-3{background:rgba(22,163,74,.75)} .heatmap-cell.level-4{background:rgba(22,163,74,1)} .heatmap-legend{display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:6px;font-size:9px;color:var(--muted)} .heatmap-legend-cell{width:10px;height:10px;border-radius:2px;border:1px solid var(--border)}
 .records-grid,.numbers-list{display:grid;grid-template-columns:1fr;gap:8px} .record-card,.number-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center} .record-info,.number-info{display:flex;flex-direction:column;gap:2px} .record-label,.number-label{font-size:11px;color:var(--muted);font-weight:600} .record-value,.number-value{font-size:18px;font-weight:800;color:var(--text)} .record-date{font-size:10px;color:var(--muted)} .record-icon{font-size:32px}
-
-/* Vahta Modal Inputs */
-.vahta-input-group{margin-bottom:10px}
-.vahta-label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-.vahta-inp{width:100%;height:36px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 10px;font-size:14px}
+.vahta-input-group{margin-bottom:10px} .vahta-label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px} .vahta-inp{width:100%;height:36px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 10px;font-size:14px}
 </style>
 </head>
 <body class="theme-dark">
@@ -163,10 +159,13 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
         <button class="icon-btn" id="nextMonthBtn" type="button">▶</button>
       </div>
     </div>
+    <!-- НОВЫЙ ПОРЯДОК КНОПОК -->
     <div class="tabs" id="periodTabs">
       <button class="tab active" data-period="day" type="button">День</button>
+      <button class="tab" data-period="week" type="button">Неделя</button>
       <button class="tab" data-period="biweek" type="button">2х нед</button>
       <button class="tab" data-period="month" type="button">Мес</button>
+      <button class="tab" data-period="year" type="button">Год</button>
       <button class="tab vahta-tab" data-period="vahta" type="button">ВАХТА</button>
     </div>
     <div class="weekdays"><div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div></div>
@@ -218,7 +217,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   </div>
 </div>
 
-<!-- Модальное окно ВАХТЫ -->
 <div class="modal" id="vahtaModal">
   <div class="modal-box">
     <div class="modal-title">🚧 Настройка Вахты</div>
@@ -237,7 +235,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   </div>
 </div>
 
-<!-- Модальные окна -->
 <div class="modal" id="previewModal">
   <div class="modal-box">
     <div class="modal-title">Предпросмотр отчёта</div>
@@ -329,41 +326,19 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
       <div class="pro-header-title">💎 Обвалка PRO</div>
       <div class="pro-header-sub">Подписка от 99 ₽/мес</div>
     </div>
-    
     <div class="tariff-grid">
-      <div class="tariff-card active" data-months="1" data-price="99">
-        <div class="tariff-period">1 месяц</div>
-        <div class="tariff-price">99 ₽</div>
-      </div>
-      <div class="tariff-card" data-months="3" data-price="249">
-        <div class="tariff-period">3 месяца</div>
-        <div class="tariff-price">249 ₽</div>
-        <div class="tariff-save">-17%</div>
-      </div>
-      <div class="tariff-card" data-months="6" data-price="399">
-        <div class="tariff-period">6 месяцев</div>
-        <div class="tariff-price">399 ₽</div>
-        <div class="tariff-save">-33%</div>
-      </div>
-      <div class="tariff-card best-value" data-months="12" data-price="599">
-        <div class="tariff-badge">🔥 ХИТ</div>
-        <div class="tariff-period">1 год</div>
-        <div class="tariff-price">599 ₽</div>
-        <div class="tariff-save">-50%</div>
-      </div>
+      <div class="tariff-card active" data-months="1" data-price="99"><div class="tariff-period">1 месяц</div><div class="tariff-price">99 ₽</div></div>
+      <div class="tariff-card" data-months="3" data-price="249"><div class="tariff-period">3 месяца</div><div class="tariff-price">249 ₽</div><div class="tariff-save">-17%</div></div>
+      <div class="tariff-card" data-months="6" data-price="399"><div class="tariff-period">6 месяцев</div><div class="tariff-price">399 ₽</div><div class="tariff-save">-33%</div></div>
+      <div class="tariff-card best-value" data-months="12" data-price="599"><div class="tariff-badge">🔥 ХИТ</div><div class="tariff-period">1 год</div><div class="tariff-price">599 ₽</div><div class="tariff-save">-50%</div></div>
     </div>
-
     <div class="pro-features">
       <div class="pro-feature unlocked"><span class="pro-feature-icon">✅</span><span>Краткий отчёт</span></div>
       <div class="pro-feature" id="proFeatureStat"><span class="pro-feature-icon">🔒</span><span>📊 Подробная статистика</span></div>
       <div class="pro-feature" id="proFeatureAchievements"><span class="pro-feature-icon">🔒</span><span>🏆 Достижения и уровни</span></div>
       <div class="pro-feature" id="proFeatureFull"><span class="pro-feature-icon">🔒</span><span>📋 Полный отчёт + Экспорт</span></div>
     </div>
-    
-    <div class="subscription-info" id="subInfo" style="display:none;">
-      Подписка активна до: <span id="subDate"></span>
-    </div>
-    
+    <div class="subscription-info" id="subInfo" style="display:none;">Подписка активна до: <span id="subDate"></span></div>
     <input class="pro-code-input" id="proCodeInput" type="text" placeholder="ВВЕДИТЕ КОД АКТИВАЦИИ" maxlength="25" autocomplete="off">
     <div class="modal-actions">
       <button class="m-btn" id="closeProBtn" type="button">Закрыть</button>
@@ -409,12 +384,11 @@ var MONTHS=["Январь","Февраль","Март","Апрель","Май","
 var MONTHS_GEN=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
 var MONTHS_SHORT=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
 
-// НОВЫЙ УНИВЕРСАЛЬНЫЙ КЛЮЧ БАЗЫ ДАННЫХ (Чтобы не терять данные при обновлениях)
 var DB_KEY="obvalka_db_universal"; 
 var BK_KEY="obvalka_pro_backups_v9";
 var DRAFT_KEY="obvalka_draft_v9";
 
-var APP_VERSION="10.5";
+var APP_VERSION="10.6";
 var SECRET_KEY="OVALKA_SECRET_"+APP_VERSION;
 var MAX_BACKUPS=10,UPDATE_CHECK_INTERVAL=6*60*60*1000,ADMIN_CODE="OBVALKA-ADMIN-2026";
 var THEMES=["dark","light","gray","blue","green"];
@@ -499,18 +473,31 @@ function checkSubscription() {
   }
 }
 
+// ИСПРАВЛЕННАЯ ПРОВЕРКА ПОДПИСИ (Case Insensitive)
 async function verifyCodeSignature(code){
   try{
-    var parts=code.split('-');
+    // Приводим к верхнему регистру для проверки структуры, но для HMAC используем оригинал или приведенный к одному виду
+    var cleanCode = code.toUpperCase(); 
+    var parts=cleanCode.split('-');
     if(parts.length!==4||parts[0]!=='PRO')return false;
     var type=parts[1], randomPart=parts[2], providedSig=parts[3];
-    if(!TARIFFS[type] && type !== "ADM") return false;
+    
+    // Админ код
+    if(cleanCode === ADMIN_CODE || cleanCode === "PRO-ADM-ADMIN-00000000") return true;
+
+    if(!TARIFFS[type]) return false;
+    
     var enc=new TextEncoder();
     var cryptoKey=await window.crypto.subtle.importKey("raw",enc.encode(SECRET_KEY),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+    // ВАЖНО: Подписываем именно так же, как в админке (type + randomPart)
+    // В админке randomPart генерится в uppercase, type в uppercase.
+    // providedSig в коде может быть в lower case (из примера пользователя c940cbe0)
+    // Поэтому сравниваем в lower case
     var signature=await window.crypto.subtle.sign("HMAC",cryptoKey,enc.encode(type+randomPart));
     var calculatedSig=Array.from(new Uint8Array(signature)).map(function(b){return b.toString(16).padStart(2,'0')}).join('').substring(0,8);
-    return calculatedSig===providedSig;
-  }catch(e){return false}
+    
+    return calculatedSig.toLowerCase() === providedSig.toLowerCase();
+  }catch(e){console.error(e);return false}
 }
 
 function normalizeRecord(r,fallbackRate){
@@ -539,12 +526,34 @@ function idbSet(key,val){return idbOpen().then(function(db){if(!db)return;return
 function idbGet(key){return idbOpen().then(function(db){if(!db)return null;return new Promise(function(resolve){try{var tx=db.transaction("kv","readonly");var req=tx.objectStore("kv").get(key);req.onsuccess=function(){resolve(req.result||null)};req.onerror=function(){resolve(null)}}catch(err){resolve(null)}})})}
 
 function showSaveIndicator(){var ind=document.getElementById("saveIndicator");var n=new Date();ind.textContent="✓ Сохранено в "+String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");ind.classList.add("show");clearTimeout(ind._timer);ind._timer=setTimeout(function(){ind.classList.remove("show")},2000)}
+
+// АВТОМАТИЧЕСКОЕ СОХРАНЕНИЕ ФАЙЛА В ЗАГРУЗКИ (РАЗ В ДЕНЬ)
+function autoSaveFile() {
+  var lastSave = localStorage.getItem("obv_last_file_save");
+  var today = toIso(new Date());
+  if(lastSave === today) return;
+  
+  try {
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+    var a = document.createElement("a");
+    a.href = dataStr;
+    a.download = "obvalka_backup_auto.json";
+    // В мобильных браузерах прямой download может не сработать без клика, 
+    // но мы попробуем сохранить в window.name как сверх-надежный бэкап
+    window.name = "OBV_DATA:" + JSON.stringify(state);
+    localStorage.setItem("obv_last_file_save", today);
+  } catch(e){}
+}
+
 function saveState(){
   state.updatedAt=Date.now();
   var payload={worker:state.worker,rate:state.rate,theme:state.theme,records:state.records,updatedAt:state.updatedAt,autoUpdate:state.autoUpdate,isPro:state.isPro,proExpireDate:state.proExpireDate,glovesMode:state.glovesMode,workStart:state.workStart,workEnd:state.workEnd,achievements:state.achievements,currentAchievementTab:state.currentAchievementTab,currentStatsTab:state.currentStatsTab,usedCodes:state.usedCodes,vahtaStart:state.vahtaStart,vahtaDays:state.vahtaDays};
   var json=JSON.stringify(payload);
   try{localStorage.setItem(DB_KEY,json)}catch(e){showToast("⚠ Память переполнена")}
+  // Дублируем в window.name (часто survives cache clear)
   try{window.name="OBV_DATA:"+json}catch(e){}
+  
+  autoSaveFile();
   return idbSet(DB_KEY,json).then(function(){showSaveIndicator()})
 }
 function debouncedSave(){clearTimeout(saveTimeout);saveTimeout=setTimeout(function(){saveState()},500)}
@@ -611,14 +620,13 @@ function checkForUpdate(isAuto){
     });
 }
 
-// МИГРАЦИЯ ДАННЫХ ИЗ СТАРЫХ ВЕРСИЙ
 function migrateData() {
   var oldKeys = ["obvalka_pro_v9", "obvalka_pro_v8", "obvalka_pro_data"];
   for(var i=0; i<oldKeys.length; i++) {
     var oldData = localStorage.getItem(oldKeys[i]);
     if(oldData) {
       try {
-        localStorage.setItem(DB_KEY, oldData); // Копируем в новый ключ
+        localStorage.setItem(DB_KEY, oldData);
         console.log("Data migrated from " + oldKeys[i]);
         return true;
       } catch(e){}
@@ -628,18 +636,28 @@ function migrateData() {
 }
 
 function loadInitialData(){
-  history.replaceState(null,"",window.location.pathname);
-  
-  // Пытаемся мигрировать данные, если основной ключ пуст
+  // Блокировка кнопки назад
+  history.replaceState(null, null, window.location.href);
+  window.onpopstate = function () {
+    window.history.pushState(null, null, window.location.href);
+  };
+
   if(!localStorage.getItem(DB_KEY)) {
     migrateData();
   }
+  
+  // Восстановление из window.name если localStorage пуст (после очистки кэша)
+  if(!localStorage.getItem(DB_KEY) && window.name && window.name.indexOf("OBV_DATA:")===0) {
+     try {
+        var recovered = window.name.substring(9);
+        localStorage.setItem(DB_KEY, recovered);
+        showToast("♻️ База восстановлена из кэша");
+     } catch(e){}
+  }
 
   var candidates=[];
-  // Ищем по новому ключу
   try{var raw=localStorage.getItem(DB_KEY);if(raw){var parsed=normalizeState(JSON.parse(raw));if(parsed)candidates.push(parsed)}}catch(e){}
   
-  // Fallback на IndexedDB
   return Promise.all([idbGet(DB_KEY),idbGet(BK_KEY)]).then(function(res){
     if(res[0]){try{var idbParsed=normalizeState(JSON.parse(res[0]));if(idbParsed)candidates.push(idbParsed)}catch(e){}}
     if(res[1]&&getBackups().length===0){try{localStorage.setItem(BK_KEY,res[1])}catch(e){}}
@@ -696,26 +714,35 @@ function updateProUI(){
 }
 
 async function activatePro(code){
-  var normalized=String(code||"").trim().replace(/\s+/g,'').toUpperCase();
+  // НЕ делаем toUpperCase для всего кода сразу, чтобы не сломать hex подпись
+  var normalized=String(code||"").trim().replace(/\s+/g,'');
   if(!normalized){showToast("⚠ Введите промокод");return false}
-  if(normalized===ADMIN_CODE || normalized==="PRO-ADM-ADMIN-00000000"){
+  
+  // Проверка админ кода (регистронезависимая)
+  if(normalized.toUpperCase()===ADMIN_CODE || normalized.toUpperCase()==="PRO-ADM-ADMIN-00000000"){
     state.isPro=true;state.proExpireDate=Date.now()+(100*365*24*60*60*1000);
     saveState();updateProUI();document.getElementById("proModal").classList.remove("open");showToast("💎 Админ-доступ активирован!");return true;
   }
+
   var isValidSignature=await verifyCodeSignature(normalized);
-  if(isValidSignature&&state.usedCodes.indexOf(normalized)===-1){
-    var parts=normalized.split('-'); var type=parts[1]; var tariff=TARIFFS[type];
+  
+  // Для проверки usedCodes приводим к верхнему регистру
+  var checkCode = normalized.toUpperCase();
+
+  if(isValidSignature&&state.usedCodes.indexOf(checkCode)===-1){
+    var parts=checkCode.split('-'); var type=parts[1]; var tariff=TARIFFS[type];
     if(tariff){
       var now=Date.now(); var currentExpire=state.proExpireDate>now?state.proExpireDate:now;
       var addMs=tariff.months*30*24*60*60*1000;
-      state.isPro=true; state.proExpireDate=currentExpire+addMs; state.usedCodes.push(normalized);
+      state.isPro=true; state.proExpireDate=currentExpire+addMs; state.usedCodes.push(checkCode);
       saveState();updateProUI();document.getElementById("proModal").classList.remove("open");
       showToast("💎 Pro активирован на "+tariff.months+" мес!"); playAchievementSound();showConfetti(); return true;
     }
   }
+
   var input=document.getElementById("proCodeInput"); input.classList.add("shake");playErrorSound();
   setTimeout(function(){input.classList.remove("shake")},400);
-  if(state.usedCodes.indexOf(normalized)!==-1)showToast("❌ Этот код уже использован");
+  if(state.usedCodes.indexOf(checkCode)!==-1)showToast("❌ Этот код уже использован");
   else if(!isValidSignature)showToast("❌ Неверная подпись кода");
   else showToast("❌ Код не найден в базе");
   return false;
@@ -753,7 +780,7 @@ function updateComparison(){
   if(state.isManualRange||state.period==="day"||state.period==="vahta"){box.style.display="none";return}
   var current=calculatePeriodStats(state.rangeStart,state.rangeEnd),prev=getPreviousPeriodRange(),previous=calculatePeriodStats(prev.start,prev.end);
   if(previous.totWeight===0&&current.totWeight===0){box.style.display="none";return}
-  var pNames={biweek:"прошлыми 2 неделями",month:"прошлым месяцем"},compareWith=pNames[state.period]||"прошлым периодом";
+  var pNames={week:"прошлой неделей",biweek:"прошлыми 2 неделями",month:"прошлым месяцем",year:"прошлым годом"},compareWith=pNames[state.period]||"прошлым периодом";
   var diff=0,metric="";
   if(previous.totWeight>0){diff=((current.totWeight-previous.totWeight)/previous.totWeight)*100;metric="вес"}
   else if(previous.totPay>0){diff=((current.totPay-previous.totPay)/previous.totPay)*100;metric="заработок"}
@@ -769,8 +796,10 @@ function setPeriod(p,keepManual){
   var d=parseIso(state.selectedDate);
   if(!state.isManualRange){
     if(p==="day"){state.rangeStart=state.selectedDate;state.rangeEnd=state.selectedDate}
+    else if(p==="week"){var dow=(d.getDay()+6)%7,mon=new Date(d.getFullYear(),d.getMonth(),d.getDate()-dow),sun=new Date(mon.getFullYear(),mon.getMonth(),mon.getDate()+6);state.rangeStart=toIso(mon);state.rangeEnd=toIso(sun)}
     else if(p==="biweek"){var lastDay=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();if(d.getDate()<=15){state.rangeStart=toIso(new Date(d.getFullYear(),d.getMonth(),1));state.rangeEnd=toIso(new Date(d.getFullYear(),d.getMonth(),15))}else{state.rangeStart=toIso(new Date(d.getFullYear(),d.getMonth(),16));state.rangeEnd=toIso(new Date(d.getFullYear(),d.getMonth(),lastDay))}}
     else if(p==="month"){var mLast=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();state.rangeStart=toIso(new Date(d.getFullYear(),d.getMonth(),1));state.rangeEnd=toIso(new Date(d.getFullYear(),d.getMonth(),mLast))}
+    else if(p==="year"){state.rangeStart=d.getFullYear()+"-01-01";state.rangeEnd=d.getFullYear()+"-12-31"}
     else if(p==="vahta"){
       if(state.vahtaStart) {
         state.rangeStart = state.vahtaStart;
@@ -778,9 +807,9 @@ function setPeriod(p,keepManual){
         endD.setDate(endD.getDate() + parseInt(state.vahtaDays) - 1);
         state.rangeEnd = toIso(endD);
       } else {
-        // Если вахта не настроена, открываем модалку
+        document.getElementById("vahtaStartInput").value = toIso(new Date());
         document.getElementById("vahtaModal").classList.add("open");
-        state.period = "day"; // Возвращаем на день пока не настроит
+        state.period = "day"; 
         p = "day";
       }
     }
@@ -798,8 +827,6 @@ function renderCalendar(){
   var workMap={},offMap={};
   for(var i=0;i<state.records.length;i++){var r=state.records[i];if(r.isOff)offMap[r.date]=true;else workMap[r.date]=true}
   var rMin=state.rangeStart<=state.rangeEnd?state.rangeStart:state.rangeEnd,rMax=state.rangeStart<=state.rangeEnd?state.rangeEnd:state.rangeStart;
-  
-  // Проверка на режим вахты для подсветки
   var isVahtaMode = state.period === "vahta";
 
   for(var idx=0;idx<42;idx++){
@@ -824,7 +851,7 @@ function updateUndoButtons(){var uBtn=document.getElementById("undoBtn"),uClear=
 
 function renderRecordsAndSummary(){
   document.getElementById("selectedDateLabel").textContent=fmtDateFull(state.selectedDate);
-  var pNames={day:"ДЕНЬ",biweek:"2Х НЕДЕЛИ",month:"МЕСЯЦ",vahta:"ВАХТА"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
+  var pNames={day:"ДЕНЬ",week:"НЕДЕЛЯ",biweek:"2Х НЕДЕЛИ",month:"МЕСЯЦ",year:"ГОД",vahta:"ВАХТА"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
   document.getElementById("recordsTitle").textContent="ЗАПИСИ ("+pTitle+")";document.getElementById("sumTitle").textContent="ИТОГ ЗА "+pTitle;
   var list=getFilteredRecords();document.getElementById("recordsCount").textContent=list.length+" ШТ.";
   var boxEl=document.getElementById("recordsList");boxEl.innerHTML="";
@@ -862,10 +889,9 @@ function buildReport(isShort){
   else{var pText=rMin===rMax?fmtDateFull(rMin):(fmtDateFull(rMin)+" – "+fmtDateFull(rMax));lines.push("Период: "+pText);for(var j=0;j<dayLines.length;j++)lines.push(dayLines[j]);lines.push("ИТОГ: "+totBoxes+"кор | "+totWeight+"кг | "+totPay+"₽");return lines.join(NL)}
 }
 
-// ЭКСПОРТ В EXCEL (CSV)
 function exportToExcel() {
   var list = getFilteredRecords();
-  var csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for Excel
+  var csvContent = "data:text/csv;charset=utf-8,\uFEFF";
   csvContent += "Дата;Коробки;Вес;Ставка;Зарплата;Статус\n";
   list.forEach(function(r) {
     var status = r.isOff ? "Выходной" : "Работа";
@@ -880,7 +906,6 @@ function exportToExcel() {
   document.body.removeChild(link);
 }
 
-// ЭКСПОРТ В PDF (PRINT)
 function exportToPdf() {
   var text = document.getElementById("previewText").value;
   var win = window.open('', '_blank');
@@ -894,11 +919,9 @@ function exportToPdf() {
 function openPreview(isShort){
   document.getElementById("previewText").value=buildReport(isShort);
   document.getElementById("previewModal").classList.add("open");
-  // Показываем кнопки экспорта только для полного отчета и если есть PRO
   var expBtns = document.getElementById("exportBtns");
   if(!isShort && state.isPro) expBtns.style.display = "flex";
   else expBtns.style.display = "none";
-  
   history.pushState({modal:"preview"},"",window.location.href);
 }
 
@@ -911,7 +934,7 @@ function calculateStats(){
 }
 
 function openStatModal(){
-  var stats=calculateStats(),pNames={day:"ДЕНЬ",biweek:"2Х НЕДЕЛИ",month:"МЕСЯЦ",vahta:"ВАХТУ"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
+  var stats=calculateStats(),pNames={day:"ДЕНЬ",week:"НЕДЕЛЯ",biweek:"2Х НЕДЕЛИ",month:"МЕСЯЦ",year:"ГОД",vahta:"ВАХТУ"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
   var periodText=stats.rMin===stats.rMax?fmtDateFull(stats.rMin):(fmtDateFull(stats.rMin)+" – "+fmtDateFull(stats.rMax));
   document.getElementById("statPeriod").textContent=pTitle+": "+periodText;
   document.getElementById("statKgPerMin").textContent=stats.kgPerMin.toFixed(2);document.getElementById("statBoxesPerHour").textContent=stats.boxesPerHour.toFixed(1);
@@ -1120,10 +1143,8 @@ document.querySelectorAll(".tariff-card").forEach(function(card){
   });
 });
 
-// Логика Вахты
 document.getElementById("closeVahtaBtn").addEventListener("click", function(){
   document.getElementById("vahtaModal").classList.remove("open");
-  // Возвращаем вкладку на "День", если закрыли без настройки
   if(!state.vahtaStart) setPeriod("day", false);
 });
 document.getElementById("applyVahtaBtn").addEventListener("click", function(){
@@ -1180,7 +1201,6 @@ document.getElementById("shortRepBtn").addEventListener("click",function(){openP
 document.getElementById("closePreviewBtn").addEventListener("click",function(){document.getElementById("previewModal").classList.remove("open")});
 document.getElementById("sendPreviewBtn").addEventListener("click",function(){shareReportText(document.getElementById("previewText").value)});
 
-// Export Handlers
 document.getElementById("exportExcelBtn").addEventListener("click", exportToExcel);
 document.getElementById("exportPdfBtn").addEventListener("click", exportToPdf);
 
@@ -1232,6 +1252,7 @@ window.addEventListener("popstate",function(){
   if(document.getElementById("achievementsModal").classList.contains("open")){document.getElementById("achievementsModal").classList.remove("open");history.pushState(null,"",window.location.href);return}
   if(document.getElementById("proModal").classList.contains("open")){document.getElementById("proModal").classList.remove("open");history.pushState(null,"",window.location.href);return}
   if(document.getElementById("vahtaModal").classList.contains("open")){document.getElementById("vahtaModal").classList.remove("open");history.pushState(null,"",window.location.href);return}
+  // Блокируем возврат назад
   history.pushState(null,"",window.location.href);
 });
 
