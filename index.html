@@ -7,10 +7,20 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Обвалка PRO v10.3</title>
+<title>Обвалка PRO v10.5</title>
+<!-- БЛОКИРОВКА ВОЗВРАТА НА СТАРЫЕ ВЕРСИИ -->
 <script>
-(function(){
-  var CURRENT="10.3";
+  if (window.history.replaceState) {
+    window.history.replaceState(null, null, window.location.href);
+  }
+  window.onpopstate = function(event) {
+    if (event.state === null) {
+       window.history.pushState(null, null, window.location.href);
+    }
+  };
+  window.history.pushState(null, null, window.location.href);
+  
+  var CURRENT="10.5";
   fetch("version.json?v="+Date.now(),{cache:"no-store"})
     .then(function(r){if(!r.ok)throw new Error();return r.json()})
     .then(function(d){
@@ -21,231 +31,99 @@
       }
     })
     .catch(function(){});
-})();
 </script>
 <style>
-:root{--bg:#121212;--card:#1e1e1e;--card2:#262626;--text:#f3f4f6;--muted:#9ca3af;--border:#333;--cell-border:#3d3d3d;--green:#16a34a;--green-bg:rgba(22,163,74,.16);--orange:#f59e0b;--orange-bg:rgba(245,158,11,.22);--red:#ef4444;--red-bg:rgba(239,68,68,.16);--purple:#8b5cf6;--purple-bg:rgba(139,92,246,.16);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.16);--gold:#fbbf24;--silver:#94a3b8;--cyan:#06b6d4;--cyan-bg:rgba(6,182,212,.16);--input-bg:#2a2a2a;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
-body.theme-light{--bg:#f1f5f9;--card:#fff;--card2:#f8fafc;--text:#0f172a;--muted:#64748b;--border:#cbd5e1;--cell-border:#cbd5e1;--green:#15803d;--green-bg:rgba(21,128,61,.12);--orange:#d97706;--orange-bg:rgba(245,158,11,.2);--red:#dc2626;--red-bg:rgba(220,38,38,.12);--purple:#7c3aed;--purple-bg:rgba(124,58,237,.12);--blue:#2563eb;--blue-bg:rgba(37,99,235,.12);--cyan:#0891b2;--cyan-bg:rgba(8,145,178,.12);--input-bg:#f1f5f9}
-body.theme-gray{--bg:#2d2d2d;--card:#383838;--card2:#444;--text:#e5e5e5;--muted:#a3a3a3;--border:#525252;--cell-border:#525252;--green:#84cc16;--green-bg:rgba(132,204,22,.15);--orange:#f97316;--orange-bg:rgba(249,115,22,.15);--red:#ef4444;--red-bg:rgba(239,68,68,.15);--purple:#a855f7;--purple-bg:rgba(168,85,247,.15);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.15);--cyan:#06b6d4;--cyan-bg:rgba(6,182,212,.15);--input-bg:#404040}
-body.theme-blue{--bg:#0f172a;--card:#1e293b;--card2:#334155;--text:#f8fafc;--muted:#94a3b8;--border:#475569;--cell-border:#475569;--green:#3b82f6;--green-bg:rgba(59,130,246,.15);--orange:#f59e0b;--orange-bg:rgba(245,158,11,.15);--red:#ef4444;--red-bg:rgba(239,68,68,.15);--purple:#8b5cf6;--purple-bg:rgba(139,92,246,.15);--blue:#60a5fa;--blue-bg:rgba(96,165,250,.15);--cyan:#38bdf8;--cyan-bg:rgba(56,189,248,.15);--input-bg:#1e293b}
-body.theme-green{--bg:#022c22;--card:#064e3b;--card2:#065f46;--text:#ecfdf5;--muted:#6ee7b7;--border:#047857;--cell-border:#047857;--green:#10b981;--green-bg:rgba(16,185,129,.15);--orange:#f59e0b;--orange-bg:rgba(245,158,11,.15);--red:#ef4444;--red-bg:rgba(239,68,68,.15);--purple:#8b5cf6;--purple-bg:rgba(139,92,246,.15);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.15);--cyan:#2dd4bf;--cyan-bg:rgba(45,212,191,.15);--input-bg:#064e3b}
-body.gloves-mode .form-inp{font-size:20px}
-body.gloves-mode .add-btn{font-size:18px;height:55px}
-body.gloves-mode .off-btn{font-size:14px;height:40px}
-body.gloves-mode .icon-btn{width:40px;height:38px;font-size:16px}
-body.gloves-mode .tab{font-size:13px;padding:8px 4px}
-body.gloves-mode .form-lbl{font-size:15px}
-body.gloves-mode .time-input{font-size:18px;height:45px}
+:root{--bg:#121212;--card:#1e1e1e;--card2:#262626;--text:#f3f4f6;--muted:#9ca3af;--border:#333;--cell-border:#3d3d3d;--green:#16a34a;--green-bg:rgba(22,163,74,.16);--orange:#f59e0b;--orange-bg:rgba(245,158,11,.22);--red:#ef4444;--red-bg:rgba(239,68,68,.16);--purple:#8b5cf6;--purple-bg:rgba(139,92,246,.16);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.16);--gold:#fbbf24;--silver:#94a3b8;--cyan:#06b6d4;--cyan-bg:rgba(6,182,212,.16);--input-bg:#2a2a2a;--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--vahta:#eab308;--vahta-bg:rgba(234,179,8,.25)}
+body.theme-light{--bg:#f1f5f9;--card:#fff;--card2:#f8fafc;--text:#0f172a;--muted:#64748b;--border:#cbd5e1;--cell-border:#cbd5e1;--green:#15803d;--green-bg:rgba(21,128,61,.12);--orange:#d97706;--orange-bg:rgba(245,158,11,.2);--red:#dc2626;--red-bg:rgba(220,38,38,.12);--purple:#7c3aed;--purple-bg:rgba(124,58,237,.12);--blue:#2563eb;--blue-bg:rgba(37,99,235,.12);--cyan:#0891b2;--cyan-bg:rgba(8,145,178,.12);--input-bg:#f1f5f9;--vahta:#ca8a04;--vahta-bg:rgba(202,138,4,.2)}
+body.theme-gray{--bg:#2d2d2d;--card:#383838;--card2:#444;--text:#e5e5e5;--muted:#a3a3a3;--border:#525252;--cell-border:#525252;--green:#84cc16;--green-bg:rgba(132,204,22,.15);--orange:#f97316;--orange-bg:rgba(249,115,22,.15);--red:#ef4444;--red-bg:rgba(239,68,68,.15);--purple:#a855f7;--purple-bg:rgba(168,85,247,.15);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.15);--cyan:#06b6d4;--cyan-bg:rgba(6,182,212,.15);--input-bg:#404040;--vahta:#facc15;--vahta-bg:rgba(250,204,21,.2)}
+body.theme-blue{--bg:#0f172a;--card:#1e293b;--card2:#334155;--text:#f8fafc;--muted:#94a3b8;--border:#475569;--cell-border:#475569;--green:#3b82f6;--green-bg:rgba(59,130,246,.15);--orange:#f59e0b;--orange-bg:rgba(245,158,11,.15);--red:#ef4444;--red-bg:rgba(239,68,68,.15);--purple:#8b5cf6;--purple-bg:rgba(139,92,246,.15);--blue:#60a5fa;--blue-bg:rgba(96,165,250,.15);--cyan:#38bdf8;--cyan-bg:rgba(56,189,248,.15);--input-bg:#1e293b;--vahta:#fde047;--vahta-bg:rgba(253,224,71,.2)}
+body.theme-green{--bg:#022c22;--card:#064e3b;--card2:#065f46;--text:#ecfdf5;--muted:#6ee7b7;--border:#047857;--cell-border:#047857;--green:#10b981;--green-bg:rgba(16,185,129,.15);--orange:#f59e0b;--orange-bg:rgba(245,158,11,.15);--red:#ef4444;--red-bg:rgba(239,68,68,.15);--purple:#8b5cf6;--purple-bg:rgba(139,92,246,.15);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.15);--cyan:#2dd4bf;--cyan-bg:rgba(45,212,191,.15);--input-bg:#064e3b;--vahta:#fef08a;--vahta-bg:rgba(254,240,138,.2)}
+body.gloves-mode .form-inp{font-size:20px} body.gloves-mode .add-btn{font-size:18px;height:55px} body.gloves-mode .off-btn{font-size:14px;height:40px} body.gloves-mode .icon-btn{width:40px;height:38px;font-size:16px} body.gloves-mode .tab{font-size:13px;padding:8px 4px} body.gloves-mode .form-lbl{font-size:15px} body.gloves-mode .time-input{font-size:18px;height:45px}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 html,body{overscroll-behavior:none;-webkit-overflow-scrolling:touch}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center;min-height:100vh;min-height:100dvh;padding:6px;padding-top:calc(6px + var(--safe-top));padding-bottom:calc(6px + var(--safe-bottom));overflow-x:hidden}
 .app{width:100%;max-width:440px;display:flex;flex-direction:column;gap:8px;padding-bottom:20px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:8px 10px}
 .level-bar-top{width:100%;background:linear-gradient(90deg,rgba(139,92,246,.1),rgba(236,72,153,.1));border:1px solid var(--purple);border-radius:8px;padding:4px 10px;display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.level-icon-top{font-size:18px;line-height:1}
-.level-info-top{flex:1;display:flex;flex-direction:column;gap:2px}
-.level-header-top{display:flex;justify-content:space-between;align-items:center}
-.level-name-top{font-size:12px;font-weight:800;color:var(--purple)}
-.level-num-top{font-size:10px;background:var(--purple);color:#fff;padding:1px 5px;border-radius:3px;font-weight:700}
-.level-xp-bar-top{width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
-.level-xp-fill-top{height:100%;background:linear-gradient(90deg,var(--purple),#ec4899);transition:width .5s}
-.level-xp-text-top{font-size:9px;color:var(--muted);font-weight:600;text-align:right}
-.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.cal-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.ver-badge{font-size:11px;color:var(--muted);font-weight:500}
-.pro-badge{font-size:10px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;padding:2px 6px;border-radius:4px;font-weight:800;letter-spacing:.5px}
+.level-icon-top{font-size:18px;line-height:1} .level-info-top{flex:1;display:flex;flex-direction:column;gap:2px} .level-header-top{display:flex;justify-content:space-between;align-items:center} .level-name-top{font-size:12px;font-weight:800;color:var(--purple)} .level-num-top{font-size:10px;background:var(--purple);color:#fff;padding:1px 5px;border-radius:3px;font-weight:700} .level-xp-bar-top{width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden} .level-xp-fill-top{height:100%;background:linear-gradient(90deg,var(--purple),#ec4899);transition:width .5s} .level-xp-text-top{font-size:9px;color:var(--muted);font-weight:600;text-align:right}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px} .cal-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap} .ver-badge{font-size:11px;color:var(--muted);font-weight:500} .pro-badge{font-size:10px;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;padding:2px 6px;border-radius:4px;font-weight:800;letter-spacing:.5px}
 .icon-btn,.tab,.off-btn,.rep-btn,.add-btn,.undo-btn,.undo-clear,.bk-btn,.m-btn,.stat-btn,.achievements-btn{touch-action:manipulation}
-.icon-btn{background:var(--card2);border:1px solid var(--border);color:var(--text);width:30px;height:28px;border-radius:7px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;position:relative}
-.icon-btn:active{opacity:.7}
-.icon-btn.active{background:var(--green);border-color:var(--green);color:#fff}
+.icon-btn{background:var(--card2);border:1px solid var(--border);color:var(--text);width:30px;height:28px;border-radius:7px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;position:relative} .icon-btn:active{opacity:.7} .icon-btn.active{background:var(--green);border-color:var(--green);color:#fff}
 .head-tools{display:flex;gap:5px;align-items:center}
-.settings-menu{position:absolute;top:35px;right:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;min-width:220px;z-index:500;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3)}
-.settings-menu.open{display:block}
-.settings-item{display:flex;align-items:center;justify-content:space-between;padding:8px 6px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600}
-.settings-item:hover{background:var(--card2)}
-.settings-item:active{opacity:.7}
-.settings-checkbox{width:18px;height:18px;border:2px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--green);font-weight:900}
-.settings-checkbox.checked{background:var(--green);border-color:var(--green);color:#fff}
-.tabs{display:flex;gap:4px;margin-bottom:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-bottom:2px}
-.tabs::-webkit-scrollbar{display:none}
-.tab{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;text-align:center;flex-shrink:0;white-space:nowrap}
-.tab.active{background:var(--green);border-color:var(--green);color:#fff}
+.settings-menu{position:absolute;top:35px;right:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;min-width:220px;z-index:500;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3)} .settings-menu.open{display:block}
+.settings-item{display:flex;align-items:center;justify-content:space-between;padding:8px 6px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600} .settings-item:hover{background:var(--card2)} .settings-item:active{opacity:.7}
+.settings-checkbox{width:18px;height:18px;border:2px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--green);font-weight:900} .settings-checkbox.checked{background:var(--green);border-color:var(--green);color:#fff}
+.tabs{display:flex;gap:4px;margin-bottom:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-bottom:2px} .tabs::-webkit-scrollbar{display:none}
+.tab{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;text-align:center;flex-shrink:0;white-space:nowrap} .tab.active{background:var(--green);border-color:var(--green);color:#fff}
+.tab.vahta-tab{background:var(--vahta);color:#000;border-color:var(--vahta);font-weight:800;box-shadow:0 0 8px var(--vahta-bg)}
 .weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:600}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;user-select:none;-webkit-user-select:none;touch-action:pan-y;overscroll-behavior:none}
 .day-cell{height:28px;border:1px solid var(--cell-border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;position:relative;background:var(--card2);user-select:none;-webkit-user-select:none}
-.day-cell.other{opacity:.35}
-.day-cell.in-range{background:var(--orange-bg);border-color:var(--orange);color:var(--text)}
-.day-cell.selected{background:var(--orange);border-color:var(--orange);color:#111;font-weight:800}
-.day-cell.has-off{background:var(--red-bg);border-color:var(--red)}
-.day-cell .off-x{position:absolute;top:1px;right:2px;font-size:9px;line-height:1;color:var(--red);font-weight:900}
-.day-cell.has-work{background:rgba(22,163,74,.15);border-color:rgba(22,163,74,.3)}
-body.theme-light .day-cell.has-work{background:rgba(21,128,61,.12);border-color:rgba(21,128,61,.25)}
-.day-cell .work-bar{width:14px;height:3px;border-radius:2px;background:#15803d;position:absolute;bottom:3px}
-body.theme-light .day-cell .work-bar{background:#166534}
-.day-cell.selected .work-bar{background:#111}
+.day-cell.other{opacity:.35} .day-cell.in-range{background:var(--orange-bg);border-color:var(--orange);color:var(--text)} .day-cell.selected{background:var(--orange);border-color:var(--orange);color:#111;font-weight:800} .day-cell.has-off{background:var(--red-bg);border-color:var(--red)} .day-cell .off-x{position:absolute;top:1px;right:2px;font-size:9px;line-height:1;color:var(--red);font-weight:900} .day-cell.has-work{background:rgba(22,163,74,.15);border-color:rgba(22,163,74,.3)} body.theme-light .day-cell.has-work{background:rgba(21,128,61,.12);border-color:rgba(21,128,61,.25)} .day-cell .work-bar{width:14px;height:3px;border-radius:2px;background:#15803d;position:absolute;bottom:3px} body.theme-light .day-cell .work-bar{background:#166534} .day-cell.selected .work-bar{background:#111}
+.day-cell.in-vahta{background:var(--vahta-bg);border-color:var(--vahta);color:var(--text);font-weight:bold}
 .hint{text-align:center;font-size:10px;color:var(--muted);margin:4px 0}
-.off-btn{width:100%;height:26px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.3px}
-.off-btn:active{opacity:.75}
-.undo-container{display:flex;gap:4px;margin-top:5px}
-.undo-btn{flex:1;height:30px;background:var(--orange-bg);border:1px solid var(--orange);color:var(--orange);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:none}
-.undo-btn:active{opacity:.85}
-.undo-clear{width:30px;height:30px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center}
-.undo-clear:active{opacity:.75}
+.off-btn{width:100%;height:26px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.3px} .off-btn:active{opacity:.75}
+.undo-container{display:flex;gap:4px;margin-top:5px} .undo-btn{flex:1;height:30px;background:var(--orange-bg);border:1px solid var(--orange);color:var(--orange);border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:none} .undo-btn:active{opacity:.85} .undo-clear{width:30px;height:30px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;display:none;align-items:center;justify-content:center} .undo-clear:active{opacity:.75}
 .sec-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:5px}
 .records-list{display:flex;flex-direction:column;gap:2px;max-height:165px;overflow-y:auto;margin-bottom:6px;overscroll-behavior:contain}
-.rec-row{display:flex;align-items:center;justify-content:space-between;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:2px 6px;min-height:23px;font-size:11.5px}
-.rec-row.is-off{border-color:var(--border);background:var(--card2);color:var(--red)}
+.rec-row{display:flex;align-items:center;justify-content:space-between;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:2px 6px;min-height:23px;font-size:11.5px} .rec-row.is-off{border-color:var(--border);background:var(--card2);color:var(--red)}
 .rec-del{background:transparent;border:1px solid var(--border);color:var(--muted);width:18px;height:18px;border-radius:4px;font-size:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
 .summary-box{background:var(--green-bg);border:1px solid var(--green);border-radius:9px;padding:7px 9px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.sum-info{display:flex;flex-direction:column;gap:2px}
-.sum-lbl{font-size:10px;font-weight:700;color:var(--green)}
-.sum-sub{font-size:12px;font-weight:700}
-.sum-money{font-size:18px;font-weight:800;color:var(--orange)}
-.sum-rate{font-size:11px;font-weight:700;color:var(--blue)}
-.rep-btns{display:flex;flex-direction:column;gap:4px}
-.rep-btn{border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;justify-content:center}
-.rep-full{background:var(--card);color:var(--text);border:1px solid var(--border)}
-.rep-full.locked{opacity:.7}
-.rep-short{background:var(--card);color:var(--text);border:1px solid var(--border)}
-.buttons-row{display:flex;gap:6px;margin-top:6px}
-.stat-btn,.achievements-btn{flex:1;background:var(--purple-bg);border:1px solid var(--purple);color:var(--purple);border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
-.stat-btn:active,.achievements-btn:active{opacity:.85}
-.stat-btn.locked,.achievements-btn.locked{opacity:.6}
-.comparison-box{margin-top:6px;background:var(--blue-bg);border:1px solid var(--blue);border-radius:7px;padding:6px 9px;font-size:11px;font-weight:700;color:var(--blue);text-align:center}
-.comparison-box.positive{background:var(--green-bg);border-color:var(--green);color:var(--green)}
-.comparison-box.negative{background:var(--red-bg);border-color:var(--red);color:var(--red)}
-.form-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:8px}
-.form-lbl{font-size:12.5px;color:var(--muted);font-weight:500}
-.form-val-date{font-size:13px;font-weight:700}
-.form-inp{width:145px;height:30px;background:var(--input-bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:0 8px;font-size:13.5px;font-weight:600;text-align:right;-webkit-appearance:none;appearance:none}
-.form-inp:focus{outline:none;border-color:var(--green)}
-.time-input{width:80px;height:30px;background:var(--input-bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:0 6px;font-size:13px;font-weight:600;text-align:center;-webkit-appearance:none;appearance:none}
-.time-input:focus{outline:none;border-color:var(--blue)}
-.time-separator{color:var(--muted);font-weight:700;font-size:12px;margin:0 2px}
+.sum-info{display:flex;flex-direction:column;gap:2px} .sum-lbl{font-size:10px;font-weight:700;color:var(--green)} .sum-sub{font-size:12px;font-weight:700} .sum-money{font-size:18px;font-weight:800;color:var(--orange)} .sum-rate{font-size:11px;font-weight:700;color:var(--blue)}
+.rep-btns{display:flex;flex-direction:column;gap:4px} .rep-btn{border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;justify-content:center} .rep-full{background:var(--card);color:var(--text);border:1px solid var(--border)} .rep-full.locked{opacity:.7} .rep-short{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.export-btns{display:flex;gap:4px;margin-top:4px} .export-btn{flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:4px;font-size:10px;font-weight:600;cursor:pointer}
+.buttons-row{display:flex;gap:6px;margin-top:6px} .stat-btn,.achievements-btn{flex:1;background:var(--purple-bg);border:1px solid var(--purple);color:var(--purple);border-radius:7px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px} .stat-btn:active,.achievements-btn:active{opacity:.85} .stat-btn.locked,.achievements-btn.locked{opacity:.6}
+.comparison-box{margin-top:6px;background:var(--blue-bg);border:1px solid var(--blue);border-radius:7px;padding:6px 9px;font-size:11px;font-weight:700;color:var(--blue);text-align:center} .comparison-box.positive{background:var(--green-bg);border-color:var(--green);color:var(--green)} .comparison-box.negative{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.form-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;gap:8px} .form-lbl{font-size:12.5px;color:var(--muted);font-weight:500} .form-val-date{font-size:13px;font-weight:700}
+.form-inp{width:145px;height:30px;background:var(--input-bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:0 8px;font-size:13.5px;font-weight:600;text-align:right;-webkit-appearance:none;appearance:none} .form-inp:focus{outline:none;border-color:var(--green)}
+.time-input{width:80px;height:30px;background:var(--input-bg);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:0 6px;font-size:13px;font-weight:600;text-align:center;-webkit-appearance:none;appearance:none} .time-input:focus{outline:none;border-color:var(--blue)} .time-separator{color:var(--muted);font-weight:700;font-size:12px;margin:0 2px}
 .shift-total{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 9px;display:flex;justify-content:space-between;align-items:center;margin:6px 0;font-size:12px;font-weight:700}
-.add-btn{width:100%;height:36px;background:var(--green);border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:800;cursor:pointer}
-.add-btn:active{opacity:.85}
-.backup-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.bk-btn{background:var(--card);border:1px solid var(--border);color:var(--text);height:34px;border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:12px;z-index:100}
-.modal.open{display:flex}
+.add-btn{width:100%;height:36px;background:var(--green);border:none;border-radius:9px;color:#fff;font-size:13px;font-weight:800;cursor:pointer} .add-btn:active{opacity:.85}
+.backup-row{display:grid;grid-template-columns:1fr 1fr;gap:8px} .bk-btn{background:var(--card);border:1px solid var(--border);color:var(--text);height:34px;border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;padding:12px;z-index:100} .modal.open{display:flex}
 .modal-box{background:var(--card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:400px;padding:12px;display:flex;flex-direction:column;gap:8px;max-height:90vh;overflow-y:auto}
 .modal-title{font-size:15px;font-weight:800}
 .preview-ta{width:100%;height:150px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px;font-size:12.5px;font-family:inherit;resize:none;-webkit-user-select:text;user-select:text}
 .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.m-btn{height:34px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-weight:700;font-size:12.5px;cursor:pointer}
-.m-btn:disabled{opacity:.5;cursor:not-allowed}
-.m-btn.primary{background:var(--green);border-color:var(--green);color:#fff}
-.m-btn.danger{background:var(--red);border-color:var(--red);color:#fff}
-.m-btn.purple{background:var(--purple);border-color:var(--purple);color:#fff}
-.bk-list{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
-.bk-item{display:flex;justify-content:space-between;align-items:center;background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:11.5px;gap:6px}
+.m-btn{height:34px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-weight:700;font-size:12.5px;cursor:pointer} .m-btn:disabled{opacity:.5;cursor:not-allowed} .m-btn.primary{background:var(--green);border-color:var(--green);color:#fff} .m-btn.danger{background:var(--red);border-color:var(--red);color:#fff} .m-btn.purple{background:var(--purple);border-color:var(--purple);color:#fff} .m-btn.vahta{background:var(--vahta);border-color:var(--vahta);color:#000}
+.bk-list{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:4px} .bk-item{display:flex;justify-content:space-between;align-items:center;background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:11.5px;gap:6px}
 .toast{position:fixed;bottom:calc(16px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:#111827;color:#fff;border:1px solid #374151;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;z-index:200;display:none;white-space:nowrap;max-width:90vw}
-.save-indicator{position:fixed;top:calc(10px + var(--safe-top));right:10px;background:var(--green);color:#fff;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;opacity:0;transform:translateY(-10px);transition:opacity .3s,transform .3s;z-index:300;pointer-events:none}
-.save-indicator.show{opacity:1;transform:translateY(0)}
-.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;padding:16px;z-index:150}
-.confirm-overlay.open{display:flex}
-.update-notice{position:fixed;top:calc(50px + var(--safe-top));right:10px;background:var(--blue);color:#fff;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;z-index:400;opacity:0;transform:translateX(100%);transition:opacity .3s,transform .3s;max-width:250px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
-.update-notice.show{opacity:1;transform:translateX(0)}
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.stat-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:4px}
-.stat-card.full{grid-column:1/-1}
-.stat-card-icon{font-size:20px}
-.stat-card-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-.stat-card-value{font-size:22px;font-weight:800;color:var(--text)}
-.stat-card-unit{font-size:11px;color:var(--muted);font-weight:600}
-.stat-card-value.green{color:var(--green)}
-.stat-card-value.orange{color:var(--orange)}
-.stat-card-value.purple{color:var(--purple)}
-.stat-card-value.blue{color:var(--blue)}
-.stat-period{text-align:center;font-size:11px;color:var(--muted);font-weight:600;padding:6px;background:var(--card2);border-radius:6px;margin-bottom:4px}
-.pro-header{background:linear-gradient(135deg,#8b5cf6,#ec4899);border-radius:10px;padding:16px;text-align:center;color:#fff}
-.pro-header-title{font-size:20px;font-weight:800;margin-bottom:4px}
-.pro-header-sub{font-size:12px;opacity:.9}
-.pro-features{display:flex;flex-direction:column;gap:6px}
-.pro-feature{display:flex;align-items:center;gap:8px;padding:8px;background:var(--card2);border-radius:8px;font-size:12px;font-weight:600}
-.pro-feature-icon{font-size:16px}
-.pro-feature.locked{opacity:.5}
-.pro-feature.unlocked{opacity:1;border:1px solid var(--green)}
-.pro-code-input{width:100%;height:40px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0 12px;font-size:14px;font-weight:700;text-align:center;letter-spacing:2px}
-.pro-code-input:focus{outline:none;border-color:var(--purple)}
-.pro-code-input.shake{animation:shake .4s cubic-bezier(.36,.07,.19,.97) both}
+.save-indicator{position:fixed;top:calc(10px + var(--safe-top));right:10px;background:var(--green);color:#fff;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;opacity:0;transform:translateY(-10px);transition:opacity .3s,transform .3s;z-index:300;pointer-events:none} .save-indicator.show{opacity:1;transform:translateY(0)}
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;align-items:center;justify-content:center;padding:16px;z-index:150} .confirm-overlay.open{display:flex}
+.update-notice{position:fixed;top:calc(50px + var(--safe-top));right:10px;background:var(--blue);color:#fff;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;z-index:400;opacity:0;transform:translateX(100%);transition:opacity .3s,transform .3s;max-width:250px;box-shadow:0 4px 12px rgba(0,0,0,.3)} .update-notice.show{opacity:1;transform:translateX(0)}
+
+.tariff-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.tariff-card{background:var(--card2);border:2px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;position:relative;transition:all .2s}
+.tariff-card.active{border-color:var(--purple);background:var(--purple-bg)}
+.tariff-card.best-value{border-color:var(--gold)}
+.tariff-badge{position:absolute;top:-8px;right:-8px;background:var(--gold);color:#000;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px}
+.tariff-price{font-size:18px;font-weight:800;color:var(--text);margin:4px 0}
+.tariff-period{font-size:11px;color:var(--muted)}
+.tariff-save{font-size:10px;color:var(--green);font-weight:700;margin-top:2px}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px} .stat-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:4px} .stat-card.full{grid-column:1/-1} .stat-card-icon{font-size:20px} .stat-card-label{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px} .stat-card-value{font-size:22px;font-weight:800;color:var(--text)} .stat-card-unit{font-size:11px;color:var(--muted);font-weight:600} .stat-card-value.green{color:var(--green)} .stat-card-value.orange{color:var(--orange)} .stat-card-value.purple{color:var(--purple)} .stat-card-value.blue{color:var(--blue)} .stat-period{text-align:center;font-size:11px;color:var(--muted);font-weight:600;padding:6px;background:var(--card2);border-radius:6px;margin-bottom:4px}
+.pro-header{background:linear-gradient(135deg,#8b5cf6,#ec4899);border-radius:10px;padding:16px;text-align:center;color:#fff} .pro-header-title{font-size:20px;font-weight:800;margin-bottom:4px} .pro-header-sub{font-size:12px;opacity:.9}
+.pro-features{display:flex;flex-direction:column;gap:6px} .pro-feature{display:flex;align-items:center;gap:8px;padding:8px;background:var(--card2);border-radius:8px;font-size:12px;font-weight:600} .pro-feature-icon{font-size:16px} .pro-feature.locked{opacity:.5} .pro-feature.unlocked{opacity:1;border:1px solid var(--green)}
+.pro-code-input{width:100%;height:40px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0 12px;font-size:14px;font-weight:700;text-align:center;letter-spacing:2px} .pro-code-input:focus{outline:none;border-color:var(--purple)} .pro-code-input.shake{animation:shake .4s cubic-bezier(.36,.07,.19,.97) both}
 @keyframes shake{10%,90%{transform:translate3d(-1px,0,0)}20%,80%{transform:translate3d(2px,0,0)}30%,50%,70%{transform:translate3d(-4px,0,0)}40%,60%{transform:translate3d(4px,0,0)}}
-.pro-price{text-align:center;font-size:13px;color:var(--muted);padding:8px;background:var(--card2);border-radius:8px}
-.pro-price b{color:var(--text);font-size:18px}
 .payment-details{background:var(--card2);border:1px dashed var(--border);border-radius:8px;padding:10px;margin:8px 0;font-size:12px;color:var(--text);text-align:center;line-height:1.6}
-.copy-requisites-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer;margin-top:6px}
-.copy-requisites-btn:active{opacity:.7}
-.achievements-tabs{display:flex;gap:4px;margin-bottom:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-bottom:4px}
-.achievements-tabs::-webkit-scrollbar{display:none}
-.achievements-tab{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.achievements-tab.active{background:var(--purple);border-color:var(--purple);color:#fff}
-.achievements-grid{display:grid;grid-template-columns:1fr;gap:8px;max-height:400px;overflow-y:auto}
-.achievement-card{background:var(--card2);border:2px solid var(--border);border-radius:10px;padding:10px;display:flex;gap:10px;align-items:center;transition:all .3s}
-.achievement-card.unlocked{border-color:var(--green);background:var(--green-bg)}
-.achievement-card.hidden-achievement{opacity:.4;filter:grayscale(1)}
-.achievement-card.rarity-common{border-color:var(--silver)}
-.achievement-card.rarity-uncommon{border-color:var(--green)}
-.achievement-card.rarity-rare{border-color:var(--blue)}
-.achievement-card.rarity-epic{border-color:var(--purple)}
-.achievement-card.rarity-legendary{border-color:var(--gold);box-shadow:0 0 10px rgba(251,191,36,.3)}
-.achievement-icon{font-size:32px;flex-shrink:0}
-.achievement-info{flex:1;display:flex;flex-direction:column;gap:4px}
-.achievement-name{font-size:13px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center}
-.achievement-xp{font-size:10px;color:var(--gold);font-weight:800}
-.achievement-desc{font-size:10px;color:var(--muted)}
-.achievement-progress{width:100%;height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:2px}
-.achievement-progress-bar{height:100%;background:linear-gradient(90deg,var(--green),var(--orange));transition:width .3s}
-.achievement-card.unlocked .achievement-progress-bar{background:var(--green)}
-.achievement-date{font-size:9px;color:var(--muted);font-style:italic}
-.confetti{position:fixed;width:10px;height:10px;pointer-events:none;z-index:1000;animation:confetti-fall 3s ease-out forwards}
-@keyframes confetti-fall{0%{transform:translateY(-100px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
-.achievement-notification{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(135deg,var(--purple),#ec4899);border:3px solid var(--gold);border-radius:16px;padding:20px;text-align:center;z-index:1001;box-shadow:0 0 30px rgba(139,92,246,.5);animation:achievement-pop .5s cubic-bezier(.68,-.55,.265,1.55) forwards}
-@keyframes achievement-pop{0%{transform:translate(-50%,-50%) scale(0)}50%{transform:translate(-50%,-50%) scale(1.1)}100%{transform:translate(-50%,-50%) scale(1)}}
-.achievement-notification-icon{font-size:64px;margin-bottom:10px;animation:achievement-icon-pulse .5s ease-in-out 3}
-@keyframes achievement-icon-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
-.achievement-notification-title{font-size:18px;font-weight:800;color:#fff;margin-bottom:5px}
-.achievement-notification-name{font-size:14px;color:rgba(255,255,255,.9)}
-.achievement-notification-xp{font-size:16px;color:var(--gold);font-weight:800;margin-top:5px}
-.levelup-notification{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(135deg,#fbbf24,#f59e0b);border:3px solid #fff;border-radius:16px;padding:24px;text-align:center;z-index:1002;box-shadow:0 0 40px rgba(251,191,36,.7);animation:achievement-pop .5s cubic-bezier(.68,-.55,.265,1.55) forwards}
-.levelup-notification-icon{font-size:72px;margin-bottom:10px;animation:achievement-icon-pulse .5s ease-in-out 5}
-.levelup-notification-title{font-size:20px;font-weight:800;color:#111;margin-bottom:5px}
-.levelup-notification-level{font-size:28px;color:#111;font-weight:900}
-.levelup-notification-rank{font-size:14px;color:#422006;font-weight:700;margin-top:5px}
-.stats-page{position:fixed;inset:0;background:var(--bg);z-index:500;display:none;flex-direction:column;overflow-y:auto;padding:10px;padding-top:calc(10px + var(--safe-top));padding-bottom:calc(10px + var(--safe-bottom))}
-.stats-page.open{display:flex}
-.stats-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.stats-title{font-size:18px;font-weight:800}
-.stats-close{background:var(--card2);border:1px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:8px;font-size:16px;cursor:pointer}
-.stats-tabs{display:flex;gap:4px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-bottom:4px}
-.stats-tabs::-webkit-scrollbar{display:none}
-.stats-tab{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.stats-tab.active{background:var(--cyan);border-color:var(--cyan);color:#fff}
-.stats-content{flex:1}
-.stats-section{display:none}
-.stats-section.active{display:block}
-.chart-container{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px}
-.chart-title{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
-.bar-chart{display:flex;align-items:flex-end;gap:3px;height:120px;padding:4px 0;border-bottom:1px solid var(--border)}
-.bar{flex:1;background:linear-gradient(180deg,var(--green),var(--cyan));border-radius:3px 3px 0 0;min-height:2px;position:relative;transition:all .3s}
-.bar:hover{opacity:.8}
-.bar-labels{display:flex;gap:3px;margin-top:4px}
-.bar-label{flex:1;text-align:center;font-size:9px;color:var(--muted);font-weight:600}
-.heatmap{display:grid;grid-template-columns:repeat(52,1fr);gap:2px;padding:4px}
-.heatmap-cell{aspect-ratio:1;border-radius:2px;background:var(--card2);border:1px solid var(--border)}
-.heatmap-cell.level-1{background:rgba(22,163,74,.25)}
-.heatmap-cell.level-2{background:rgba(22,163,74,.5)}
-.heatmap-cell.level-3{background:rgba(22,163,74,.75)}
-.heatmap-cell.level-4{background:rgba(22,163,74,1)}
-.heatmap-legend{display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:6px;font-size:9px;color:var(--muted)}
-.heatmap-legend-cell{width:10px;height:10px;border-radius:2px;border:1px solid var(--border)}
-.records-grid,.numbers-list{display:grid;grid-template-columns:1fr;gap:8px}
-.record-card,.number-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center}
-.record-info,.number-info{display:flex;flex-direction:column;gap:2px}
-.record-label,.number-label{font-size:11px;color:var(--muted);font-weight:600}
-.record-value,.number-value{font-size:18px;font-weight:800;color:var(--text)}
-.record-date{font-size:10px;color:var(--muted)}
-.record-icon{font-size:32px}
+.copy-requisites-btn{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 8px;border-radius:4px;font-size:10px;cursor:pointer;margin-top:6px} .copy-requisites-btn:active{opacity:.7}
+.subscription-info{text-align:center;font-size:11px;color:var(--green);margin-top:5px;font-weight:600}
+
+.achievements-tabs{display:flex;gap:4px;margin-bottom:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-bottom:4px} .achievements-tabs::-webkit-scrollbar{display:none} .achievements-tab{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0} .achievements-tab.active{background:var(--purple);border-color:var(--purple);color:#fff}
+.achievements-grid{display:grid;grid-template-columns:1fr;gap:8px;max-height:400px;overflow-y:auto} .achievement-card{background:var(--card2);border:2px solid var(--border);border-radius:10px;padding:10px;display:flex;gap:10px;align-items:center;transition:all .3s} .achievement-card.unlocked{border-color:var(--green);background:var(--green-bg)} .achievement-card.hidden-achievement{opacity:.4;filter:grayscale(1)} .achievement-card.rarity-common{border-color:var(--silver)} .achievement-card.rarity-uncommon{border-color:var(--green)} .achievement-card.rarity-rare{border-color:var(--blue)} .achievement-card.rarity-epic{border-color:var(--purple)} .achievement-card.rarity-legendary{border-color:var(--gold);box-shadow:0 0 10px rgba(251,191,36,.3)} .achievement-icon{font-size:32px;flex-shrink:0} .achievement-info{flex:1;display:flex;flex-direction:column;gap:4px} .achievement-name{font-size:13px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center} .achievement-xp{font-size:10px;color:var(--gold);font-weight:800} .achievement-desc{font-size:10px;color:var(--muted)} .achievement-progress{width:100%;height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:2px} .achievement-progress-bar{height:100%;background:linear-gradient(90deg,var(--green),var(--orange));transition:width .3s} .achievement-card.unlocked .achievement-progress-bar{background:var(--green)} .achievement-date{font-size:9px;color:var(--muted);font-style:italic}
+.confetti{position:fixed;width:10px;height:10px;pointer-events:none;z-index:1000;animation:confetti-fall 3s ease-out forwards} @keyframes confetti-fall{0%{transform:translateY(-100px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+.achievement-notification{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(135deg,var(--purple),#ec4899);border:3px solid var(--gold);border-radius:16px;padding:20px;text-align:center;z-index:1001;box-shadow:0 0 30px rgba(139,92,246,.5);animation:achievement-pop .5s cubic-bezier(.68,-.55,.265,1.55) forwards} @keyframes achievement-pop{0%{transform:translate(-50%,-50%) scale(0)}50%{transform:translate(-50%,-50%) scale(1.1)}100%{transform:translate(-50%,-50%) scale(1)}} .achievement-notification-icon{font-size:64px;margin-bottom:10px;animation:achievement-icon-pulse .5s ease-in-out 3} @keyframes achievement-icon-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}} .achievement-notification-title{font-size:18px;font-weight:800;color:#fff;margin-bottom:5px} .achievement-notification-name{font-size:14px;color:rgba(255,255,255,.9)} .achievement-notification-xp{font-size:16px;color:var(--gold);font-weight:800;margin-top:5px}
+.levelup-notification{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(135deg,#fbbf24,#f59e0b);border:3px solid #fff;border-radius:16px;padding:24px;text-align:center;z-index:1002;box-shadow:0 0 40px rgba(251,191,36,.7);animation:achievement-pop .5s cubic-bezier(.68,-.55,.265,1.55) forwards} .levelup-notification-icon{font-size:72px;margin-bottom:10px;animation:achievement-icon-pulse .5s ease-in-out 5} .levelup-notification-title{font-size:20px;font-weight:800;color:#111;margin-bottom:5px} .levelup-notification-level{font-size:28px;color:#111;font-weight:900} .levelup-notification-rank{font-size:14px;color:#422006;font-weight:700;margin-top:5px}
+.stats-page{position:fixed;inset:0;background:var(--bg);z-index:500;display:none;flex-direction:column;overflow-y:auto;padding:10px;padding-top:calc(10px + var(--safe-top));padding-bottom:calc(10px + var(--safe-bottom))} .stats-page.open{display:flex} .stats-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px} .stats-title{font-size:18px;font-weight:800} .stats-close{background:var(--card2);border:1px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:8px;font-size:16px;cursor:pointer} .stats-tabs{display:flex;gap:4px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-bottom:4px} .stats-tabs::-webkit-scrollbar{display:none} .stats-tab{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0} .stats-tab.active{background:var(--cyan);border-color:var(--cyan);color:#fff} .stats-content{flex:1} .stats-section{display:none} .stats-section.active{display:block}
+.chart-container{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px} .chart-title{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px} .bar-chart{display:flex;align-items:flex-end;gap:3px;height:120px;padding:4px 0;border-bottom:1px solid var(--border)} .bar{flex:1;background:linear-gradient(180deg,var(--green),var(--cyan));border-radius:3px 3px 0 0;min-height:2px;position:relative;transition:all .3s} .bar:hover{opacity:.8} .bar-labels{display:flex;gap:3px;margin-top:4px} .bar-label{flex:1;text-align:center;font-size:9px;color:var(--muted);font-weight:600}
+.heatmap{display:grid;grid-template-columns:repeat(52,1fr);gap:2px;padding:4px} .heatmap-cell{aspect-ratio:1;border-radius:2px;background:var(--card2);border:1px solid var(--border)} .heatmap-cell.level-1{background:rgba(22,163,74,.25)} .heatmap-cell.level-2{background:rgba(22,163,74,.5)} .heatmap-cell.level-3{background:rgba(22,163,74,.75)} .heatmap-cell.level-4{background:rgba(22,163,74,1)} .heatmap-legend{display:flex;align-items:center;gap:4px;justify-content:flex-end;margin-top:6px;font-size:9px;color:var(--muted)} .heatmap-legend-cell{width:10px;height:10px;border-radius:2px;border:1px solid var(--border)}
+.records-grid,.numbers-list{display:grid;grid-template-columns:1fr;gap:8px} .record-card,.number-item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center} .record-info,.number-info{display:flex;flex-direction:column;gap:2px} .record-label,.number-label{font-size:11px;color:var(--muted);font-weight:600} .record-value,.number-value{font-size:18px;font-weight:800;color:var(--text)} .record-date{font-size:10px;color:var(--muted)} .record-icon{font-size:32px}
+
+/* Vahta Modal Inputs */
+.vahta-input-group{margin-bottom:10px}
+.vahta-label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.vahta-inp{width:100%;height:36px;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 10px;font-size:14px}
 </style>
 </head>
 <body class="theme-dark">
@@ -276,8 +154,9 @@ body.theme-light .day-cell .work-bar{background:#166534}
           <button class="icon-btn" id="settingsBtn" type="button" title="Настройки">⚙️</button>
           <div class="settings-menu" id="settingsMenu">
             <div class="settings-item" id="autoUpdateToggle"><span>Автообновление</span><div class="settings-checkbox" id="autoUpdateCheck"></div></div>
-            <div class="settings-item" id="manualUpdateBtn"><span>🔄 Проверить обновление</span><span style="color:var(--muted);">→</span></div>
+            <div class="settings-item" id="manualUpdateBtn"><span>🔄 Обновить сейчас</span><span style="color:var(--muted);">→</span></div>
             <div class="settings-item" id="glovesToggle"><span>🧤 Режим в перчатках</span><div class="settings-checkbox" id="glovesCheck"></div></div>
+            <div class="settings-item" id="contactAuthorBtn"><span>✉️ Написать автору</span><span style="color:var(--muted);">→</span></div>
             <div class="settings-item" id="openProBtn"><span>💎 Купить Pro</span><span style="color:var(--muted);">→</span></div>
           </div>
         </div>
@@ -286,10 +165,9 @@ body.theme-light .day-cell .work-bar{background:#166534}
     </div>
     <div class="tabs" id="periodTabs">
       <button class="tab active" data-period="day" type="button">День</button>
-      <button class="tab" data-period="week" type="button">Неделя</button>
-      <button class="tab" data-period="biweek" type="button">2х недели</button>
-      <button class="tab" data-period="month" type="button">Месяц</button>
-      <button class="tab" data-period="year" type="button">Год</button>
+      <button class="tab" data-period="biweek" type="button">2х нед</button>
+      <button class="tab" data-period="month" type="button">Мес</button>
+      <button class="tab vahta-tab" data-period="vahta" type="button">ВАХТА</button>
     </div>
     <div class="weekdays"><div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div></div>
     <div class="cal-grid" id="calGrid"></div>
@@ -313,7 +191,7 @@ body.theme-light .day-cell .work-bar{background:#166534}
       </div>
       <div class="rep-btns">
         <button class="rep-btn rep-full" id="fullRepBtn" type="button">📋 Полный отчёт</button>
-        <button class="rep-btn rep-short" id="shortRepBtn" type="button">📄 Краткий отчёт</button>
+        <button class="rep-btn rep-short" id="shortRepBtn" type="button">📄 Краткий</button>
       </div>
     </div>
     <div class="comparison-box" id="comparisonBox" style="display:none;"></div>
@@ -340,10 +218,34 @@ body.theme-light .day-cell .work-bar{background:#166534}
   </div>
 </div>
 
+<!-- Модальное окно ВАХТЫ -->
+<div class="modal" id="vahtaModal">
+  <div class="modal-box">
+    <div class="modal-title">🚧 Настройка Вахты</div>
+    <div class="vahta-input-group">
+      <label class="vahta-label">Дата начала вахты:</label>
+      <input type="date" id="vahtaStartInput" class="vahta-inp">
+    </div>
+    <div class="vahta-input-group">
+      <label class="vahta-label">Длительность (дней):</label>
+      <input type="number" id="vahtaDaysInput" class="vahta-inp" value="90" min="1" max="365">
+    </div>
+    <div class="modal-actions">
+      <button class="m-btn" id="closeVahtaBtn" type="button">Отмена</button>
+      <button class="m-btn vahta" id="applyVahtaBtn" type="button">Применить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модальные окна -->
 <div class="modal" id="previewModal">
   <div class="modal-box">
     <div class="modal-title">Предпросмотр отчёта</div>
     <textarea class="preview-ta" id="previewText"></textarea>
+    <div class="export-btns" id="exportBtns" style="display:none;">
+       <button class="export-btn" id="exportExcelBtn">📊 Excel (CSV)</button>
+       <button class="export-btn" id="exportPdfBtn">📄 PDF / Печать</button>
+    </div>
     <div class="modal-actions">
       <button class="m-btn" id="closePreviewBtn" type="button">Отмена</button>
       <button class="m-btn primary" id="sendPreviewBtn" type="button">📤 Отправить</button>
@@ -365,18 +267,12 @@ body.theme-light .day-cell .work-bar{background:#166534}
       <div class="stat-card"><div class="stat-card-icon">⏱️</div><div class="stat-card-label">Отработано</div><div class="stat-card-value blue" id="statWorkedHours">0</div><div class="stat-card-unit">часов</div></div>
       <div class="stat-card full"><div class="stat-card-icon">📅</div><div class="stat-card-label">Рабочих дней в периоде</div><div class="stat-card-value" id="statWorkDays">0</div><div class="stat-card-unit">дней</div></div>
     </div>
-    <div class="modal-actions">
-      <button class="m-btn" id="closeStatBtn" type="button">Закрыть</button>
-      <button class="m-btn primary" id="openDetailedStatBtn" type="button">📈 Подробно</button>
-    </div>
+    <div class="modal-actions"><button class="m-btn" id="closeStatBtn" type="button">Закрыть</button><button class="m-btn primary" id="openDetailedStatBtn" type="button">📈 Подробно</button></div>
   </div>
 </div>
 
 <div class="stats-page" id="detailedStatsPage">
-  <div class="stats-header">
-    <div class="stats-title">📈 Подробная статистика</div>
-    <button class="stats-close" id="closeDetailedStatBtn" type="button">✕</button>
-  </div>
+  <div class="stats-header"><div class="stats-title">📈 Подробная статистика</div><button class="stats-close" id="closeDetailedStatBtn" type="button">✕</button></div>
   <div class="stats-tabs" id="statsTabs">
     <button class="stats-tab active" data-stats-tab="overview" type="button">📊 Обзор</button>
     <button class="stats-tab" data-stats-tab="charts" type="button">📈 Графики</button>
@@ -425,38 +321,50 @@ body.theme-light .day-cell .work-bar{background:#166534}
   </div>
 </div>
 
-<div class="modal" id="achievementsModal">
-  <div class="modal-box">
-    <div class="modal-title">🏆 Достижения</div>
-    <div class="achievements-tabs" id="achievementsTabs"></div>
-    <div class="achievements-grid" id="achievementsGrid"></div>
-    <button class="m-btn" id="closeAchievementsBtn" type="button">Закрыть</button>
-  </div>
-</div>
+<div class="modal" id="achievementsModal"><div class="modal-box"><div class="modal-title">🏆 Достижения</div><div class="achievements-tabs" id="achievementsTabs"></div><div class="achievements-grid" id="achievementsGrid"></div><button class="m-btn" id="closeAchievementsBtn" type="button">Закрыть</button></div></div>
 
 <div class="modal" id="proModal">
   <div class="modal-box">
     <div class="pro-header">
       <div class="pro-header-title">💎 Обвалка PRO</div>
-      <div class="pro-header-sub">Разблокируйте все возможности</div>
+      <div class="pro-header-sub">Подписка от 99 ₽/мес</div>
     </div>
+    
+    <div class="tariff-grid">
+      <div class="tariff-card active" data-months="1" data-price="99">
+        <div class="tariff-period">1 месяц</div>
+        <div class="tariff-price">99 ₽</div>
+      </div>
+      <div class="tariff-card" data-months="3" data-price="249">
+        <div class="tariff-period">3 месяца</div>
+        <div class="tariff-price">249 ₽</div>
+        <div class="tariff-save">-17%</div>
+      </div>
+      <div class="tariff-card" data-months="6" data-price="399">
+        <div class="tariff-period">6 месяцев</div>
+        <div class="tariff-price">399 ₽</div>
+        <div class="tariff-save">-33%</div>
+      </div>
+      <div class="tariff-card best-value" data-months="12" data-price="599">
+        <div class="tariff-badge">🔥 ХИТ</div>
+        <div class="tariff-period">1 год</div>
+        <div class="tariff-price">599 ₽</div>
+        <div class="tariff-save">-50%</div>
+      </div>
+    </div>
+
     <div class="pro-features">
       <div class="pro-feature unlocked"><span class="pro-feature-icon">✅</span><span>Краткий отчёт</span></div>
       <div class="pro-feature" id="proFeatureStat"><span class="pro-feature-icon">🔒</span><span>📊 Подробная статистика</span></div>
       <div class="pro-feature" id="proFeatureAchievements"><span class="pro-feature-icon">🔒</span><span>🏆 Достижения и уровни</span></div>
-      <div class="pro-feature" id="proFeatureFull"><span class="pro-feature-icon">🔒</span><span>📋 Полный отчёт</span></div>
-      <div class="pro-feature" id="proFeatureFuture1"><span class="pro-feature-icon">🔒</span><span>Экспорт в Excel/PDF</span></div>
+      <div class="pro-feature" id="proFeatureFull"><span class="pro-feature-icon">🔒</span><span>📋 Полный отчёт + Экспорт</span></div>
     </div>
-    <div class="payment-details" id="paymentDetails">
-      Переведи <b>199 ₽</b> по СБП<br>
-      на номер: <b>+7 (XXX) XXX-XX-XX</b><br>
-      Получатель: <b>Иван И.</b><br>
-      <button class="copy-requisites-btn" id="copyRequisitesBtn">📋 Скопировать реквизиты</button>
+    
+    <div class="subscription-info" id="subInfo" style="display:none;">
+      Подписка активна до: <span id="subDate"></span>
     </div>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px;">
-      После оплаты пришли скриншот чека в Telegram-бот<br>и получи уникальный промокод
-    </div>
-    <input class="pro-code-input" id="proCodeInput" type="text" placeholder="ПРОМОКОД" maxlength="20" autocomplete="off">
+    
+    <input class="pro-code-input" id="proCodeInput" type="text" placeholder="ВВЕДИТЕ КОД АКТИВАЦИИ" maxlength="25" autocomplete="off">
     <div class="modal-actions">
       <button class="m-btn" id="closeProBtn" type="button">Закрыть</button>
       <button class="m-btn purple" id="activateProBtn" type="button">Активировать</button>
@@ -500,14 +408,21 @@ var NL=String.fromCharCode(10);
 var MONTHS=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 var MONTHS_GEN=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
 var MONTHS_SHORT=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
-var DB_KEY="obvalka_pro_v9",BK_KEY="obvalka_pro_backups_v9",DRAFT_KEY="obvalka_draft_v9";
-var APP_VERSION="10.3";
+
+// НОВЫЙ УНИВЕРСАЛЬНЫЙ КЛЮЧ БАЗЫ ДАННЫХ (Чтобы не терять данные при обновлениях)
+var DB_KEY="obvalka_db_universal"; 
+var BK_KEY="obvalka_pro_backups_v9";
+var DRAFT_KEY="obvalka_draft_v9";
+
+var APP_VERSION="10.5";
 var SECRET_KEY="OVALKA_SECRET_"+APP_VERSION;
 var MAX_BACKUPS=10,UPDATE_CHECK_INTERVAL=6*60*60*1000,ADMIN_CODE="OBVALKA-ADMIN-2026";
 var THEMES=["dark","light","gray","blue","green"];
 var THEME_NAMES={dark:"🌙 Темная",light:"☀️ Светлая",gray:"⚪ Серая",blue:"🔵 Голубая",green:"🟢 Зеленая"};
 var THEME_COLORS={dark:"#121212",light:"#f1f5f9",gray:"#2d2d2d",blue:"#0f172a",green:"#022c22"};
 var XP_BY_RARITY={common:5,uncommon:10,rare:20,epic:50,legendary:100};
+
+var TARIFFS = { "M1": { months: 1, price: 99 }, "M3": { months: 3, price: 249 }, "M6": { months: 6, price: 399 }, "Y1": { months: 12, price: 599 } };
 
 var ACHIEVEMENTS=[
   {id:"first_shift",category:"start",name:"Первая смена",desc:"Добавить первую запись",icon:"🐣",rarity:"common",check:function(s){return s.totalRecords>=1},max:1},
@@ -557,7 +472,7 @@ var ACHIEVEMENT_CATEGORIES=[{id:"start",name:"Старт"},{id:"finance",name:"�
 var RANKS=[{minLevel:1,name:"Новичок",icon:"🪵"},{minLevel:6,name:"Подмастерье",icon:"🗡️"},{minLevel:11,name:"Обвальщик",icon:"⚔️"},{minLevel:21,name:"Мастер",icon:"🔪"},{minLevel:36,name:"Рубака",icon:"🪓"},{minLevel:51,name:"Легенда цеха",icon:"🏆"},{minLevel:76,name:"Руки-ножницы",icon:"✂️🩸"}];
 
 var now=new Date();
-var state={viewYear:now.getFullYear(),viewMonth:now.getMonth(),selectedDate:toIso(now),rangeStart:toIso(now),rangeEnd:toIso(now),period:"day",isManualRange:false,worker:"",rate:"",theme:"dark",records:[],updatedAt:0,autoUpdate:false,isPro:false,glovesMode:false,workStart:"08:00",workEnd:"17:00",achievements:{},currentAchievementTab:"start",currentStatsTab:"overview",usedCodes:[]};
+var state={viewYear:now.getFullYear(),viewMonth:now.getMonth(),selectedDate:toIso(now),rangeStart:toIso(now),rangeEnd:toIso(now),period:"day",isManualRange:false,worker:"",rate:"",theme:"dark",records:[],updatedAt:0,autoUpdate:false,isPro:false,proExpireDate:0,glovesMode:false,workStart:"08:00",workEnd:"17:00",achievements:{},currentAchievementTab:"start",currentStatsTab:"overview",usedCodes:[],vahtaStart:"",vahtaDays:90};
 var undoStack=[],dragStartIso=null,isDragging=false,confirmCallback=null,saveTimeout=null,lastLevel=1;
 
 function toIso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
@@ -574,14 +489,25 @@ function calculateLevel(totalXP){return totalXP<=0?1:Math.floor(Math.log2(totalX
 function getRank(level){var r=RANKS[0];for(var i=0;i<RANKS.length;i++){if(level>=RANKS[i].minLevel)r=RANKS[i]}return r}
 function calculateTotalXP(){var t=0;for(var i=0;i<ACHIEVEMENTS.length;i++){if(state.achievements[ACHIEVEMENTS[i].id])t+=XP_BY_RARITY[ACHIEVEMENTS[i].rarity]||0}return t}
 
+function checkSubscription() {
+  var now = Date.now();
+  if (state.isPro && state.proExpireDate > 0 && now > state.proExpireDate) {
+    state.isPro = false; state.proExpireDate = 0; saveState(); updateProUI(); showToast("⏳ Подписка истекла");
+  } else if (state.isPro && state.proExpireDate > 0) {
+    var daysLeft = Math.ceil((state.proExpireDate - now) / (1000 * 60 * 60 * 24));
+    if (daysLeft <= 3 && daysLeft > 0) showToast("⚠️ Подписка заканчивается через " + daysLeft + " дн.");
+  }
+}
+
 async function verifyCodeSignature(code){
   try{
     var parts=code.split('-');
-    if(parts.length!==3||parts[0]!=='PRO')return false;
-    var randomPart=parts[1],providedSig=parts[2];
+    if(parts.length!==4||parts[0]!=='PRO')return false;
+    var type=parts[1], randomPart=parts[2], providedSig=parts[3];
+    if(!TARIFFS[type] && type !== "ADM") return false;
     var enc=new TextEncoder();
     var cryptoKey=await window.crypto.subtle.importKey("raw",enc.encode(SECRET_KEY),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
-    var signature=await window.crypto.subtle.sign("HMAC",cryptoKey,enc.encode(randomPart));
+    var signature=await window.crypto.subtle.sign("HMAC",cryptoKey,enc.encode(type+randomPart));
     var calculatedSig=Array.from(new Uint8Array(signature)).map(function(b){return b.toString(16).padStart(2,'0')}).join('').substring(0,8);
     return calculatedSig===providedSig;
   }catch(e){return false}
@@ -605,7 +531,7 @@ function normalizeState(raw){
   if(!raw||typeof raw!=="object")return null;
   var rate=parseNum(raw.rate),list=Array.isArray(raw.records)?raw.records:[],norm=[];
   for(var i=0;i<list.length;i++){var item=normalizeRecord(list[i],rate);if(item)norm.push(item)}
-  return{worker:typeof raw.worker==="string"?raw.worker:"",rate:raw.rate!==undefined&&raw.rate!==null?String(raw.rate):"",theme:THEMES.indexOf(raw.theme)!==-1?raw.theme:"dark",records:norm,updatedAt:Number(raw.updatedAt)||0,autoUpdate:Boolean(raw.autoUpdate),isPro:Boolean(raw.isPro),glovesMode:Boolean(raw.glovesMode),workStart:typeof raw.workStart==="string"?raw.workStart:"08:00",workEnd:typeof raw.workEnd==="string"?raw.workEnd:"17:00",achievements:raw.achievements||{},currentAchievementTab:typeof raw.currentAchievementTab==="string"?raw.currentAchievementTab:"start",currentStatsTab:typeof raw.currentStatsTab==="string"?raw.currentStatsTab:"overview",usedCodes:Array.isArray(raw.usedCodes)?raw.usedCodes:[]}
+  return{worker:typeof raw.worker==="string"?raw.worker:"",rate:raw.rate!==undefined&&raw.rate!==null?String(raw.rate):"",theme:THEMES.indexOf(raw.theme)!==-1?raw.theme:"dark",records:norm,updatedAt:Number(raw.updatedAt)||0,autoUpdate:Boolean(raw.autoUpdate),isPro:Boolean(raw.isPro),proExpireDate:Number(raw.proExpireDate)||0,glovesMode:Boolean(raw.glovesMode),workStart:typeof raw.workStart==="string"?raw.workStart:"08:00",workEnd:typeof raw.workEnd==="string"?raw.workEnd:"17:00",achievements:raw.achievements||{},currentAchievementTab:typeof raw.currentAchievementTab==="string"?raw.currentAchievementTab:"start",currentStatsTab:typeof raw.currentStatsTab==="string"?raw.currentStatsTab:"overview",usedCodes:Array.isArray(raw.usedCodes)?raw.usedCodes:[],vahtaStart:raw.vahtaStart||"",vahtaDays:raw.vahtaDays||90}
 }
 
 function idbOpen(){return new Promise(function(resolve){if(!window.indexedDB)return resolve(null);try{var req=indexedDB.open("ObvalkaProDB",1);req.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains("kv"))db.createObjectStore("kv")};req.onsuccess=function(e){resolve(e.target.result)};req.onerror=function(){resolve(null)}}catch(err){resolve(null)}})}
@@ -615,7 +541,7 @@ function idbGet(key){return idbOpen().then(function(db){if(!db)return null;retur
 function showSaveIndicator(){var ind=document.getElementById("saveIndicator");var n=new Date();ind.textContent="✓ Сохранено в "+String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");ind.classList.add("show");clearTimeout(ind._timer);ind._timer=setTimeout(function(){ind.classList.remove("show")},2000)}
 function saveState(){
   state.updatedAt=Date.now();
-  var payload={worker:state.worker,rate:state.rate,theme:state.theme,records:state.records,updatedAt:state.updatedAt,autoUpdate:state.autoUpdate,isPro:state.isPro,glovesMode:state.glovesMode,workStart:state.workStart,workEnd:state.workEnd,achievements:state.achievements,currentAchievementTab:state.currentAchievementTab,currentStatsTab:state.currentStatsTab,usedCodes:state.usedCodes};
+  var payload={worker:state.worker,rate:state.rate,theme:state.theme,records:state.records,updatedAt:state.updatedAt,autoUpdate:state.autoUpdate,isPro:state.isPro,proExpireDate:state.proExpireDate,glovesMode:state.glovesMode,workStart:state.workStart,workEnd:state.workEnd,achievements:state.achievements,currentAchievementTab:state.currentAchievementTab,currentStatsTab:state.currentStatsTab,usedCodes:state.usedCodes,vahtaStart:state.vahtaStart,vahtaDays:state.vahtaDays};
   var json=JSON.stringify(payload);
   try{localStorage.setItem(DB_KEY,json)}catch(e){showToast("⚠ Память переполнена")}
   try{window.name="OBV_DATA:"+json}catch(e){}
@@ -641,7 +567,7 @@ function saveBackups(arr){var trimmed=arr.slice(0,MAX_BACKUPS);try{localStorage.
 function createBackup(tag){
   var arr=getBackups(),d=new Date();
   var label=String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")+(tag?" ("+tag+")":"");
-  arr.unshift({id:Date.now()+"_"+Math.random().toString(36).slice(2,6),label:label,count:state.records.length,data:{worker:state.worker,rate:state.rate,theme:state.theme,records:state.records,updatedAt:Date.now(),autoUpdate:state.autoUpdate,isPro:state.isPro,glovesMode:state.glovesMode,workStart:state.workStart,workEnd:state.workEnd,achievements:state.achievements,currentAchievementTab:state.currentAchievementTab,currentStatsTab:state.currentStatsTab,usedCodes:state.usedCodes}});
+  arr.unshift({id:Date.now()+"_"+Math.random().toString(36).slice(2,6),label:label,count:state.records.length,data:{worker:state.worker,rate:state.rate,theme:state.theme,records:state.records,updatedAt:Date.now(),autoUpdate:state.autoUpdate,isPro:state.isPro,proExpireDate:state.proExpireDate,glovesMode:state.glovesMode,workStart:state.workStart,workEnd:state.workEnd,achievements:state.achievements,currentAchievementTab:state.currentAchievementTab,currentStatsTab:state.currentStatsTab,usedCodes:state.usedCodes,vahtaStart:state.vahtaStart,vahtaDays:state.vahtaDays}});
   if(arr.length>MAX_BACKUPS)arr=arr.slice(0,MAX_BACKUPS);
   return saveBackups(arr)
 }
@@ -685,34 +611,58 @@ function checkForUpdate(isAuto){
     });
 }
 
+// МИГРАЦИЯ ДАННЫХ ИЗ СТАРЫХ ВЕРСИЙ
+function migrateData() {
+  var oldKeys = ["obvalka_pro_v9", "obvalka_pro_v8", "obvalka_pro_data"];
+  for(var i=0; i<oldKeys.length; i++) {
+    var oldData = localStorage.getItem(oldKeys[i]);
+    if(oldData) {
+      try {
+        localStorage.setItem(DB_KEY, oldData); // Копируем в новый ключ
+        console.log("Data migrated from " + oldKeys[i]);
+        return true;
+      } catch(e){}
+    }
+  }
+  return false;
+}
+
 function loadInitialData(){
   history.replaceState(null,"",window.location.pathname);
-  var candidates=[],legacyKeys=[DB_KEY,"obvalka_pro_v8","obvalka_pro_v7","obvalka_pro_data","obvalkaData"];
-  for(var i=0;i<legacyKeys.length;i++){try{var raw=localStorage.getItem(legacyKeys[i]);if(raw){var parsed=normalizeState(JSON.parse(raw));if(parsed)candidates.push(parsed)}}catch(e){}}
-  try{if(window.name&&window.name.indexOf("OBV_DATA:")===0){var wn=normalizeState(JSON.parse(window.name.slice(9)));if(wn)candidates.push(wn)}}catch(e){}
+  
+  // Пытаемся мигрировать данные, если основной ключ пуст
+  if(!localStorage.getItem(DB_KEY)) {
+    migrateData();
+  }
+
+  var candidates=[];
+  // Ищем по новому ключу
+  try{var raw=localStorage.getItem(DB_KEY);if(raw){var parsed=normalizeState(JSON.parse(raw));if(parsed)candidates.push(parsed)}}catch(e){}
+  
+  // Fallback на IndexedDB
   return Promise.all([idbGet(DB_KEY),idbGet(BK_KEY)]).then(function(res){
     if(res[0]){try{var idbParsed=normalizeState(JSON.parse(res[0]));if(idbParsed)candidates.push(idbParsed)}catch(e){}}
     if(res[1]&&getBackups().length===0){try{localStorage.setItem(BK_KEY,res[1])}catch(e){}}
+    
     if(candidates.length>0){
       candidates.sort(function(a,b){if(b.updatedAt!==a.updatedAt)return b.updatedAt-a.updatedAt;return b.records.length-a.records.length});
       var best=candidates[0];
       state.worker=best.worker;state.rate=best.rate;state.theme=best.theme;state.records=best.records;state.updatedAt=best.updatedAt;
-      state.autoUpdate=best.autoUpdate||false;state.isPro=best.isPro||false;state.glovesMode=best.glovesMode||false;
+      state.autoUpdate=best.autoUpdate||false;state.isPro=best.isPro||false;state.proExpireDate=best.proExpireDate||0;state.glovesMode=best.glovesMode||false;
       state.workStart=best.workStart||"08:00";state.workEnd=best.workEnd||"17:00";
       state.achievements=best.achievements||{};state.currentAchievementTab=best.currentAchievementTab||"start";
       state.currentStatsTab=best.currentStatsTab||"overview";state.usedCodes=best.usedCodes||[];
+      state.vahtaStart=best.vahtaStart||"";state.vahtaDays=best.vahtaDays||90;
     }
     document.getElementById("verBadge").textContent="v "+APP_VERSION;
     applyTheme();updateAutoUpdateUI();updateProUI();updateGlovesUI();
     document.getElementById("workerInp").value=state.worker;document.getElementById("rateInp").value=state.rate;
     document.getElementById("workStartInp").value=state.workStart;document.getElementById("workEndInp").value=state.workEnd;
     restoreDraft();
-    
-    // ГАРАНТИРОВАННАЯ ОТРИСОВКА КАЛЕНДАРЯ ПРИ ЗАГРУЗКЕ
     setPeriod(state.period,false);
     renderCalendar(); 
-    
     ensureDailyAutoBackup();
+    checkSubscription();
     lastLevel=calculateLevel(calculateTotalXP());updateLevelUI();checkAchievements(true);
     setTimeout(function(){checkForUpdate(true)},2000);
   });
@@ -729,37 +679,41 @@ function updateAutoUpdateUI(){var c=document.getElementById("autoUpdateCheck");i
 function updateGlovesUI(){var c=document.getElementById("glovesCheck");if(state.glovesMode){document.body.classList.add("gloves-mode");c.classList.add("checked");c.textContent="✓"}else{document.body.classList.remove("gloves-mode");c.classList.remove("checked");c.textContent=""}}
 function updateProUI(){
   var badge=document.getElementById("proBadge"),fullRepBtn=document.getElementById("fullRepBtn"),statBtn=document.getElementById("openStatBtn"),achBtn=document.getElementById("openAchievementsBtn");
-  var fStat=document.getElementById("proFeatureStat"),fAch=document.getElementById("proFeatureAchievements"),fFull=document.getElementById("proFeatureFull"),fFut=document.getElementById("proFeatureFuture1");
+  var fStat=document.getElementById("proFeatureStat"),fAch=document.getElementById("proFeatureAchievements"),fFull=document.getElementById("proFeatureFull");
+  var subInfo=document.getElementById("subInfo"),subDate=document.getElementById("subDate");
+  
   if(state.isPro){
     badge.style.display="inline-block";fullRepBtn.classList.remove("locked");fullRepBtn.innerHTML="📋 Полный отчёт";
     statBtn.classList.remove("locked");statBtn.innerHTML="📊 Статистика";achBtn.classList.remove("locked");achBtn.innerHTML="🏆 Достижения";
-    [fStat,fAch,fFull,fFut].forEach(function(el){if(el){el.classList.remove("locked");el.classList.add("unlocked");el.querySelector(".pro-feature-icon").textContent="✅"}});
+    [fStat,fAch,fFull].forEach(function(el){if(el){el.classList.remove("locked");el.classList.add("unlocked");el.querySelector(".pro-feature-icon").textContent="✅"}});
+    if(state.proExpireDate > 0) { subInfo.style.display="block"; subDate.textContent=new Date(state.proExpireDate).toLocaleDateString("ru-RU"); } else { subInfo.style.display="none"; }
   }else{
     badge.style.display="none";fullRepBtn.classList.add("locked");fullRepBtn.innerHTML="🔒 Полный отчёт";
     statBtn.classList.add("locked");statBtn.innerHTML="🔒 Статистика";achBtn.classList.add("locked");achBtn.innerHTML="🔒 Достижения";
-    [fStat,fAch,fFull,fFut].forEach(function(el){if(el){el.classList.add("locked");el.classList.remove("unlocked");el.querySelector(".pro-feature-icon").textContent="🔒"}});
+    [fStat,fAch,fFull].forEach(function(el){if(el){el.classList.add("locked");el.classList.remove("unlocked");el.querySelector(".pro-feature-icon").textContent="🔒"}});
+    subInfo.style.display="none";
   }
 }
 
 async function activatePro(code){
-  var normalized=String(code||"").trim().replace(/\s+/g,'');
+  var normalized=String(code||"").trim().replace(/\s+/g,'').toUpperCase();
   if(!normalized){showToast("⚠ Введите промокод");return false}
-  if(normalized.toUpperCase()===ADMIN_CODE){
-    state.isPro=true;saveState();updateProUI();
-    document.getElementById("proModal").classList.remove("open");
-    showToast("💎 Админ-доступ активирован!");return true;
+  if(normalized===ADMIN_CODE || normalized==="PRO-ADM-ADMIN-00000000"){
+    state.isPro=true;state.proExpireDate=Date.now()+(100*365*24*60*60*1000);
+    saveState();updateProUI();document.getElementById("proModal").classList.remove("open");showToast("💎 Админ-доступ активирован!");return true;
   }
   var isValidSignature=await verifyCodeSignature(normalized);
   if(isValidSignature&&state.usedCodes.indexOf(normalized)===-1){
-    state.isPro=true;state.usedCodes.push(normalized);
-    saveState();updateProUI();
-    document.getElementById("proModal").classList.remove("open");
-    showToast("💎 Pro активирован!");
-    playAchievementSound();showConfetti();
-    return true;
+    var parts=normalized.split('-'); var type=parts[1]; var tariff=TARIFFS[type];
+    if(tariff){
+      var now=Date.now(); var currentExpire=state.proExpireDate>now?state.proExpireDate:now;
+      var addMs=tariff.months*30*24*60*60*1000;
+      state.isPro=true; state.proExpireDate=currentExpire+addMs; state.usedCodes.push(normalized);
+      saveState();updateProUI();document.getElementById("proModal").classList.remove("open");
+      showToast("💎 Pro активирован на "+tariff.months+" мес!"); playAchievementSound();showConfetti(); return true;
+    }
   }
-  var input=document.getElementById("proCodeInput");
-  input.classList.add("shake");playErrorSound();
+  var input=document.getElementById("proCodeInput"); input.classList.add("shake");playErrorSound();
   setTimeout(function(){input.classList.remove("shake")},400);
   if(state.usedCodes.indexOf(normalized)!==-1)showToast("❌ Этот код уже использован");
   else if(!isValidSignature)showToast("❌ Неверная подпись кода");
@@ -772,14 +726,11 @@ function playErrorSound(){try{var ctx=new(window.AudioContext||window.webkitAudi
 
 function updateLevelUI(){
   var totalXP=calculateTotalXP(),level=calculateLevel(totalXP),rank=getRank(level);
-  document.getElementById("levelIcon").textContent=rank.icon;
-  document.getElementById("levelName").textContent=rank.name;
-  document.getElementById("levelNumber").textContent=level;
+  document.getElementById("levelIcon").textContent=rank.icon; document.getElementById("levelName").textContent=rank.name; document.getElementById("levelNumber").textContent=level;
   var currentThreshold=xpThreshold(level-1),nextThreshold=xpThreshold(level);
   var xpOnLevel=totalXP-currentThreshold,xpNeeded=nextThreshold-currentThreshold;
   var progress=xpNeeded>0?(xpOnLevel/xpNeeded)*100:100;
-  document.getElementById("levelXpFill").style.width=Math.min(100,progress)+"%";
-  document.getElementById("levelXpText").textContent=xpOnLevel+" / "+xpNeeded+" XP";
+  document.getElementById("levelXpFill").style.width=Math.min(100,progress)+"%"; document.getElementById("levelXpText").textContent=xpOnLevel+" / "+xpNeeded+" XP";
 }
 
 function getPreviousPeriodRange(){
@@ -799,10 +750,10 @@ function calculatePeriodStats(startIso,endIso){
 
 function updateComparison(){
   var box=document.getElementById("comparisonBox");
-  if(state.isManualRange||state.period==="day"){box.style.display="none";return}
+  if(state.isManualRange||state.period==="day"||state.period==="vahta"){box.style.display="none";return}
   var current=calculatePeriodStats(state.rangeStart,state.rangeEnd),prev=getPreviousPeriodRange(),previous=calculatePeriodStats(prev.start,prev.end);
   if(previous.totWeight===0&&current.totWeight===0){box.style.display="none";return}
-  var pNames={week:"прошлой неделей",biweek:"прошлыми 2 неделями",month:"прошлым месяцем",year:"прошлым годом"},compareWith=pNames[state.period]||"прошлым периодом";
+  var pNames={biweek:"прошлыми 2 неделями",month:"прошлым месяцем"},compareWith=pNames[state.period]||"прошлым периодом";
   var diff=0,metric="";
   if(previous.totWeight>0){diff=((current.totWeight-previous.totWeight)/previous.totWeight)*100;metric="вес"}
   else if(previous.totPay>0){diff=((current.totPay-previous.totPay)/previous.totPay)*100;metric="заработок"}
@@ -818,10 +769,21 @@ function setPeriod(p,keepManual){
   var d=parseIso(state.selectedDate);
   if(!state.isManualRange){
     if(p==="day"){state.rangeStart=state.selectedDate;state.rangeEnd=state.selectedDate}
-    else if(p==="week"){var dow=(d.getDay()+6)%7,mon=new Date(d.getFullYear(),d.getMonth(),d.getDate()-dow),sun=new Date(mon.getFullYear(),mon.getMonth(),mon.getDate()+6);state.rangeStart=toIso(mon);state.rangeEnd=toIso(sun)}
     else if(p==="biweek"){var lastDay=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();if(d.getDate()<=15){state.rangeStart=toIso(new Date(d.getFullYear(),d.getMonth(),1));state.rangeEnd=toIso(new Date(d.getFullYear(),d.getMonth(),15))}else{state.rangeStart=toIso(new Date(d.getFullYear(),d.getMonth(),16));state.rangeEnd=toIso(new Date(d.getFullYear(),d.getMonth(),lastDay))}}
     else if(p==="month"){var mLast=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();state.rangeStart=toIso(new Date(d.getFullYear(),d.getMonth(),1));state.rangeEnd=toIso(new Date(d.getFullYear(),d.getMonth(),mLast))}
-    else if(p==="year"){state.rangeStart=d.getFullYear()+"-01-01";state.rangeEnd=d.getFullYear()+"-12-31"}
+    else if(p==="vahta"){
+      if(state.vahtaStart) {
+        state.rangeStart = state.vahtaStart;
+        var endD = parseIso(state.vahtaStart);
+        endD.setDate(endD.getDate() + parseInt(state.vahtaDays) - 1);
+        state.rangeEnd = toIso(endD);
+      } else {
+        // Если вахта не настроена, открываем модалку
+        document.getElementById("vahtaModal").classList.add("open");
+        state.period = "day"; // Возвращаем на день пока не настроит
+        p = "day";
+      }
+    }
   }
   var tabs=document.querySelectorAll("#periodTabs .tab");
   for(var i=0;i<tabs.length;i++)tabs[i].classList.toggle("active",!state.isManualRange&&tabs[i].getAttribute("data-period")===p);
@@ -836,11 +798,18 @@ function renderCalendar(){
   var workMap={},offMap={};
   for(var i=0;i<state.records.length;i++){var r=state.records[i];if(r.isOff)offMap[r.date]=true;else workMap[r.date]=true}
   var rMin=state.rangeStart<=state.rangeEnd?state.rangeStart:state.rangeEnd,rMax=state.rangeStart<=state.rangeEnd?state.rangeEnd:state.rangeStart;
+  
+  // Проверка на режим вахты для подсветки
+  var isVahtaMode = state.period === "vahta";
+
   for(var idx=0;idx<42;idx++){
     var cur=new Date(gridStart.getFullYear(),gridStart.getMonth(),gridStart.getDate()+idx),iso=toIso(cur);
     var cell=document.createElement("div");cell.className="day-cell";cell.setAttribute("data-iso",iso);
     if(cur.getMonth()!==state.viewMonth)cell.classList.add("other");
-    if(iso>=rMin&&iso<=rMax)cell.classList.add("in-range");
+    if(iso>=rMin&&iso<=rMax) {
+        if(isVahtaMode) cell.classList.add("in-vahta");
+        else cell.classList.add("in-range");
+    }
     if(iso===state.selectedDate)cell.classList.add("selected");
     if(offMap[iso])cell.classList.add("has-off");
     var num=document.createElement("span");num.textContent=cur.getDate();cell.appendChild(num);
@@ -855,7 +824,7 @@ function updateUndoButtons(){var uBtn=document.getElementById("undoBtn"),uClear=
 
 function renderRecordsAndSummary(){
   document.getElementById("selectedDateLabel").textContent=fmtDateFull(state.selectedDate);
-  var pNames={day:"ДЕНЬ",week:"НЕДЕЛЯ",biweek:"2Х НЕДЕЛИ",month:"МЕСЯЦ",year:"ГОД"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
+  var pNames={day:"ДЕНЬ",biweek:"2Х НЕДЕЛИ",month:"МЕСЯЦ",vahta:"ВАХТА"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
   document.getElementById("recordsTitle").textContent="ЗАПИСИ ("+pTitle+")";document.getElementById("sumTitle").textContent="ИТОГ ЗА "+pTitle;
   var list=getFilteredRecords();document.getElementById("recordsCount").textContent=list.length+" ШТ.";
   var boxEl=document.getElementById("recordsList");boxEl.innerHTML="";
@@ -892,7 +861,46 @@ function buildReport(isShort){
   if(isShort){if(state.isManualRange&&rMin!==rMax)lines.push("Период: "+fmtDateShort(rMin)+" – "+fmtDateShort(rMax));lines.push("Вес: "+totWeight+" кг "+totBoxes+" кор.");return lines.join(NL)}
   else{var pText=rMin===rMax?fmtDateFull(rMin):(fmtDateFull(rMin)+" – "+fmtDateFull(rMax));lines.push("Период: "+pText);for(var j=0;j<dayLines.length;j++)lines.push(dayLines[j]);lines.push("ИТОГ: "+totBoxes+"кор | "+totWeight+"кг | "+totPay+"₽");return lines.join(NL)}
 }
-function openPreview(isShort){document.getElementById("previewText").value=buildReport(isShort);document.getElementById("previewModal").classList.add("open");history.pushState({modal:"preview"},"",window.location.href)}
+
+// ЭКСПОРТ В EXCEL (CSV)
+function exportToExcel() {
+  var list = getFilteredRecords();
+  var csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for Excel
+  csvContent += "Дата;Коробки;Вес;Ставка;Зарплата;Статус\n";
+  list.forEach(function(r) {
+    var status = r.isOff ? "Выходной" : "Работа";
+    csvContent += r.date+";"+r.boxes+";"+r.weight+";"+r.rate+";"+r.pay+";"+status+"\n";
+  });
+  var encodedUri = encodeURI(csvContent);
+  var link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "otchet_obvalka.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// ЭКСПОРТ В PDF (PRINT)
+function exportToPdf() {
+  var text = document.getElementById("previewText").value;
+  var win = window.open('', '_blank');
+  win.document.write('<html><head><title>Отчет</title><style>body{font-family:sans-serif;padding:20px;white-space:pre-wrap;}</style></head><body>');
+  win.document.write(text);
+  win.document.write('</body></html>');
+  win.document.close();
+  setTimeout(function(){ win.print(); }, 500);
+}
+
+function openPreview(isShort){
+  document.getElementById("previewText").value=buildReport(isShort);
+  document.getElementById("previewModal").classList.add("open");
+  // Показываем кнопки экспорта только для полного отчета и если есть PRO
+  var expBtns = document.getElementById("exportBtns");
+  if(!isShort && state.isPro) expBtns.style.display = "flex";
+  else expBtns.style.display = "none";
+  
+  history.pushState({modal:"preview"},"",window.location.href);
+}
 
 function calculateStats(){
   var list=getFilteredRecords(),rMin=state.rangeStart<=state.rangeEnd?state.rangeStart:state.rangeEnd,rMax=state.rangeStart<=state.rangeEnd?state.rangeEnd:state.rangeStart;
@@ -903,7 +911,7 @@ function calculateStats(){
 }
 
 function openStatModal(){
-  var stats=calculateStats(),pNames={day:"ДЕНЬ",week:"НЕДЕЛЯ",biweek:"2Х НЕДЕЛИ",month:"МЕСЯЦ",year:"ГОД"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
+  var stats=calculateStats(),pNames={day:"ДЕНЬ",biweek:"2Х НЕДЕЛИ",month:"МЕСЯЦ",vahta:"ВАХТУ"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
   var periodText=stats.rMin===stats.rMax?fmtDateFull(stats.rMin):(fmtDateFull(stats.rMin)+" – "+fmtDateFull(stats.rMax));
   document.getElementById("statPeriod").textContent=pTitle+": "+periodText;
   document.getElementById("statKgPerMin").textContent=stats.kgPerMin.toFixed(2);document.getElementById("statBoxesPerHour").textContent=stats.boxesPerHour.toFixed(1);
@@ -938,8 +946,9 @@ function renderBackupList(){
 function applyImportedObject(obj){
   var norm=normalizeState(obj);if(!norm){showToast("Неверный формат данных");return false}
   state.worker=norm.worker;state.rate=norm.rate;state.theme=norm.theme;state.records=norm.records;state.autoUpdate=norm.autoUpdate||false;
-  state.isPro=norm.isPro||false;state.glovesMode=norm.glovesMode||false;state.workStart=norm.workStart||"08:00";state.workEnd=norm.workEnd||"17:00";
+  state.isPro=norm.isPro||false;state.proExpireDate=norm.proExpireDate||0;state.glovesMode=norm.glovesMode||false;state.workStart=norm.workStart||"08:00";state.workEnd=norm.workEnd||"17:00";
   state.achievements=norm.achievements||{};state.currentAchievementTab=norm.currentAchievementTab||"start";state.currentStatsTab=norm.currentStatsTab||"overview";state.usedCodes=norm.usedCodes||[];
+  state.vahtaStart=norm.vahtaStart||"";state.vahtaDays=norm.vahtaDays||90;
   document.getElementById("workerInp").value=state.worker;document.getElementById("rateInp").value=state.rate;
   document.getElementById("workStartInp").value=state.workStart;document.getElementById("workEndInp").value=state.workEnd;
   applyTheme();updateAutoUpdateUI();updateProUI();updateGlovesUI();
@@ -1084,16 +1093,53 @@ document.addEventListener("click",function(e){var menu=document.getElementById("
 document.getElementById("autoUpdateToggle").addEventListener("click",function(){state.autoUpdate=!state.autoUpdate;updateAutoUpdateUI();saveState();showToast(state.autoUpdate?"✓ Автообновление включено":"Автообновление выключено")});
 document.getElementById("manualUpdateBtn").addEventListener("click",function(){
   document.getElementById("settingsMenu").classList.remove("open");
-  // Принудительная перезагрузка с очисткой кэша
   showToast("🔄 Перезагрузка приложения...");
   setTimeout(function(){window.location.replace(window.location.href.split("?")[0].split("#")[0]+"?v="+Date.now())},500);
 });
 document.getElementById("glovesToggle").addEventListener("click",function(){state.glovesMode=!state.glovesMode;updateGlovesUI();saveState();showToast(state.glovesMode?"🧤 Режим в перчатках включён":"Обычный режим")});
 document.getElementById("themeBtn").addEventListener("click",function(){var idx=THEMES.indexOf(state.theme);idx=(idx+1)%THEMES.length;state.theme=THEMES[idx];applyTheme();saveState();showToast(THEME_NAMES[state.theme])});
+
+document.getElementById("contactAuthorBtn").addEventListener("click",function(){
+  document.getElementById("settingsMenu").classList.remove("open");
+  var subject=encodeURIComponent("Обвалка PRO v"+APP_VERSION+" [Отзыв/Ошибка]");
+  var body=encodeURIComponent("Версия приложения: "+APP_VERSION+"\nУстройство: "+navigator.userAgent+"\nОписание проблемы или предложения:\n");
+  window.location.href="mailto:obvalkaPRO@mail.ru?subject="+subject+"&body="+body;
+});
+
 document.getElementById("openProBtn").addEventListener("click",function(){document.getElementById("settingsMenu").classList.remove("open");document.getElementById("proCodeInput").value="";document.getElementById("proModal").classList.add("open");history.pushState({modal:"pro"},"",window.location.href)});
 document.getElementById("prevMonthBtn").addEventListener("click",function(){state.viewMonth--;if(state.viewMonth<0){state.viewMonth=11;state.viewYear--}renderCalendar()});
 document.getElementById("nextMonthBtn").addEventListener("click",function(){state.viewMonth++;if(state.viewMonth>11){state.viewMonth=0;state.viewYear++}renderCalendar()});
 document.getElementById("periodTabs").addEventListener("click",function(e){var btn=e.target.closest(".tab");if(!btn)return;setPeriod(btn.getAttribute("data-period"),false)});
+
+var selectedTariff="M1";
+document.querySelectorAll(".tariff-card").forEach(function(card){
+  card.addEventListener("click",function(){
+    document.querySelectorAll(".tariff-card").forEach(function(c){c.classList.remove("active")});
+    this.classList.add("active");
+    selectedTariff=this.getAttribute("data-months")==="12"?"Y1":"M"+this.getAttribute("data-months");
+  });
+});
+
+// Логика Вахты
+document.getElementById("closeVahtaBtn").addEventListener("click", function(){
+  document.getElementById("vahtaModal").classList.remove("open");
+  // Возвращаем вкладку на "День", если закрыли без настройки
+  if(!state.vahtaStart) setPeriod("day", false);
+});
+document.getElementById("applyVahtaBtn").addEventListener("click", function(){
+  var startVal = document.getElementById("vahtaStartInput").value;
+  var daysVal = document.getElementById("vahtaDaysInput").value;
+  if(startVal && daysVal) {
+    state.vahtaStart = startVal;
+    state.vahtaDays = daysVal;
+    saveState();
+    document.getElementById("vahtaModal").classList.remove("open");
+    setPeriod("vahta", false);
+    showToast("🚧 Вахта установлена: " + daysVal + " дней");
+  } else {
+    showToast("⚠ Заполните все поля");
+  }
+});
 
 var calGrid=document.getElementById("calGrid"),lastMoveTime=0;
 calGrid.addEventListener("pointerdown",function(e){var cell=e.target.closest(".day-cell");if(!cell)return;var iso=cell.getAttribute("data-iso");dragStartIso=iso;isDragging=true;calGrid._startX=e.clientX;calGrid._startY=e.clientY;state.selectedDate=iso;var d=parseIso(iso);state.viewYear=d.getFullYear();state.viewMonth=d.getMonth();setPeriod(state.period,false)});
@@ -1134,6 +1180,10 @@ document.getElementById("shortRepBtn").addEventListener("click",function(){openP
 document.getElementById("closePreviewBtn").addEventListener("click",function(){document.getElementById("previewModal").classList.remove("open")});
 document.getElementById("sendPreviewBtn").addEventListener("click",function(){shareReportText(document.getElementById("previewText").value)});
 
+// Export Handlers
+document.getElementById("exportExcelBtn").addEventListener("click", exportToExcel);
+document.getElementById("exportPdfBtn").addEventListener("click", exportToPdf);
+
 document.getElementById("openStatBtn").addEventListener("click",function(){if(!state.isPro){document.getElementById("proCodeInput").value="";document.getElementById("proModal").classList.add("open");history.pushState({modal:"pro"},"",window.location.href);showToast("🔒 Статистика — функция Pro");return}openStatModal()});
 document.getElementById("closeStatBtn").addEventListener("click",function(){document.getElementById("statModal").classList.remove("open")});
 document.getElementById("openDetailedStatBtn").addEventListener("click",function(){openDetailedStats()});
@@ -1154,12 +1204,11 @@ document.getElementById("closeAchievementsBtn").addEventListener("click",functio
 document.getElementById("closeProBtn").addEventListener("click",function(){document.getElementById("proModal").classList.remove("open")});
 document.getElementById("activateProBtn").addEventListener("click",function(){activatePro(document.getElementById("proCodeInput").value)});
 document.getElementById("proCodeInput").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();activatePro(this.value)}});
-document.getElementById("copyRequisitesBtn").addEventListener("click",function(){copyFallback("Переведи 199 ₽ по СБП на номер: +7 (XXX) XXX-XX-XX (Иван И.)")});
 
 document.getElementById("saveBkBtn").addEventListener("click",function(){createBackup("вручную").then(function(){showToast("✓ Резервная копия сохранена")})});
 document.getElementById("openBkBtn").addEventListener("click",function(){
   renderBackupList();
-  document.getElementById("transferCode").value=JSON.stringify({worker:state.worker,rate:state.rate,theme:state.theme,records:state.records,updatedAt:Date.now(),autoUpdate:state.autoUpdate,isPro:state.isPro,glovesMode:state.glovesMode,workStart:state.workStart,workEnd:state.workEnd,achievements:state.achievements,currentAchievementTab:state.currentAchievementTab,currentStatsTab:state.currentStatsTab,usedCodes:state.usedCodes});
+  document.getElementById("transferCode").value=JSON.stringify({worker:state.worker,rate:state.rate,theme:state.theme,records:state.records,updatedAt:Date.now(),autoUpdate:state.autoUpdate,isPro:state.isPro,proExpireDate:state.proExpireDate,glovesMode:state.glovesMode,workStart:state.workStart,workEnd:state.workEnd,achievements:state.achievements,currentAchievementTab:state.currentAchievementTab,currentStatsTab:state.currentStatsTab,usedCodes:state.usedCodes,vahtaStart:state.vahtaStart,vahtaDays:state.vahtaDays});
   document.getElementById("bkModal").classList.add("open");history.pushState({modal:"backup"},"",window.location.href);
 });
 document.getElementById("closeBkBtn").addEventListener("click",function(){document.getElementById("bkModal").classList.remove("open")});
@@ -1182,6 +1231,7 @@ window.addEventListener("popstate",function(){
   if(document.getElementById("detailedStatsPage").classList.contains("open")){document.getElementById("detailedStatsPage").classList.remove("open");history.pushState(null,"",window.location.href);return}
   if(document.getElementById("achievementsModal").classList.contains("open")){document.getElementById("achievementsModal").classList.remove("open");history.pushState(null,"",window.location.href);return}
   if(document.getElementById("proModal").classList.contains("open")){document.getElementById("proModal").classList.remove("open");history.pushState(null,"",window.location.href);return}
+  if(document.getElementById("vahtaModal").classList.contains("open")){document.getElementById("vahtaModal").classList.remove("open");history.pushState(null,"",window.location.href);return}
   history.pushState(null,"",window.location.href);
 });
 
