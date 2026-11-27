@@ -7,10 +7,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Обвалка PRO v10.8</title>
+<title>Обвалка PRO v10.9</title>
 <script>
 (function(){
-  var CURRENT="10.8";
+  var CURRENT="10.9";
   if (window.history.replaceState) {
     window.history.replaceState(null, null, window.location.href);
   }
@@ -33,7 +33,7 @@ body.theme-light{--bg:#f1f5f9;--card:#fff;--card2:#f8fafc;--text:#0f172a;--muted
 body.theme-gray{--bg:#2d2d2d;--card:#383838;--card2:#444;--text:#e5e5e5;--muted:#a3a3a3;--border:#525252;--cell-border:#525252;--green:#84cc16;--green-bg:rgba(132,204,22,.15);--orange:#f97316;--orange-bg:rgba(249,115,22,.15);--red:#ef4444;--red-bg:rgba(239,68,68,.15);--purple:#a855f7;--purple-bg:rgba(168,85,247,.15);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.15);--cyan:#06b6d4;--cyan-bg:rgba(6,182,212,.15);--input-bg:#404040;--vahta:#facc15;--vahta-bg:rgba(250,204,21,.2)}
 body.theme-blue{--bg:#0f172a;--card:#1e293b;--card2:#334155;--text:#f8fafc;--muted:#94a3b8;--border:#475569;--cell-border:#475569;--green:#3b82f6;--green-bg:rgba(59,130,246,.15);--orange:#f59e0b;--orange-bg:rgba(245,158,11,.15);--red:#ef4444;--red-bg:rgba(239,68,68,.15);--purple:#8b5cf6;--purple-bg:rgba(139,92,246,.15);--blue:#60a5fa;--blue-bg:rgba(96,165,250,.15);--cyan:#38bdf8;--cyan-bg:rgba(56,189,248,.15);--input-bg:#1e293b;--vahta:#fde047;--vahta-bg:rgba(253,224,71,.2)}
 body.theme-green{--bg:#022c22;--card:#064e3b;--card2:#065f46;--text:#ecfdf5;--muted:#6ee7b7;--border:#047857;--cell-border:#047857;--green:#10b981;--green-bg:rgba(16,185,129,.15);--orange:#f59e0b;--orange-bg:rgba(245,158,11,.15);--red:#ef4444;--red-bg:rgba(239,68,68,.15);--purple:#8b5cf6;--purple-bg:rgba(139,92,246,.15);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.15);--cyan:#2dd4bf;--cyan-bg:rgba(45,212,191,.15);--input-bg:#064e3b;--vahta:#fef08a;--vahta-bg:rgba(254,240,138,.2)}
-body.gloves-mode .form-inp{font-size:20px} body.gloves-mode .add-btn{font-size:18px;height:55px} body.gloves-mode .off-btn{font-size:14px;height:40px} body.gloves-mode .icon-btn{width:40px;height:38px;font-size:16px} body.gloves-mode .tab{font-size:13px;padding:8px 4px} body.gloves-mode .form-lbl{font-size:15px} body.gloves-mode .time-input{font-size:18px;height:45px}
+body.gloves-mode .form-inp{font-size:20px} body.gloves-mode .add-btn{font-size:18px;height:55px} body.gloves-mode .off-btn{font-size:14px;height:40px} body.gloves-mode .icon-btn{width:40px;height:38px;font-size:16px} body.gloves-mode .tab{font-size:12px;padding:8px 2px} body.gloves-mode .form-lbl{font-size:15px} body.gloves-mode .time-input{font-size:18px;height:45px}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 html,body{overscroll-behavior:none;-webkit-overflow-scrolling:touch}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center;min-height:100vh;min-height:100dvh;padding:6px;padding-top:calc(6px + var(--safe-top));padding-bottom:calc(6px + var(--safe-bottom));overflow-x:hidden}
@@ -48,9 +48,13 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .settings-menu{position:absolute;top:35px;right:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;min-width:220px;z-index:500;display:none;box-shadow:0 4px 12px rgba(0,0,0,.3)} .settings-menu.open{display:block}
 .settings-item{display:flex;align-items:center;justify-content:space-between;padding:8px 6px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600} .settings-item:hover{background:var(--card2)} .settings-item:active{opacity:.7}
 .settings-checkbox{width:18px;height:18px;border:2px solid var(--border);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--green);font-weight:900} .settings-checkbox.checked{background:var(--green);border-color:var(--green);color:#fff}
-.tabs{display:flex;gap:4px;margin-bottom:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-bottom:2px} .tabs::-webkit-scrollbar{display:none}
-.tab{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:5px 6px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;text-align:center;flex-shrink:0;white-space:nowrap} .tab.active{background:var(--green);border-color:var(--green);color:#fff}
+
+/* ИСПРАВЛЕННЫЕ ТАБЫ */
+.tabs{display:flex;gap:2px;margin-bottom:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-bottom:2px} .tabs::-webkit-scrollbar{display:none}
+.tab{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:6px 4px;border-radius:7px;font-size:10px;font-weight:600;cursor:pointer;text-align:center;flex:1;white-space:nowrap} 
+.tab.active{background:var(--green);border-color:var(--green);color:#fff}
 .tab.vahta-tab{background:var(--vahta);color:#000;border-color:var(--vahta);font-weight:800;box-shadow:0 0 8px var(--vahta-bg)}
+
 .weekdays{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;color:var(--muted);margin-bottom:3px;font-weight:600}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;user-select:none;-webkit-user-select:none;touch-action:pan-y;overscroll-behavior:none}
 .day-cell{height:28px;border:1px solid var(--cell-border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;position:relative;background:var(--card2);user-select:none;-webkit-user-select:none}
@@ -83,7 +87,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .modal-title{font-size:15px;font-weight:800}
 .preview-ta{width:100%;height:150px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px;font-size:12.5px;font-family:inherit;resize:none;-webkit-user-select:text;user-select:text}
 .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.m-btn{height:34px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-weight:700;font-size:12.5px;cursor:pointer} .m-btn:disabled{opacity:.5;cursor:not-allowed} .m-btn.primary{background:var(--green);border-color:var(--green);color:#fff} .m-btn.danger{background:var(--red);border-color:var(--red);color:#fff} .m-btn.purple{background:var(--purple);border-color:var(--purple);color:#fff} .m-btn.vahta{background:var(--vahta);border-color:var(--vahta);color:#000} .m-btn.deep{background:var(--gold);border-color:var(--gold);color:#000}
+.m-btn{height:34px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-weight:700;font-size:12.5px;cursor:pointer} .m-btn:disabled{opacity:.5;cursor:not-allowed} .m-btn.primary{background:var(--green);border-color:var(--green);color:#fff} .m-btn.danger{background:var(--red);border-color:var(--red);color:#fff} .m-btn.purple{background:var(--purple);border-color:var(--purple);color:#fff} .m-btn.vahta{background:var(--vahta);border-color:var(--vahta);color:#000} .m-btn.deep{background:var(--gold);border-color:var(--gold);color:#000} .m-btn.restore-deep{background:var(--cyan);border-color:var(--cyan);color:#fff}
 .bk-list{max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:4px} .bk-item{display:flex;justify-content:space-between;align-items:center;background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:11.5px;gap:6px}
 .toast{position:fixed;bottom:calc(16px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:#111827;color:#fff;border:1px solid #374151;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;z-index:200;display:none;white-space:nowrap;max-width:90vw}
 .save-indicator{position:fixed;top:calc(10px + var(--safe-top));right:10px;background:var(--green);color:#fff;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:700;opacity:0;transform:translateY(-10px);transition:opacity .3s,transform .3s;z-index:300;pointer-events:none} .save-indicator.show{opacity:1;transform:translateY(0)}
@@ -155,11 +159,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
         <button class="icon-btn" id="nextMonthBtn" type="button">▶</button>
       </div>
     </div>
+    <!-- ПОЛНЫЕ НАЗВАНИЯ КНОПОК -->
     <div class="tabs" id="periodTabs">
       <button class="tab active" data-period="day" type="button">День</button>
       <button class="tab" data-period="week" type="button">Неделя</button>
-      <button class="tab" data-period="biweek" type="button">2 нед</button>
-      <button class="tab" data-period="month" type="button">Мес</button>
+      <button class="tab" data-period="biweek" type="button">2 недели</button>
+      <button class="tab" data-period="month" type="button">Месяц</button>
       <button class="tab" data-period="year" type="button">Год</button>
       <button class="tab vahta-tab" data-period="vahta" type="button">ВАХТА</button>
     </div>
@@ -352,8 +357,11 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
       <button class="m-btn" id="copyCodeBtn" type="button">📋 Копировать код</button>
       <button class="m-btn primary" id="importCodeBtn" type="button">📥 Загрузить код</button>
     </div>
-    <button class="m-btn deep" id="deepBackupBtn" type="button" style="margin-top:8px;">💎 Глубокий резерв</button>
-    <button class="m-btn" id="closeBkBtn" type="button" style="margin-top:4px;">Закрыть</button>
+    <!-- НОВЫЕ КНОПКИ ГЛУБОКОГО РЕЗЕРВА -->
+    <button class="m-btn deep" id="deepBackupBtn" type="button" style="margin-top:8px;">💎 Сохранить в глубокий резерв</button>
+    <button class="m-btn restore-deep" id="restoreDeepBtn" type="button" style="margin-top:4px;">♻️ Восстановить из глубокого</button>
+    
+    <button class="m-btn" id="closeBkBtn" type="button" style="margin-top:8px;">Закрыть</button>
   </div>
 </div>
 
@@ -383,9 +391,9 @@ var MONTHS_SHORT=["янв","фев","мар","апр","май","июн","июл"
 var DB_KEY="obvalka_db_universal"; 
 var BK_KEY="obvalka_pro_backups_v9";
 var DRAFT_KEY="obvalka_draft_v9";
-var DEEP_BACKUP_KEY="obvalka_deep_backup"; // НОВЫЙ КЛЮЧ
+var DEEP_BACKUP_KEY="obvalka_deep_backup"; 
 
-var APP_VERSION="10.8";
+var APP_VERSION="10.9";
 var SECRET_KEY="OVALKA_SECRET_"+APP_VERSION;
 var MAX_BACKUPS=10,UPDATE_CHECK_INTERVAL=6*60*60*1000,ADMIN_CODE="OBVALKA-ADMIN-2026";
 var THEMES=["dark","light","gray","blue","green"];
@@ -513,7 +521,6 @@ function idbGet(key){return idbOpen().then(function(db){if(!db)return null;retur
 
 function showSaveIndicator(){var ind=document.getElementById("saveIndicator");var n=new Date();ind.textContent="✓ Сохранено в "+String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0");ind.classList.add("show");clearTimeout(ind._timer);ind._timer=setTimeout(function(){ind.classList.remove("show")},2000)}
 
-// ГЛУБОКИЙ РЕЗЕРВ
 function saveDeepBackup() {
   try {
     var payload={worker:state.worker,rate:state.rate,theme:state.theme,records:state.records,updatedAt:Date.now(),autoUpdate:state.autoUpdate,isPro:state.isPro,proExpireDate:state.proExpireDate,glovesMode:state.glovesMode,workStart:state.workStart,workEnd:state.workEnd,achievements:state.achievements,currentAchievementTab:state.currentAchievementTab,currentStatsTab:state.currentStatsTab,usedCodes:state.usedCodes,vahtaStart:state.vahtaStart,vahtaDays:state.vahtaDays};
@@ -524,6 +531,17 @@ function saveDeepBackup() {
   }
 }
 
+function restoreDeepBackup() {
+  try {
+    var raw = localStorage.getItem(DEEP_BACKUP_KEY);
+    if(!raw) { showToast("⚠ Глубокий резерв пуст"); return; }
+    applyImportedObject(JSON.parse(raw));
+    showToast("♻️ Данные восстановлены из глубокого резерва");
+  } catch(e) {
+    showToast("❌ Ошибка восстановления");
+  }
+}
+
 function saveState(){
   state.updatedAt=Date.now();
   var payload={worker:state.worker,rate:state.rate,theme:state.theme,records:state.records,updatedAt:state.updatedAt,autoUpdate:state.autoUpdate,isPro:state.isPro,proExpireDate:state.proExpireDate,glovesMode:state.glovesMode,workStart:state.workStart,workEnd:state.workEnd,achievements:state.achievements,currentAchievementTab:state.currentAchievementTab,currentStatsTab:state.currentStatsTab,usedCodes:state.usedCodes,vahtaStart:state.vahtaStart,vahtaDays:state.vahtaDays};
@@ -531,7 +549,6 @@ function saveState(){
   try{localStorage.setItem(DB_KEY,json)}catch(e){showToast("⚠ Память переполнена")}
   try{window.name="OBV_DATA:"+json}catch(e){}
   
-  // Автосохранение в глубокий резерв раз в день
   var lastDeep = localStorage.getItem("obv_last_deep_save");
   var today = toIso(new Date());
   if(lastDeep !== today) {
@@ -630,7 +647,6 @@ function loadInitialData(){
     migrateData();
   }
   
-  // Восстановление из window.name
   if(!localStorage.getItem(DB_KEY) && window.name && window.name.indexOf("OBV_DATA:")===0) {
      try {
         var recovered = window.name.substring(9);
@@ -639,7 +655,6 @@ function loadInitialData(){
      } catch(e){}
   }
 
-  // Восстановление из ГЛУБОКОГО РЕЗЕРВА
   if(!localStorage.getItem(DB_KEY)) {
      try {
         var deepRaw = localStorage.getItem(DEEP_BACKUP_KEY);
@@ -838,7 +853,7 @@ function updateUndoButtons(){var uBtn=document.getElementById("undoBtn"),uClear=
 
 function renderRecordsAndSummary(){
   document.getElementById("selectedDateLabel").textContent=fmtDateFull(state.selectedDate);
-  var pNames={day:"ДЕНЬ",week:"НЕДЕЛЯ",biweek:"2 НЕД",month:"МЕСЯЦ",year:"ГОД",vahta:"ВАХТА"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
+  var pNames={day:"ДЕНЬ",week:"НЕДЕЛЯ",biweek:"2 НЕДЕЛИ",month:"МЕСЯЦ",year:"ГОД",vahta:"ВАХТА"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
   document.getElementById("recordsTitle").textContent="ЗАПИСИ ("+pTitle+")";document.getElementById("sumTitle").textContent="ИТОГ ЗА "+pTitle;
   var list=getFilteredRecords();document.getElementById("recordsCount").textContent=list.length+" ШТ.";
   var boxEl=document.getElementById("recordsList");boxEl.innerHTML="";
@@ -876,10 +891,9 @@ function buildReport(isShort){
   else{var pText=rMin===rMax?fmtDateFull(rMin):(fmtDateFull(rMin)+" – "+fmtDateFull(rMax));lines.push("Период: "+pText);for(var j=0;j<dayLines.length;j++)lines.push(dayLines[j]);lines.push("ИТОГ: "+totBoxes+"кор | "+totWeight+"кг | "+totPay+"₽");return lines.join(NL)}
 }
 
-// ИСПРАВЛЕННЫЙ ЭКСПОРТ В EXCEL (CSV)
 function exportToExcel() {
   var list = getFilteredRecords();
-  var csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM for Excel
+  var csvContent = "data:text/csv;charset=utf-8,\uFEFF";
   csvContent += "Дата;Коробки;Вес;Ставка;Зарплата;Статус\n";
   list.forEach(function(r) {
     var status = r.isOff ? "Выходной" : "Работа";
@@ -927,7 +941,7 @@ function calculateStats(){
 }
 
 function openStatModal(){
-  var stats=calculateStats(),pNames={day:"ДЕНЬ",week:"НЕДЕЛЯ",biweek:"2 НЕД",month:"МЕСЯЦ",year:"ГОД",vahta:"ВАХТУ"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
+  var stats=calculateStats(),pNames={day:"ДЕНЬ",week:"НЕДЕЛЯ",biweek:"2 НЕДЕЛИ",month:"МЕСЯЦ",year:"ГОД",vahta:"ВАХТУ"},pTitle=state.isManualRange?"ПЕРИОД":(pNames[state.period]||"ДЕНЬ");
   var periodText=stats.rMin===stats.rMax?fmtDateFull(stats.rMin):(fmtDateFull(stats.rMin)+" – "+fmtDateFull(stats.rMax));
   document.getElementById("statPeriod").textContent=pTitle+": "+periodText;
   document.getElementById("statKgPerMin").textContent=stats.kgPerMin.toFixed(2);document.getElementById("statBoxesPerHour").textContent=stats.boxesPerHour.toFixed(1);
@@ -1226,10 +1240,9 @@ document.getElementById("openBkBtn").addEventListener("click",function(){
 });
 document.getElementById("closeBkBtn").addEventListener("click",function(){document.getElementById("bkModal").classList.remove("open")});
 
-// КНОПКА ГЛУБОКОГО РЕЗЕРВА
-document.getElementById("deepBackupBtn").addEventListener("click", function(){
-  saveDeepBackup();
-});
+// ОБРАБОТЧИКИ ГЛУБОКОГО РЕЗЕРВА
+document.getElementById("deepBackupBtn").addEventListener("click", saveDeepBackup);
+document.getElementById("restoreDeepBtn").addEventListener("click", restoreDeepBackup);
 
 document.getElementById("copyCodeBtn").addEventListener("click",function(){var ta=document.getElementById("transferCode");ta.select();ta.setSelectionRange(0,ta.value.length);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(ta.value).then(function(){showToast("✓ Код скопирован")}).catch(function(){try{document.execCommand("copy");showToast("✓ Код скопирован")}catch(e){showToast("Выделите код вручную")}})}else{try{document.execCommand("copy");showToast("✓ Код скопирован")}catch(e){showToast("Выделите код вручную")}}});
 document.getElementById("importCodeBtn").addEventListener("click",function(){var raw=document.getElementById("transferCode").value.trim();if(!raw){showToast("⚠ Вставьте код базы");return}var btn=this,orig=btn.textContent;btn.disabled=true;btn.textContent="Загрузка...";setTimeout(function(){try{applyImportedObject(JSON.parse(raw))}catch(e){showToast("❌ Ошибка чтения кода")}btn.disabled=false;btn.textContent=orig},50)});
